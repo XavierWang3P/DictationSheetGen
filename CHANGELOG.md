@@ -2,6 +2,36 @@
 
 本项目遵循 [Semantic Versioning 2.0.0](https://semver.org/lang/zh-CN/) 语义化版本规范。
 
+## [2.2.1] - 2026-10-14
+
+### 架构修复与稳定性强化 (Bug Fixes & Architectural Stabilization)
+- **彻底解决 Vue 虚拟 DOM 与原生 DOM 操作冲突 (P0)**：
+  - 彻底删除 `QuickInputPane`、`WordLibraryPane`、`VisualClozePane`、`SettingsPane` 中所有脱离虚拟 DOM 的手动渲染逻辑（`innerHTML = ...`、`syncDom()`、`syncVisualDom()`、`renderChipsHtml()`、`renderLibRowsHtml()` 等）；
+  - 全站界面 100% 依托 Vue 3 响应式 `state` 流自然驱动与 Diff 更新，彻底根除 `NotFoundError: Failed to execute 'insertBefore': The node before which the new node is to be inserted is not a child of this node.` 运行期错误与数据-视图脱节隐患。
+- **消除事件委托与子按钮重复触发 (Double Event Handling) (P0)**：
+  - 移除草稿单词容器、本地词库容器、挖空胶囊包裹层上的冗余点击事件委托；
+  - 统一为子按钮及交互药丸配备 Vue 专属事件修饰符（`@click.stop`、`@change.stop`），确保单次点击精准执行一次操作，修复“点击下移移动2位”、“点击加入试卷重复加入”、“挖空药丸点击后瞬时反弹取消”的交互缺陷。
+- **强化本地词库查重算法 (`detectDuplicates`)**：
+  - 完善英文（不区分大小写、去除首尾空格）及中文释义查重；
+  - 增加对待导入批次内部（Intra-batch）的自查重，避免同批次内重复词条录入词库。
+- **本地词库导入覆盖与数据一致性**：
+  - 导入 JSON 词库时先执行对应表清空（`await db.clear('words')` / `await db.clear('sentences')`），再执行 `bulkPut`，防止原有的无用旧词重新回流。
+- **导入防御性深度校验与 XSS 注入安全防护**：
+  - `storage.js` 中的 `validateImportData` 增加对条目结构、字段类型、字符长度阈值及排版设置项边界的严格类型防御；
+  - `layout.js` 针对动态拼入 HTML/SVG 模板的属性（如 `data-id`、`letterSpacing`、`fontFamily`、`titleSize`）全面增加 `escapeHtml` 净化转义，消除恶意 JSON 导致的本地代码注入风险。
+- **三年级字母专项细节优化与 UX 打磨**：
+  - 顶部栏题量徽章动态判断：字母模式显示“已选 X 题”，普通模式显示“已选 X 词”；
+  - 字母预设完整配置 `wordsPerPage: 26` 等标准参数，26 字母卷排版自适应一页呈现；
+  - 顺序默写提示词大幅精简（如 `第 1 字母 (Aa)`），解决三栏紧凑排版时的折行拥挤问题；
+  - 字母模式下隐藏不必要的普通长文本域与反向存词控件，控制台更清爽；
+  - 字母控制台新增“⚡ 载入 / 重新随机出卷”操作，方便教师一键重新洗牌出题。
+- **顶部操作栏联动与工程规范对齐**：
+  - “生成预览”按钮绑定真实视口适配联动与重绘刷新；
+  - 同步对齐 `package.json` 与 `package-lock.json` 版本至 `2.2.1`，开源协议统一规范为 `MIT`；
+  - 优化 `.github/workflows/deploy.yml` 自动化部署流，在 Pages 部署前增加 `npm ci` 与 `npm run build`，杜绝源码与发布产物脱节。
+- **新增架构防冲突与真实交互端到端回归测试 (`test_architecture_fix.js`)**：
+  - 覆盖真实浏览器环境下的单步下移、单条加入词库、挖空胶囊单选与保持、以及全程控制台 0 报错验证（`npm run test:arch`，100% 通过）。
+
 ## [2.2.0] - 2026-10-14
 
 ### 新增功能 (New Features)

@@ -4,7 +4,7 @@
       <template #header>
         <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
           <span style="font-size:14px; font-weight:700; color:var(--text-main);">📝 单词输入与当前试卷</span>
-          <n-badge :value="`${state.draft.items.length} 词`" type="info" id="badgeWordCount" />
+          <n-badge :value="badgeText" type="info" id="badgeWordCount" />
         </div>
       </template>
 
@@ -190,7 +190,7 @@
         <!-- 操作按钮栏 -->
         <div class="alpha-action-row">
           <n-button type="primary" size="small" id="btnGenerateAlphabetSheet" style="flex:1;" @click="handleGenerateAlphabet(false)">
-            ⚡ 载入/替换试卷
+            ⚡ 载入 / 重新随机出卷
           </n-button>
           <n-button size="small" id="btnAppendAlphabetSheet" @click="handleGenerateAlphabet(true)">
             ➕ 追加到试卷
@@ -223,51 +223,54 @@
         </div>
       </div>
 
-      <div v-if="state.draft.settings.dictMode !== 'alphabet'" class="alpha-quick-entry-row" style="margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-        <span style="font-size:11px; color:var(--primary); font-weight:600;">🔤 三年级字母专项:</span>
-        <button type="button" class="preset-chip-btn" id="btnQuickAlpha26" @click="handleLoadAlphabetPreset('alpha_26_pair')">26字母全默写</button>
-        <button type="button" class="preset-chip-btn" id="btnQuickNeighbors" @click="handleLoadAlphabetPreset('alpha_neighbors_9')">左右邻居(9题)</button>
-        <button type="button" class="preset-chip-btn" id="btnQuickCase" @click="handleLoadAlphabetPreset('alpha_case_convert_9')">大小写转换(9题)</button>
-      </div>
+      <!-- 普通单词/句子模式下的录入区域 (字母模式下隐藏，界面更精简) -->
+      <template v-if="state.draft.settings.dictMode !== 'alphabet'">
+        <div class="alpha-quick-entry-row" style="margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:var(--primary); font-weight:600;">🔤 三年级字母专项:</span>
+          <button type="button" class="preset-chip-btn" id="btnQuickAlpha26" @click="handleLoadAlphabetPreset('alpha_26_pair')">26字母全默写</button>
+          <button type="button" class="preset-chip-btn" id="btnQuickNeighbors" @click="handleLoadAlphabetPreset('alpha_neighbors_9')">左右邻居(9题)</button>
+          <button type="button" class="preset-chip-btn" id="btnQuickCase" @click="handleLoadAlphabetPreset('alpha_case_convert_9')">大小写转换(9题)</button>
+        </div>
 
-      <p class="form-desc" id="formDescWords">
-        支持每行一词；支持纯中文；支持“word | 中文”、“word - 中文”或空格分隔；中文为空时仍生成默写格。
-      </p>
+        <p class="form-desc" id="formDescWords">
+          支持每行一词；支持纯中文；支持“word | 中文”、“word - 中文”或空格分隔；中文为空时仍生成默写格。
+        </p>
 
-      <textarea
-        class="word-textarea"
-        id="customWordTextarea"
-        v-model="rawText"
-        rows="4"
-        placeholder="美丽的；优美的&#10;工作努力的；辛勤的&#10;绳；粗绳&#10;聪明的；聪颖的&#10;机器人&#10;钢琴&#10;幼小的；年轻的&#10;跳；跃&#10;国际象棋"
-        style="width: 100%; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 8px; font-size: 13px; font-family: inherit; margin-bottom: 10px; resize: vertical;"
-      ></textarea>
+        <textarea
+          class="word-textarea"
+          id="customWordTextarea"
+          v-model="rawText"
+          rows="4"
+          placeholder="美丽的；优美的&#10;工作努力的；辛勤的&#10;绳；粗绳&#10;聪明的；聪颖的&#10;机器人&#10;钢琴&#10;幼小的；年轻的&#10;跳；跃&#10;国际象棋"
+          style="width: 100%; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 8px; font-size: 13px; font-family: inherit; margin-bottom: 10px; resize: vertical;"
+        ></textarea>
 
-      <div class="action-btn-row">
-        <n-button type="primary" size="small" id="btnParseText" @click="handleParseText">
-          载入/替换试卷
-        </n-button>
-        <n-button size="small" id="btnAppendText" @click="handleAppendText">
-          追加
-        </n-button>
-        <n-button size="small" id="btnSaveDraftToLib" @click="handleSaveDraftToLib" title="将当前试卷词汇保存到本地词库">
-          📥 存入词库
-        </n-button>
-        <n-button size="small" id="btnLoadDefaultSample" @click="handleLoadDefault">
-          默认9词
-        </n-button>
-        <n-popconfirm @positive-click="handleClear">
-          <template #trigger>
-            <n-button size="small" type="error" ghost id="btnClearWords">
-              清空试卷
-            </n-button>
-          </template>
-          确定要清空试卷上的全部词汇吗？
-        </n-popconfirm>
-      </div>
+        <div class="action-btn-row">
+          <n-button type="primary" size="small" id="btnParseText" @click="handleParseText">
+            载入/替换试卷
+          </n-button>
+          <n-button size="small" id="btnAppendText" @click="handleAppendText">
+            追加
+          </n-button>
+          <n-button size="small" id="btnSaveDraftToLib" @click="handleSaveDraftToLib" title="将当前试卷词汇保存到本地词库">
+            📥 存入词库
+          </n-button>
+          <n-button size="small" id="btnLoadDefaultSample" @click="handleLoadDefault">
+            默认9词
+          </n-button>
+          <n-popconfirm @positive-click="handleClear">
+            <template #trigger>
+              <n-button size="small" type="error" ghost id="btnClearWords">
+                清空试卷
+              </n-button>
+            </template>
+            确定要清空试卷上的全部词汇吗？
+          </n-popconfirm>
+        </div>
+      </template>
 
-      <!-- 试卷单词列表 -->
-      <div class="words-list-container" id="wordsListContainer" @click="handleListClick">
+      <!-- 试卷单词列表 (完全由 Vue 响应式 v-for 驱动，禁止 innerHTML 暴力重写) -->
+      <div class="words-list-container" id="wordsListContainer">
         <template v-if="state.draft.items.length === 0">
           <div class="empty-list-tip">
             暂无单词，请在上方输入框粘贴或载入默认词表
@@ -298,9 +301,9 @@
             </div>
 
             <div class="word-item-actions">
-              <button type="button" class="word-item-btn" title="上移" @click="moveUp(index)">▲</button>
-              <button type="button" class="word-item-btn" title="下移" @click="moveDown(index)">▼</button>
-              <button type="button" class="word-item-btn del" title="删除" @click="removeItem(index)">✕</button>
+              <button type="button" class="word-item-btn" title="上移" @click.stop="moveUp(index)">▲</button>
+              <button type="button" class="word-item-btn" title="下移" @click.stop="moveDown(index)">▼</button>
+              <button type="button" class="word-item-btn del" title="删除" @click.stop="removeItem(index)">✕</button>
             </div>
           </div>
         </template>
@@ -310,17 +313,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { NCard, NBadge, NButton, NPopconfirm, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
 import { parseCustomText, generateId } from '../core/tokenizer.js';
 import {
   DEFAULT_WORDS_RAW,
   DEFAULT_CLOZE_WORDS_RAW,
-  createDraftItem,
-  computePageLayout,
-  renderPracticeSheetHtml,
-  escapeHtml
+  createDraftItem
 } from '../core/layout.js';
 import { detectDuplicates } from '../core/storage.js';
 import {
@@ -333,61 +333,10 @@ import {
 const message = useMessage();
 const rawText = ref('');
 
-function renderChipsHtml(items) {
-  if (!items || items.length === 0) {
-    return '<div class="empty-list-tip">暂无单词，请在上方输入框粘贴或载入默认词表</div>';
-  }
-  return items.map((item, index) => {
-    let enHtml = '';
-    if (item.en) {
-      if (state.draft.settings.dictMode === 'cloze' && (item.en.includes('[') || item.en.includes('{'))) {
-        enHtml = `<mark class="chip-blank-mark">${escapeHtml(item.en)}</mark>`;
-      } else {
-        enHtml = escapeHtml(item.en);
-      }
-    }
-    return `<div class="word-item-row word-chip" data-id="${item.id}">
-      <div class="word-item-main">
-        <span class="word-item-index">${index + 1}.</span>
-        ${item.en ? `<span class="word-item-en word-chip-en">${enHtml}</span>` : '<span class="word-chip-en" style="display:none;"></span>'}
-        ${item.zh ? `<span class="word-item-zh word-chip-zh">${escapeHtml(item.zh)}</span>` : '<span class="word-chip-zh" style="display:none;"></span>'}
-      </div>
-      <div class="word-item-actions">
-        <button type="button" class="word-item-btn" title="上移">▲</button>
-        <button type="button" class="word-item-btn" title="下移">▼</button>
-        <button type="button" class="word-item-btn del" title="删除">✕</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function syncDom() {
-  const container = document.getElementById('sheetsStreamContainer');
-  if (container) {
-    const layout = computePageLayout(state.draft.items, state.draft.settings);
-    container.innerHTML = renderPracticeSheetHtml(layout, state.draft.settings);
-  }
-  const listEl = document.getElementById('wordsListContainer');
-  if (listEl) {
-    listEl.innerHTML = renderChipsHtml(state.draft.items);
-  }
-}
-
-function handleListClick(e) {
-  const target = e.target;
-  const row = target.closest('.word-item-row');
-  if (!row) return;
-  const id = row.getAttribute('data-id');
-  const index = state.draft.items.findIndex(it => it.id === id);
-  if (index === -1) return;
-  if (target.classList.contains('del') || target.textContent === '✕') {
-    removeItem(index);
-  } else if (target.title === '上移' || target.textContent === '▲') {
-    moveUp(index);
-  } else if (target.title === '下移' || target.textContent === '▼') {
-    moveDown(index);
-  }
-}
+const badgeText = computed(() => {
+  const count = state.draft.items.length;
+  return state.draft.settings.dictMode === 'alphabet' ? `${count} 题` : `${count} 词`;
+});
 
 const alphabetActiveType = ref('sequence');
 const alphaSeqConfig = ref({
@@ -410,6 +359,7 @@ function handleGenerateAlphabet(isAppend = false) {
   let defaultTitle = '';
   let defaultCols = 3;
   let defaultCopies = 3;
+  let defaultWordsPerPage = 9;
 
   if (alphabetActiveType.value === 'sequence') {
     newItems = generateAlphabetSequenceItems(alphaSeqConfig.value);
@@ -417,16 +367,19 @@ function handleGenerateAlphabet(isAppend = false) {
     defaultTitle = `三年级英语 26个英文字母${subLabel}卷`;
     defaultCols = 3;
     defaultCopies = 1;
+    defaultWordsPerPage = 26;
   } else if (alphabetActiveType.value === 'neighbors') {
     newItems = generateLetterNeighborsItems(alphaNeighConfig.value);
     defaultTitle = '三年级英语 字母左右邻居专项练习卷';
     defaultCols = 3;
     defaultCopies = 3;
+    defaultWordsPerPage = alphaNeighConfig.value.count || 9;
   } else if (alphabetActiveType.value === 'case') {
     newItems = generateCaseConversionItems(alphaCaseConfig.value);
     defaultTitle = '三年级英语 字母大小写转换专项练习卷';
     defaultCols = 3;
     defaultCopies = 3;
+    defaultWordsPerPage = alphaCaseConfig.value.count || 9;
   }
 
   if (isAppend) {
@@ -438,9 +391,9 @@ function handleGenerateAlphabet(isAppend = false) {
     state.draft.settings.title = defaultTitle;
     state.draft.settings.columns = defaultCols;
     state.draft.settings.copiesPerPage = defaultCopies;
+    state.draft.settings.wordsPerPage = defaultWordsPerPage;
     message.success(`已生成 ${newItems.length} 道字母练习题并应用版式！`);
   }
-  syncDom();
 }
 
 function handleLoadAlphabetPreset(presetKey) {
@@ -450,23 +403,20 @@ function handleLoadAlphabetPreset(presetKey) {
   state.draft.settings.title = preset.settings.title;
   state.draft.settings.columns = preset.settings.columns;
   state.draft.settings.copiesPerPage = preset.settings.copiesPerPage;
+  state.draft.settings.wordsPerPage = preset.settings.wordsPerPage || 9;
   state.draft.items = preset.getItems();
   message.success(`已载入「${preset.title}」！`);
-  syncDom();
 }
 
 function onModeChange(mode) {
   state.draft.settings.dictMode = mode;
   if (mode === 'alphabet' && state.draft.items.length === 0) {
     handleGenerateAlphabet(false);
-  } else {
-    syncDom();
   }
 }
 
 function onClozeStyleChange(style) {
   state.draft.settings.clozeStyle = style;
-  syncDom();
 }
 
 function handleParseText() {
@@ -478,7 +428,6 @@ function handleParseText() {
     return;
   }
   state.draft.items = list;
-  syncDom();
   message.success(`已成功载入 ${list.length} 个单词！`);
 }
 
@@ -491,7 +440,6 @@ function handleAppendText() {
     return;
   }
   state.draft.items = state.draft.items.concat(list);
-  syncDom();
   message.success(`已追加 ${list.length} 个单词！`);
 }
 
@@ -526,13 +474,11 @@ function handleLoadDefault() {
     state.draft.items = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
     message.success('已载入默认 9 词与推荐设置！');
   }
-  syncDom();
 }
 
 function handleClear() {
   state.draft.items = [];
   rawText.value = '';
-  syncDom();
   message.info('已清空试卷词汇表');
 }
 
@@ -541,7 +487,6 @@ function moveUp(index) {
     const temp = state.draft.items[index];
     state.draft.items[index] = state.draft.items[index - 1];
     state.draft.items[index - 1] = temp;
-    syncDom();
   }
 }
 
@@ -550,13 +495,11 @@ function moveDown(index) {
     const temp = state.draft.items[index];
     state.draft.items[index] = state.draft.items[index + 1];
     state.draft.items[index + 1] = temp;
-    syncDom();
   }
 }
 
 function removeItem(index) {
   state.draft.items.splice(index, 1);
-  syncDom();
 }
 </script>
 
@@ -654,6 +597,11 @@ function removeItem(index) {
   border: 1px solid var(--border-light);
   border-radius: 6px;
   font-size: 12.5px;
+}
+
+.word-item-row:hover {
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 .word-item-main {

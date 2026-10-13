@@ -35,7 +35,7 @@ async function runTests() {
         ws.send(JSON.stringify({
           id,
           method: 'Runtime.evaluate',
-          params: { expression: expr, returnByValue: true }
+          params: { expression: expr, returnByValue: true, awaitPromise: true }
         }));
       });
     }
@@ -260,10 +260,11 @@ async function runTests() {
     console.log('-> 判定:', pass4 ? '✅ PASS' : '❌ FAIL', '\n');
 
     // 验收 5: 智能多格式词汇录入与多页排版
-    const r5 = await evalExpr(`(() => {
+    const r5 = await evalExpr(`(async () => {
       const textarea = document.getElementById('customWordTextarea');
       textarea.value = "apple 苹果\\nbanana /bəˈnɑːnə/ 香蕉\\nclassroom 教室";
       document.getElementById('btnParseText').click();
+      await new Promise(r => setTimeout(r, 60));
 
       const chips = document.querySelectorAll('.word-chip');
       const allCards = document.querySelectorAll('.word-entry-item');
@@ -316,7 +317,7 @@ async function runTests() {
     console.log('-> 判定:', pass6 ? '✅ PASS' : '❌ FAIL', '\n');
 
     // 验收 7: 考生信息大幅调宽、题号不加粗、句子中间挖空填写模式全功能验证
-    const r7 = await evalExpr(`(() => {
+    const r7 = await evalExpr(`(async () => {
       // 1. 验证考生信息填入区域大幅调宽
       const nameLine = document.querySelector('.compact-info .info-line-name');
       const classLine = document.querySelector('.compact-info .info-line-class');
@@ -333,6 +334,7 @@ async function runTests() {
       // 3. 切换至挖空填写模式并显式载入挖空示例 (避免无提示暴力自动覆盖)
       document.getElementById('modeCloze').click();
       document.getElementById('btnLoadDefaultSample').click();
+      await new Promise(r => setTimeout(r, 60));
       const modeAfterClick = state.settings.dictMode;
 
       // 检查默认挖空示例第 1 项是否在句子中间挖空
@@ -345,6 +347,7 @@ async function runTests() {
       const textarea = document.getElementById('customWordTextarea');
       textarea.value = "ask [your teacher] for help | 向你的老师求助\\nShe [likes] apples.";
       document.getElementById('btnParseText').click();
+      await new Promise(r => setTimeout(r, 60));
 
       const customCards = document.querySelectorAll('.word-entry-item');
       const card1Html = customCards[0]?.querySelector('.meaning')?.innerHTML || '';
@@ -356,6 +359,7 @@ async function runTests() {
       // 恢复模式为 writing
       document.getElementById('modeWriting').click();
       document.getElementById('btnLoadDefaultSample').click();
+      await new Promise(r => setTimeout(r, 60));
 
       return {
         nameWidth,

@@ -65,14 +65,14 @@ export function generateAlphabetSequenceItems(options = {}) {
     }
 
     if (subMode === 'full') {
-      const typeLabel = caseStyle === 'upper' ? '大写' : (caseStyle === 'lower' ? '小写' : '大小写');
-      promptZh = `默写第 ${letterIdx + 1} 个字母 (${typeLabel})`;
+      const typeLabel = caseStyle === 'upper' ? u : (caseStyle === 'lower' ? l : `${u}${l}`);
+      promptZh = `第 ${letterIdx + 1} 字母 (${typeLabel})`;
     } else if (subMode === 'gap') {
       const isBlank = blankIndices.has(letterIdx);
       if (isBlank) {
-        promptZh = `请补全第 ${letterIdx + 1} 个字母: [ ? ]`;
+        promptZh = `补全第 ${letterIdx + 1} 字母: [ ? ]`;
       } else {
-        promptZh = `已给出第 ${letterIdx + 1} 个字母: ${caseStyle === 'pair' ? `${u}${l}` : targetEn}`;
+        promptZh = `给出第 ${letterIdx + 1} 字母: ${caseStyle === 'pair' ? `${u}${l}` : targetEn}`;
       }
     } else if (subMode === 'shuffle') {
       promptZh = `听写字母 (书写四线格)`;
@@ -230,7 +230,7 @@ export const ALPHABET_PRESETS = [
     settings: {
       title: '三年级英语 26个英文字母规范书写卷 (大小写)',
       columns: 3,
-      wordsPerPage: 9,
+      wordsPerPage: 26,
       copiesPerPage: 1
     },
     getItems: () => generateAlphabetSequenceItems({ caseStyle: 'pair', subMode: 'full' })
@@ -242,7 +242,7 @@ export const ALPHABET_PRESETS = [
     settings: {
       title: '三年级英语 26个英文字母接龙填空卷',
       columns: 3,
-      wordsPerPage: 9,
+      wordsPerPage: 26,
       copiesPerPage: 1
     },
     getItems: () => generateAlphabetSequenceItems({ caseStyle: 'pair', subMode: 'gap', gapCount: 13 })

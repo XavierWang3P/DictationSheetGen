@@ -104,6 +104,7 @@ async function runPhase3Tests() {
       const searchInput = document.getElementById('inputSearchLib');
       searchInput.value = 'piano';
       searchInput.dispatchEvent(new Event('input'));
+      await new Promise(r => setTimeout(r, 60));
 
       const filteredRows = document.querySelectorAll('#libWordsContainer .lib-item-row');
       const hasPiano = filteredRows.length === 1 && filteredRows[0].textContent.includes('piano');
@@ -111,19 +112,23 @@ async function runPhase3Tests() {
       // 点击单个加入试卷
       const addBtn = filteredRows[0].querySelector('.btn-lib-add');
       if (addBtn) addBtn.click();
+      await new Promise(r => setTimeout(r, 60));
       const afterSingleDraftLen = state.draft.items.length;
 
       // 清空搜索
       searchInput.value = '';
       searchInput.dispatchEvent(new Event('input'));
+      await new Promise(r => setTimeout(r, 60));
 
       // 测试全选与批量加入
       const selectAllBtn = document.getElementById('btnLibSelectAll');
       selectAllBtn.click(); // 全选
+      await new Promise(r => setTimeout(r, 60));
       const selectedCount = parseInt(document.getElementById('libSelectedCount').textContent, 10);
 
       const batchAddBtn = document.getElementById('btnLibBatchAddToDraft');
       batchAddBtn.click(); // 批量加入
+      await new Promise(r => setTimeout(r, 60));
       const afterBatchDraftLen = state.draft.items.length;
 
       return {
@@ -194,6 +199,7 @@ async function runPhase3Tests() {
       inputSentence.dispatchEvent(new Event('input'));
       inputZh.value = '这个聪明的男孩会骑自行车。';
       inputZh.dispatchEvent(new Event('input'));
+      await new Promise(r => setTimeout(r, 60));
 
       // 检查切词胶囊数量
       const tokenBtns = document.querySelectorAll('#visualTokenWrap .visual-token-btn');
@@ -204,6 +210,7 @@ async function runPhase3Tests() {
       const bicycleBtn = Array.from(tokenBtns).find(b => b.textContent === 'bicycle');
       if (cleverBtn) cleverBtn.click();
       if (bicycleBtn) bicycleBtn.click();
+      await new Promise(r => setTimeout(r, 60));
 
       // 点击后 DOM 重新渲染，重新获取活跃的胶囊元素
       const updatedBtns = document.querySelectorAll('#visualTokenWrap .visual-token-btn');

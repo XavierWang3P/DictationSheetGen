@@ -21,7 +21,7 @@
 
     <div class="header-actions">
       <div class="badge-status" id="quickStatBadge">
-        已选 {{ layout.totalItems }} 词 · 每页 {{ layout.copiesPerPage }} 份 · 共 {{ layout.totalPages }} 页
+        已选 {{ layout.totalItems }} {{ state.draft.settings.dictMode === 'alphabet' ? '题' : '词' }} · 每页 {{ layout.copiesPerPage }} 份 · 共 {{ layout.totalPages }} 页
       </div>
 
       <n-button size="small" id="btnGeneratePreview" @click="handleRefreshPreview" title="根据当前设置重绘打印预览">
@@ -65,7 +65,8 @@ const fileInputRef = ref(null);
 const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
 
 function handleRefreshPreview() {
-  message.success('预览已刷新！');
+  state.ui.zoom = Math.round(state.ui.zoom * 100) / 100;
+  message.success('已重新计算并对齐打印预览！');
 }
 
 function handlePrint() {
@@ -146,11 +147,13 @@ function handleFileChange(e) {
 
         if (validation.libraryWords.length > 0) {
           state.library.words = validation.libraryWords.map(w => createDraftItem({ ...w, type: 'word' }));
+          await db.clear('words');
           await db.bulkPut('words', state.library.words);
         }
 
         if (validation.librarySentences.length > 0) {
           state.library.sentences = validation.librarySentences.map(s => createDraftItem({ ...s, type: 'sentence' }));
+          await db.clear('sentences');
           await db.bulkPut('sentences', state.library.sentences);
         }
       } else {

@@ -110,22 +110,49 @@ export class StorageDB {
   }
 }
 
-// 重复项检测 (基于 en 不区分大小写，或中文释义完全匹配)
+// 重复项检测 (基于 en 不区分大小写，或中文释义完全匹配，支持单批次内部自身查重)
 export function detectDuplicates(existingItems, newItems) {
-  const existingMap = new Map();
+  const existingEnMap = new Map();
+  const existingZhMap = new Map();
+
   (existingItems || []).forEach(item => {
-    if (item.en) existingMap.set(item.en.trim().toLowerCase(), item);
+    if (!item) return;
+    const enKey = (item.en || '').trim().toLowerCase();
+    const zhKey = (item.zh || item.translation || '').trim();
+    if (enKey) existingEnMap.set(enKey, item);
+    if (zhKey) existingZhMap.set(zhKey, item);
   });
 
   const unique = [];
   const duplicates = [];
 
+  // 当前批次内部已收录的键，用于发现同一批数据内部自身的重复
+  const seenEnMap = new Map();
+  const seenZhMap = new Map();
+
   (newItems || []).forEach(item => {
-    const key = (item.en || '').trim().toLowerCase();
-    if (key && existingMap.has(key)) {
-      duplicates.push({ newItem: item, existingItem: existingMap.get(key) });
+    if (!item || typeof item !== 'object') return;
+    const enKey = (item.en || '').trim().toLowerCase();
+    const zhKey = (item.zh || item.translation || '').trim();
+
+    let matchedExisting = null;
+
+    if (enKey && existingEnMap.has(enKey)) {
+      matchedExisting = existingEnMap.get(enKey);
+    } else if (enKey && seenEnMap.has(enKey)) {
+      matchedExisting = seenEnMap.get(enKey);
+    } else if (!enKey && zhKey && existingZhMap.has(zhKey)) {
+      matchedExisting = existingZhMap.get(zhKey);
+    } else if (!enKey && zhKey && seenZhMap.has(zhKey)) {
+      matchedExisting = seenZhMap.get(zhKey);
+    }
+
+    if (matchedExisting) {
+      duplicates.push({ newItem: item, existingItem: matchedExisting });
     } else {
       unique.push(item);
+      if (enKey) seenEnMap.set(enKey, item);
+      if (zhKey) seenZhMap.set(zhKey, item);
     }
   });
 
@@ -134,29 +161,50 @@ export function detectDuplicates(existingItems, newItems) {
 
 // 配置文件格式校验与版本迁移
 export function validateImportData(parsed) {
-  if (!parsed || typeof parsed !== 'object') {
-    return { valid: false, message: '无效的 JSON 配置文件' };
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { valid: false, message: '无效的 JSON 配置文件（必须是顶层对象）' };
+  }
+
+  function sanitizeList(list) {
+    if (!Array.isArray(list)) return [];
+    return list.filter(it => it && typeof it === 'object' && (it.en || it.zh || it.translation));
   }
 
   // v4 统一全量格式
   if (parsed.draft || parsed.library) {
+    const draftItems = sanitizeList(parsed.draft?.items);
+    const libraryWords = sanitizeList(parsed.library?.words);
+    const librarySentences = sanitizeList(parsed.library?.sentences);
+    const draftSettings = (parsed.draft?.settings && typeof parsed.draft.settings === 'object') ? parsed.draft.settings : null;
+
+    if (draftItems.length === 0 && libraryWords.length === 0 && librarySentences.length === 0 && !draftSettings) {
+      return { valid: false, message: '配置文件的草稿或词库内容为空' };
+    }
+
     return {
       valid: true,
-      version: parsed.version || '4.0',
-      draftItems: Array.isArray(parsed.draft?.items) ? parsed.draft.items : [],
-      draftSettings: parsed.draft?.settings || null,
-      libraryWords: Array.isArray(parsed.library?.words) ? parsed.library.words : [],
-      librarySentences: Array.isArray(parsed.library?.sentences) ? parsed.library.sentences : []
+      version: String(parsed.version || '4.0'),
+      draftItems,
+      draftSettings,
+      libraryWords,
+      librarySentences
     };
   }
 
   // v1 ~ v3 传统格式 ({ words: [...], settings: {...} })
-  if (Array.isArray(parsed.words) || parsed.settings) {
+  if (Array.isArray(parsed.words) || (parsed.settings && typeof parsed.settings === 'object')) {
+    const draftItems = sanitizeList(parsed.words);
+    const draftSettings = (parsed.settings && typeof parsed.settings === 'object') ? parsed.settings : null;
+
+    if (draftItems.length === 0 && !draftSettings) {
+      return { valid: false, message: '配置文件的词汇列表与设置项均为空' };
+    }
+
     return {
       valid: true,
-      version: parsed.version || '3.0',
-      draftItems: Array.isArray(parsed.words) ? parsed.words : [],
-      draftSettings: parsed.settings || null,
+      version: String(parsed.version || '3.0'),
+      draftItems,
+      draftSettings,
       libraryWords: [],
       librarySentences: []
     };

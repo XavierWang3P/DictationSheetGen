@@ -18,7 +18,7 @@
           id="inputVisualSentence"
           placeholder="例: Ask your teacher for help."
           class="native-search-input"
-          @input="onSentenceInput"
+          @input="onSentenceChange"
         />
       </div>
 
@@ -30,15 +30,15 @@
           id="inputVisualTranslation"
           placeholder="例: 向你的老师求助。"
           class="native-search-input"
-          @input="onTranslationInput"
         />
       </div>
 
       <div style="margin-top: 12px;">
         <label class="item-label" style="display:block; margin-bottom: 6px;">
-          💡 点击单词设为挖空 (蓝色高亮为挖空目标)：
+          💡 点击单词设为挖空 (墨绿色高亮为挖空目标)：
         </label>
-        <div class="visual-token-wrap" id="visualTokenWrap" @click="handleTokenWrapClick">
+        <!-- 单词胶囊列表 (纯 Vue 响应式驱动，单次点击精确切换) -->
+        <div class="visual-token-wrap" id="visualTokenWrap">
           <template v-if="wordTokens.length === 0">
             <span style="color:#94a3b8; font-size:12px;">请输入完整英文句子以生成可点击单词</span>
           </template>
@@ -50,7 +50,7 @@
               class="visual-token-btn"
               :class="{ 'is-blank': tok.isBlank }"
               :data-id="tok.id"
-              @click="toggleTokenBlank(tok)"
+              @click.stop="toggleTokenBlank(tok)"
             >
               {{ tok.text }}
             </button>
@@ -62,6 +62,7 @@
         <label class="item-label" style="display:block; margin-bottom: 6px;">
           👀 默写纸挖空预览效果：
         </label>
+        <!-- 实时预览区 (纯 Vue 响应式计算属性驱动) -->
         <div class="visual-cloze-preview" id="visualClozePreview">
           <template v-if="segments.length === 0">
             <span style="color:#94a3b8; font-size:12px;">暂无预览内容</span>
@@ -143,7 +144,7 @@
                 class="btn-act btn-sentence-add"
                 :data-id="s.id"
                 title="加入当前试卷"
-                @click="handleAddSentenceToDraft(s)"
+                @click.stop="handleAddSentenceToDraft(s)"
               >
                 ➕ 试卷
               </button>
@@ -152,7 +153,7 @@
                 class="btn-act del btn-sentence-del"
                 :data-id="s.id"
                 title="从句库中删除"
-                @click="handleDeleteSentence(s.id)"
+                @click.stop="handleDeleteSentence(s.id)"
               >
                 ✕
               </button>
@@ -174,9 +175,10 @@ import {
   segmentsToMarkedText,
   generateId
 } from '../core/tokenizer.js';
-import { computePageLayout, renderPracticeSheetHtml, createDraftItem, escapeHtml } from '../core/layout.js';
+import { createDraftItem } from '../core/layout.js';
 
 const message = useMessage();
+
 const sentenceText = ref('Ask your teacher for help.');
 const translationText = ref('向你的老师求助。');
 const tokens = ref(parseSentenceIntoVisualTokens(sentenceText.value));
@@ -185,94 +187,20 @@ const wordTokens = computed(() => tokens.value.filter(t => t.isWord));
 const segments = computed(() => getVisualSegments(tokens.value));
 const hasBlank = computed(() => segments.value.some(s => s.blank));
 
-function syncSheetDom() {
-  const container = document.getElementById('sheetsStreamContainer');
-  if (container) {
-    const layout = computePageLayout(state.draft.items, state.draft.settings);
-    container.innerHTML = renderPracticeSheetHtml(layout, state.draft.settings);
+function onSentenceChange(e) {
+  if (e && e.target) {
+    sentenceText.value = e.target.value;
   }
-}
-
-function renderTokensHtml(tokList) {
-  const words = (tokList || []).filter(t => t.isWord);
-  if (words.length === 0) {
-    return '<span style="color:#94a3b8; font-size:12px;">请输入完整英文句子以生成可点击单词</span>';
-  }
-  return words.map(tok => {
-    return `<button type="button" class="visual-token-btn ${tok.isBlank ? 'is-blank' : ''}" data-id="${tok.id}">${escapeHtml(tok.text)}</button>`;
-  }).join('');
-}
-
-function renderPreviewHtml(tokList, translation) {
-  const segs = getVisualSegments(tokList);
-  if (!segs || segs.length === 0) {
-    return '<span style="color:#94a3b8; font-size:12px;">暂无预览内容</span>';
-  }
-  const segHtml = segs.map(seg => {
-    if (seg.blank) {
-      return `<span style="border-bottom:2px solid var(--primary); color:var(--primary); font-weight:700; padding:0 4px; margin:0 2px;">( ${escapeHtml(seg.text.trim())} )</span>`;
-    }
-    return `<span>${escapeHtml(seg.text)}</span>`;
-  }).join('');
-
-  return `<div style="width:100%;">
-    <div style="font-size:13.5px; color:#1e293b; line-height:1.6;">${segHtml}</div>
-    ${translation ? `<div style="font-size:11.5px; color:#64748b; margin-top:4px;">释义：${escapeHtml(translation)}</div>` : ''}
-  </div>`;
-}
-
-function syncVisualDom() {
-  const wrap = document.getElementById('visualTokenWrap');
-  if (wrap) {
-    wrap.innerHTML = renderTokensHtml(tokens.value);
-  }
-  const preview = document.getElementById('visualClozePreview');
-  if (preview) {
-    preview.innerHTML = renderPreviewHtml(tokens.value, translationText.value);
-  }
-}
-
-function onSentenceInput(e) {
-  sentenceText.value = e.target.value;
   tokens.value = parseSentenceIntoVisualTokens(sentenceText.value);
-  syncVisualDom();
 }
 
-function onTranslationInput(e) {
-  translationText.value = e.target.value;
-  syncVisualDom();
-}
-
-function toggleTokenBlank(tok, e) {
+function toggleTokenBlank(tok) {
   tok.isBlank = !tok.isBlank;
-  if (e?.currentTarget) {
-    e.currentTarget.classList.toggle('is-blank', tok.isBlank);
-  }
-  const preview = document.getElementById('visualClozePreview');
-  if (preview) {
-    preview.innerHTML = renderPreviewHtml(tokens.value, translationText.value);
-  }
-}
-
-function handleTokenWrapClick(e) {
-  const btn = e.target.closest('.visual-token-btn');
-  if (!btn) return;
-  const word = btn.textContent.trim();
-  const id = btn.getAttribute('data-id');
-  const tok = tokens.value.find(t => t.id === id || (t.isWord && t.text === word));
-  if (tok) {
-    tok.isBlank = !tok.isBlank;
-    btn.classList.toggle('is-blank', tok.isBlank);
-    const preview = document.getElementById('visualClozePreview');
-    if (preview) {
-      preview.innerHTML = renderPreviewHtml(tokens.value, translationText.value);
-    }
-  }
 }
 
 function handleAddToDraft() {
   if (!hasBlank.value) {
-    if (message) message.warning('请先点击上方蓝色胶囊单词设置至少一个挖空目标！');
+    message.warning('请先点击上方蓝色胶囊单词设置至少一个挖空目标！');
     return;
   }
   const enMarked = segmentsToMarkedText(segments.value);
@@ -288,13 +216,12 @@ function handleAddToDraft() {
   if (state.draft.settings.dictMode !== 'cloze') {
     state.draft.settings.dictMode = 'cloze';
   }
-  syncSheetDom();
-  if (message) message.success('已加入当前试卷并同步为句子挖空模式！');
+  message.success('已加入当前试卷并同步为句子挖空模式！');
 }
 
 async function handleSaveToLib() {
   if (!hasBlank.value) {
-    if (message) message.warning('请先点击上方单词设置至少一个挖空目标！');
+    message.warning('请先点击上方单词设置至少一个挖空目标！');
     return;
   }
   const enMarked = segmentsToMarkedText(segments.value);
@@ -309,15 +236,14 @@ async function handleSaveToLib() {
   };
   state.library.sentences.unshift(sentenceItem);
   await db.bulkPut('sentences', [sentenceItem]);
-  if (message) message.success('已成功保存至本地句库！');
+  message.success('已成功保存至本地句库！');
 }
 
 function handleReset() {
   sentenceText.value = '';
   translationText.value = '';
   tokens.value = [];
-  syncVisualDom();
-  if (message) message.info('已重置可视化输入区');
+  message.info('已重置可视化输入区');
 }
 
 function handleAddSentenceToDraft(s) {
@@ -333,8 +259,7 @@ function handleAddSentenceToDraft(s) {
   if (state.draft.settings.dictMode !== 'cloze') {
     state.draft.settings.dictMode = 'cloze';
   }
-  syncSheetDom();
-  if (message) message.success('已加入当前试卷并同步为挖空模式！');
+  message.success('已将该句加入当前试卷！');
 }
 
 async function handleDeleteSentence(id) {
@@ -342,7 +267,7 @@ async function handleDeleteSentence(id) {
   if (idx !== -1) {
     state.library.sentences.splice(idx, 1);
     await db.delete('sentences', id);
-    if (message) message.info('已从句库移除该句子');
+    message.info('已从句库移除该句');
   }
 }
 </script>
@@ -352,6 +277,31 @@ async function handleDeleteSentence(id) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.pane-card {
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.form-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0 0 10px 0;
+}
+
+.form-item-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: block;
+  margin-bottom: 4px;
 }
 
 .native-search-input {
@@ -370,30 +320,6 @@ async function handleDeleteSentence(id) {
 .native-search-input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-light);
-}
-
-.native-search-input:focus {
-  border-color: #0284c7;
-}
-
-.pane-card {
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.form-desc {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  line-height: 1.45;
-  margin: 0 0 10px 0;
-}
-
-.item-label {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-main);
-  display: block;
-  margin-bottom: 4px;
 }
 
 .visual-token-wrap {

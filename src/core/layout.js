@@ -351,8 +351,13 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
 
     const cardCls = isClozeInline ? 'cloze-card-inline' : (s.zhPosition === 'left' ? 'meaning-left' : '');
 
+    const safeCardId = escapeHtml(item.id);
+    const safeLetterSpacing = escapeHtml(String(s.letterSpacing || '0').replace(/[^0-9a-zA-Z. -]/g, ''));
+    const safeFontFamily = escapeHtml(s.fontFamilyZh || "'KaiTi', '楷体', STKaiti, serif");
+    const safeTitleAlign = escapeHtml(s.titleAlign || 'center');
+
     cardsHtml += `
-      <div class="word-card word-entry-item ${cardCls}" data-id="${item.id}" style="letter-spacing:${s.letterSpacing};">
+      <div class="word-card word-entry-item ${cardCls}" data-id="${safeCardId}" style="letter-spacing:${safeLetterSpacing};">
         <div class="meaning word-prompt-row" style="font-size:${effectivePromptSize}pt;">
           <span class="word-num entry-index">${overallIndex}.</span>
           ${zhMeaningHtml}
@@ -388,12 +393,16 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   // 标题
   const rawTitleSize = s.titleFontSize || '18pt';
   const titleSize = (typeof rawTitleSize === 'number' || !String(rawTitleSize).endsWith('pt')) ? `${rawTitleSize}pt` : rawTitleSize;
+  const safeTitleSize = escapeHtml(String(titleSize).replace(/[^0-9a-zA-Z.]/g, ''));
+  const safeFontFamily = escapeHtml(s.fontFamilyZh || "'KaiTi', '楷体', STKaiti, serif");
+  const safeTitleAlign = escapeHtml(s.titleAlign || 'center');
+
   let headerHtml = '';
   if (copies > 1) {
     headerHtml = `
       <div class="sheet-header sheet-header-compact">
         <div class="sheet-header-top-row">
-          <h2 class="sheet-title-text" style="font-size:${titleSize}; text-align:${s.titleAlign || 'center'}; width:100%; font-family:${s.fontFamilyZh};">
+          <h2 class="sheet-title-text" style="font-size:${safeTitleSize}; text-align:${safeTitleAlign}; width:100%; font-family:${safeFontFamily};">
             ${escapeHtml(s.title || 'Unit 1 黑体词默写')}
           </h2>
         </div>
@@ -403,7 +412,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   } else {
     headerHtml = `
       <div class="sheet-header">
-        <h1 class="sheet-title-text" style="font-size:${titleSize}; text-align:${s.titleAlign || 'center'}; font-family:${s.fontFamilyZh};">
+        <h1 class="sheet-title-text" style="font-size:${safeTitleSize}; text-align:${safeTitleAlign}; font-family:${safeFontFamily};">
           ${escapeHtml(s.title || 'Unit 1 黑体词默写')}
         </h1>
         ${studentInfoHtml}

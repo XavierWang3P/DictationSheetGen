@@ -19,7 +19,6 @@
           id="inputSearchLib"
           placeholder="🔍 搜索词库 (英文或中文)..."
           class="native-search-input"
-          @input="onSearchInput"
         />
       </div>
 
@@ -52,13 +51,8 @@
         已选中 <strong id="libSelectedCount" style="color:var(--primary);">{{ selectedIds.size }}</strong> 个单词
       </div>
 
-      <!-- 词库条目列表 -->
-      <div
-        class="words-list-container"
-        id="libWordsContainer"
-        @click="handleContainerClick"
-        @change="handleContainerChange"
-      >
+      <!-- 词库条目列表 (由 Vue 响应式 v-for 驱动，无 innerHTML 干扰) -->
+      <div class="words-list-container" id="libWordsContainer">
         <template v-if="filteredWords.length === 0">
           <div class="empty-list-tip">
             {{ searchQuery ? '未检索到符合条件的词汇' : '本地词库为空，可从左侧试卷保存或点击导入' }}
@@ -77,7 +71,7 @@
               class="lib-item-check"
               :data-id="w.id"
               :checked="selectedIds.has(w.id)"
-              @change="toggleItemSelect(w.id)"
+              @change.stop="toggleItemSelect(w.id)"
               style="cursor:pointer;"
             />
 
@@ -93,7 +87,7 @@
                 class="btn-lib-add btn-act"
                 :data-id="w.id"
                 title="添加到当前试卷"
-                @click="handleAddSingle(w)"
+                @click.stop="handleAddSingle(w)"
               >
                 ➕ 试卷
               </button>
@@ -102,7 +96,7 @@
                 class="btn-lib-del btn-act del"
                 :data-id="w.id"
                 title="从词库中删除"
-                @click="handleDelete(w.id)"
+                @click.stop="handleDelete(w.id)"
               >
                 ✕
               </button>
@@ -118,7 +112,7 @@
 import { ref, computed } from 'vue';
 import { NCard, NBadge, NButton, NPopconfirm, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
-import { computePageLayout, renderPracticeSheetHtml, createDraftItem, escapeHtml } from '../core/layout.js';
+import { createDraftItem } from '../core/layout.js';
 
 const message = useMessage();
 const searchQuery = ref('');
@@ -139,114 +133,26 @@ const isAllSelected = computed(() => {
   return filteredWords.value.every(w => selectedIds.value.has(w.id));
 });
 
-function syncSheetDom() {
-  const container = document.getElementById('sheetsStreamContainer');
-  if (container) {
-    const layout = computePageLayout(state.draft.items, state.draft.settings);
-    container.innerHTML = renderPracticeSheetHtml(layout, state.draft.settings);
-  }
-}
-
-function renderLibRowsHtml(list) {
-  if (!list || list.length === 0) {
-    return `<div class="empty-list-tip">${searchQuery.value ? '未检索到符合条件的词汇' : '本地词库为空'}</div>`;
-  }
-  return list.map(w => {
-    return `<div class="lib-item-row" data-id="${w.id}">
-      <input
-        type="checkbox"
-        class="lib-item-check"
-        data-id="${w.id}"
-        ${selectedIds.value.has(w.id) ? 'checked' : ''}
-        style="cursor:pointer;"
-      />
-      <div class="lib-item-text">
-        <strong style="color:#0f172a; font-size:12.5px;">${escapeHtml(w.en)}</strong>
-        ${w.phonetic ? `<span style="color:#0284c7; font-size:11px; margin-left:4px;">[${escapeHtml(w.phonetic)}]</span>` : ''}
-        <span style="color:#64748b; font-size:11.5px; margin-left:6px;">${escapeHtml(w.zh || '')}</span>
-      </div>
-      <div class="lib-item-actions">
-        <button
-          type="button"
-          class="btn-lib-add btn-act"
-          data-id="${w.id}"
-          title="添加到当前试卷"
-        >
-          ➕ 试卷
-        </button>
-        <button
-          type="button"
-          class="btn-lib-del btn-act del"
-          data-id="${w.id}"
-          title="从词库中删除"
-        >
-          ✕
-        </button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function onSearchInput(e) {
-  searchQuery.value = e.target.value;
-  const listEl = document.getElementById('libWordsContainer');
-  if (listEl) {
-    listEl.innerHTML = renderLibRowsHtml(filteredWords.value);
-  }
-}
-
 function toggleItemSelect(id) {
-  if (selectedIds.value.has(id)) {
-    selectedIds.value.delete(id);
+  const newSet = new Set(selectedIds.value);
+  if (newSet.has(id)) {
+    newSet.delete(id);
   } else {
-    selectedIds.value.add(id);
+    newSet.add(id);
   }
-  const cntEl = document.getElementById('libSelectedCount');
-  if (cntEl) cntEl.textContent = String(selectedIds.value.size);
+  selectedIds.value = newSet;
 }
 
 function handleToggleSelectAll() {
   const list = filteredWords.value;
   const allSel = list.length > 0 && list.every(w => selectedIds.value.has(w.id));
+  const newSet = new Set(selectedIds.value);
   if (allSel) {
-    list.forEach(w => selectedIds.value.delete(w.id));
+    list.forEach(w => newSet.delete(w.id));
   } else {
-    list.forEach(w => selectedIds.value.add(w.id));
+    list.forEach(w => newSet.add(w.id));
   }
-  const cntEl = document.getElementById('libSelectedCount');
-  if (cntEl) cntEl.textContent = String(selectedIds.value.size);
-  document.querySelectorAll('#libWordsContainer .lib-item-check').forEach(ck => {
-    const id = ck.getAttribute('data-id');
-    ck.checked = selectedIds.value.has(id);
-  });
-}
-
-function handleContainerClick(e) {
-  const target = e.target;
-  const btnAdd = target.closest('.btn-lib-add');
-  const btnDel = target.closest('.btn-lib-del');
-  if (btnAdd) {
-    const id = btnAdd.getAttribute('data-id');
-    const w = state.library.words.find(it => it.id === id);
-    if (w) handleAddSingle(w);
-  } else if (btnDel) {
-    const id = btnDel.getAttribute('data-id');
-    if (id) handleDelete(id);
-  }
-}
-
-function handleContainerChange(e) {
-  const ck = e.target.closest('.lib-item-check');
-  if (ck) {
-    const id = ck.getAttribute('data-id');
-    if (ck.checked) {
-      selectedIds.value.add(id);
-    } else {
-      selectedIds.value.delete(id);
-    }
-    const cntEl = document.getElementById('libSelectedCount');
-    if (cntEl) cntEl.textContent = String(selectedIds.value.size);
-  }
+  selectedIds.value = newSet;
 }
 
 function handleAddSingle(w) {
@@ -257,13 +163,12 @@ function handleAddSingle(w) {
     sourceId: w.id
   });
   state.draft.items.push(item);
-  syncSheetDom();
-  if (message) message.success(`已将「${w.en}」加入当前试卷！`);
+  message.success(`已将「${w.en}」加入当前试卷！`);
 }
 
 function handleBatchAdd() {
   if (selectedIds.value.size === 0) {
-    if (message) message.warning('请先勾选需要加入试卷的单词');
+    message.warning('请先勾选需要加入试卷的单词');
     return;
   }
   const selectedItems = state.library.words.filter(w => selectedIds.value.has(w.id));
@@ -274,12 +179,8 @@ function handleBatchAdd() {
     sourceId: w.id
   }));
   state.draft.items = state.draft.items.concat(newDraftItems);
-  selectedIds.value.clear();
-  syncSheetDom();
-  const cntEl = document.getElementById('libSelectedCount');
-  if (cntEl) cntEl.textContent = '0';
-  document.querySelectorAll('#libWordsContainer .lib-item-check').forEach(ck => ck.checked = false);
-  if (message) message.success(`已成功将 ${newDraftItems.length} 个词汇批量加入试卷！`);
+  selectedIds.value = new Set();
+  message.success(`已成功将 ${newDraftItems.length} 个词汇批量加入试卷！`);
 }
 
 async function handleDelete(id) {
@@ -287,7 +188,11 @@ async function handleDelete(id) {
   if (idx !== -1) {
     const wordEn = state.library.words[idx].en;
     state.library.words.splice(idx, 1);
-    selectedIds.value.delete(id);
+    if (selectedIds.value.has(id)) {
+      const newSet = new Set(selectedIds.value);
+      newSet.delete(id);
+      selectedIds.value = newSet;
+    }
     await db.delete('words', id);
     message.info(`已从词库移除「${wordEn}」`);
   }
@@ -299,24 +204,24 @@ function handleExportLib() {
     type: 'wordLibrary',
     version: '4.0',
     exportedAt: new Date().toISOString(),
-    wordsCount: state.library.words.length,
+    count: state.library.words.length,
     words: state.library.words
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `dictation_words_${Date.now()}.json`;
+  a.download = `word_library_${Date.now()}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  message.success('本地词库已成功导出为 JSON 文件！');
+  message.success('本地词库已导出为独立 JSON 文件！');
 }
 
 async function handleClearLib() {
   state.library.words = [];
-  selectedIds.value.clear();
+  selectedIds.value = new Set();
   await db.clear('words');
   message.info('本地词库已清空');
 }
@@ -359,15 +264,11 @@ async function handleClearLib() {
   box-shadow: 0 0 0 2px var(--primary-light);
 }
 
-.native-search-input:focus {
-  border-color: #0284c7;
-}
-
 .toolbar-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
   gap: 6px;
 }
@@ -382,7 +283,7 @@ async function handleClearLib() {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 480px;
+  max-height: 400px;
   overflow-y: auto;
 }
 

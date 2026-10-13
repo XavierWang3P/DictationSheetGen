@@ -540,14 +540,6 @@ const PAPER_SPECS = {
   '8K': { width: '260mm', height: '370mm' }
 };
 
-function syncSheetContainer() {
-  const container = document.getElementById('sheetsStreamContainer');
-  if (container) {
-    const layout = computePageLayout(state.draft.items, state.draft.settings);
-    container.innerHTML = renderPracticeSheetHtml(layout, state.draft.settings);
-  }
-}
-
 function onPaperSizeChange(size) {
   state.draft.settings.paperSize = size;
   const spec = PAPER_SPECS[size];
@@ -557,7 +549,6 @@ function onPaperSizeChange(size) {
       page.style.height = spec.height;
     });
   }
-  syncSheetContainer();
 }
 
 function onTitleFontSizeInput(e) {
