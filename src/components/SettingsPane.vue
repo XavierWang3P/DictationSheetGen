@@ -1,0 +1,743 @@
+<template>
+  <div class="settings-pane">
+    <!-- 模块 2：标题与考生信息 (已上移) -->
+    <section class="settings-group" id="groupTitleInfo">
+      <div class="group-header">
+        <span class="group-title">✏️ 标题与考生信息</span>
+      </div>
+
+      <div class="form-row">
+        <label>试卷标题</label>
+        <n-input
+          v-model:value="state.draft.settings.title"
+          id="inputSheetTitle"
+          size="small"
+          placeholder="请输入试卷标题"
+        />
+      </div>
+
+      <div class="form-row">
+        <label>标题字号</label>
+        <div class="form-range-wrap">
+          <input
+            type="range"
+            class="form-range"
+            id="inputTitleFontSize"
+            min="12"
+            max="32"
+            step="1"
+            :value="titleFontSizeNum"
+            @input="onTitleFontSizeInput"
+          />
+          <span class="form-range-val" id="valTitleFontSize">{{ state.draft.settings.titleFontSize }}</span>
+        </div>
+      </div>
+
+      <div class="form-row" style="align-items:flex-start;">
+        <label style="margin-top:2px;">考生信息栏</label>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="checkName" v-model="state.draft.settings.showStudentName" /> 姓名
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="checkClass" v-model="state.draft.settings.showStudentClass" /> 班级
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="checkNo" v-model="state.draft.settings.showStudentNo" /> 座号
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="checkDate" v-model="state.draft.settings.showStudentDate" /> 日期
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="checkScore" v-model="state.draft.settings.showStudentScore" /> 得分
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 模块 3：页面设置 (默认折叠) -->
+    <section
+      class="settings-group collapsible"
+      :class="{ collapsed: isPageCollapsed }"
+      id="groupPageSettings"
+    >
+      <div class="group-header" @click="toggleGroup('page', $event)">
+        <span class="group-title">📄 页面设置</span>
+        <span class="collapse-arrow">›</span>
+      </div>
+      <div class="group-body">
+        <div class="form-row">
+          <label>纸张规格</label>
+          <div class="segmented-control">
+            <input
+              type="radio"
+              name="paperSize"
+              id="sizeA4"
+              value="A4"
+              :checked="state.draft.settings.paperSize === 'A4'"
+              @click="onPaperSizeChange('A4')"
+              @change="onPaperSizeChange('A4')"
+            />
+            <label for="sizeA4">A4</label>
+            <input
+              type="radio"
+              name="paperSize"
+              id="sizeB4"
+              value="B4"
+              :checked="state.draft.settings.paperSize === 'B4'"
+              @click="onPaperSizeChange('B4')"
+              @change="onPaperSizeChange('B4')"
+            />
+            <label for="sizeB4">B4</label>
+            <input
+              type="radio"
+              name="paperSize"
+              id="size8K"
+              value="8K"
+              :checked="state.draft.settings.paperSize === '8K'"
+              @click="onPaperSizeChange('8K')"
+              @change="onPaperSizeChange('8K')"
+            />
+            <label for="size8K">8K</label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>纸张方向</label>
+          <div class="segmented-control">
+            <input
+              type="radio"
+              name="paperOrient"
+              id="orientPortrait"
+              value="portrait"
+              :checked="state.draft.settings.orientation === 'portrait'"
+              @change="state.draft.settings.orientation = 'portrait'"
+            />
+            <label for="orientPortrait">纵向</label>
+            <input
+              type="radio"
+              name="paperOrient"
+              id="orientLandscape"
+              value="landscape"
+              :checked="state.draft.settings.orientation === 'landscape'"
+              @change="state.draft.settings.orientation = 'landscape'"
+            />
+            <label for="orientLandscape">横向</label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>一页份数</label>
+          <div class="segmented-control">
+            <input
+              type="radio"
+              name="copiesPerPage"
+              id="copy1"
+              value="1"
+              :checked="state.draft.settings.copiesPerPage === 1"
+              @change="state.draft.settings.copiesPerPage = 1"
+            />
+            <label for="copy1">1 份 (全页)</label>
+            <input
+              type="radio"
+              name="copiesPerPage"
+              id="copy2"
+              value="2"
+              :checked="state.draft.settings.copiesPerPage === 2"
+              @change="state.draft.settings.copiesPerPage = 2"
+            />
+            <label for="copy2">2 份 (对半)</label>
+            <input
+              type="radio"
+              name="copiesPerPage"
+              id="copy3"
+              value="3"
+              :checked="state.draft.settings.copiesPerPage === 3"
+              @change="state.draft.settings.copiesPerPage = 3"
+            />
+            <label for="copy3">3 份 (推荐)</label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>页边距 (mm)</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="inputPageMargin"
+              min="4"
+              max="16"
+              step="1"
+              v-model.number="state.draft.settings.pageMargin"
+            />
+            <span class="form-range-val" id="valPageMargin">{{ state.draft.settings.pageMargin }}mm</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 模块 4：单词区域排版 (默认折叠) -->
+    <section
+      class="settings-group collapsible"
+      :class="{ collapsed: isWordCollapsed }"
+      id="groupWordArea"
+    >
+      <div class="group-header" @click="toggleGroup('word', $event)">
+        <span class="group-title">📐 单词区域排版</span>
+        <span class="collapse-arrow">›</span>
+      </div>
+      <div class="group-body">
+        <div class="form-row">
+          <label>排列列数</label>
+          <div class="segmented-control">
+            <input
+              type="radio"
+              name="colCount"
+              id="col1"
+              value="1"
+              :checked="state.draft.settings.columns === 1"
+              @change="state.draft.settings.columns = 1"
+            />
+            <label for="col1">1 列</label>
+            <input
+              type="radio"
+              name="colCount"
+              id="col2"
+              value="2"
+              :checked="state.draft.settings.columns === 2"
+              @change="state.draft.settings.columns = 2"
+            />
+            <label for="col2">2 列</label>
+            <input
+              type="radio"
+              name="colCount"
+              id="col3"
+              value="3"
+              :checked="state.draft.settings.columns === 3"
+              @change="state.draft.settings.columns = 3"
+            />
+            <label for="col3">3 列 (默认)</label>
+            <input
+              type="radio"
+              name="colCount"
+              id="col4"
+              value="4"
+              :checked="state.draft.settings.columns === 4"
+              @change="state.draft.settings.columns = 4"
+            />
+            <label for="col4">4 列</label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>每页词数容量</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="wordsPerPageInput"
+              min="3"
+              max="25"
+              step="1"
+              v-model.number="state.draft.settings.wordsPerPage"
+            />
+            <span class="form-range-val" id="valWordsPerPage">{{ state.draft.settings.wordsPerPage }} 词</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>提示字号 (题号/释义)</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="inputPromptFontSize"
+              min="7"
+              max="20"
+              step="0.5"
+              :value="state.draft.settings.promptFontSize"
+              @input="onPromptFontSizeInput"
+            />
+            <span class="form-range-val" id="valPromptFontSize">{{ state.draft.settings.promptFontSize }}pt</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>中文释义位置</label>
+          <div class="segmented-control">
+            <input
+              type="radio"
+              name="zhPosition"
+              id="zhPosTop"
+              value="top"
+              :checked="state.draft.settings.zhPosition === 'top'"
+              @change="state.draft.settings.zhPosition = 'top'"
+            />
+            <label for="zhPosTop">格子上方</label>
+            <input
+              type="radio"
+              name="zhPosition"
+              id="zhPosLeft"
+              value="left"
+              :checked="state.draft.settings.zhPosition === 'left'"
+              @change="state.draft.settings.zhPosition = 'left'"
+            />
+            <label for="zhPosLeft">格子左侧</label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>水平间距 (列距)</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="inputColGap"
+              min="3"
+              max="12"
+              step="0.5"
+              v-model.number="state.draft.settings.colGap"
+            />
+            <span class="form-range-val" id="valColGap">{{ state.draft.settings.colGap }}mm</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>垂直间距 (行距)</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="inputRowGap"
+              min="2"
+              max="10"
+              step="0.5"
+              v-model.number="state.draft.settings.rowGap"
+            />
+            <span class="form-range-val" id="valRowGap">{{ state.draft.settings.rowGap }}mm</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 模块 5：四线三格专用设置 (默认折叠) -->
+    <section
+      class="settings-group collapsible"
+      :class="{ collapsed: isGridCollapsed }"
+      id="groupGrid"
+    >
+      <div class="group-header" @click="toggleGroup('grid', $event)">
+        <span class="group-title">📏 四线三格设置</span>
+        <span class="collapse-arrow">›</span>
+      </div>
+      <div class="group-body">
+        <div class="form-row">
+          <label>练习格样式</label>
+          <div class="segmented-control">
+            <input
+              type="radio"
+              name="gridStyle"
+              id="gridFour"
+              value="four-line"
+              :checked="state.draft.settings.gridStyle === 'four-line'"
+              @change="state.draft.settings.gridStyle = 'four-line'"
+            />
+            <label for="gridFour">四线三格</label>
+            <input
+              type="radio"
+              name="gridStyle"
+              id="gridSingle"
+              value="single-line"
+              :checked="state.draft.settings.gridStyle === 'single-line'"
+              @change="state.draft.settings.gridStyle = 'single-line'"
+            />
+            <label for="gridSingle">普通横线</label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>格子高度 (mm)</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="inputGridHeight"
+              min="6"
+              max="18"
+              step="0.5"
+              v-model.number="state.draft.settings.gridHeight"
+            />
+            <span class="form-range-val" id="valGridHeight">{{ state.draft.settings.gridHeight }}mm</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>线条粗细</label>
+          <div class="segmented-control">
+            <input
+              type="radio"
+              name="gridStroke"
+              id="strThin"
+              value="0.6"
+              :checked="state.draft.settings.gridStroke === 0.6"
+              @change="state.draft.settings.gridStroke = 0.6"
+            />
+            <label for="strThin">细 (0.6)</label>
+            <input
+              type="radio"
+              name="gridStroke"
+              id="strMed"
+              value="0.85"
+              :checked="state.draft.settings.gridStroke === 0.85"
+              @change="state.draft.settings.gridStroke = 0.85"
+            />
+            <label for="strMed">中 (0.85)</label>
+            <input
+              type="radio"
+              name="gridStroke"
+              id="strThick"
+              value="1.2"
+              :checked="state.draft.settings.gridStroke === 1.2"
+              @change="state.draft.settings.gridStroke = 1.2"
+            />
+            <label for="strThick">粗 (1.2)</label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>线条颜色</label>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input
+              type="color"
+              id="inputGridColor"
+              v-model="state.draft.settings.gridColor"
+              style="width:36px; height:26px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;"
+            />
+            <span style="font-size:11.5px; color:#64748b;" id="textGridColor">{{ state.draft.settings.gridColor }}</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>左右闭合竖线</label>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              id="checkVerticalLine"
+              v-model="state.draft.settings.showVerticalBorder"
+            />
+            显示独立卡片封闭竖线
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 模块 6：字体与模式设置 (默认折叠) -->
+    <section
+      class="settings-group collapsible"
+      :class="{ collapsed: isTypoCollapsed }"
+      id="groupTypography"
+    >
+      <div class="group-header" @click="toggleGroup('typo', $event)">
+        <span class="group-title">🔤 字体与模式设置</span>
+        <span class="collapse-arrow">›</span>
+      </div>
+      <div class="group-body">
+        <div class="form-row">
+          <label>中文字体</label>
+          <select class="form-select" id="selectFontZh" v-model="state.draft.settings.fontFamilyZh">
+            <option value="'KaiTi', '楷体', STKaiti, serif">楷体 (标准范字)</option>
+            <option value="'SimSun', '宋体', serif">宋体</option>
+            <option value="'SimHei', '黑体', sans-serif">黑体</option>
+            <option value="'FangSong', '仿宋', serif">仿宋</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>英文字体</label>
+          <select class="form-select" id="selectFontEn" v-model="state.draft.settings.fontFamilyEn">
+            <option value="Arial, sans-serif">Arial (清晰无衬线)</option>
+            <option value="'Times New Roman', serif">Times New Roman (衬线)</option>
+            <option value="'Georgia', serif">Georgia</option>
+            <option value="'HengShui', 'Comic Sans MS', cursive">衡水体手写 (需本地安装)</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>字间距</label>
+          <div class="segmented-control">
+            <input
+              type="radio"
+              name="letterSpacing"
+              id="spNormal"
+              value="0"
+              :checked="state.draft.settings.letterSpacing === '0'"
+              @change="state.draft.settings.letterSpacing = '0'"
+            />
+            <label for="spNormal">正常</label>
+            <input
+              type="radio"
+              name="letterSpacing"
+              id="spWide"
+              value="0.8px"
+              :checked="state.draft.settings.letterSpacing === '0.8px'"
+              @change="state.draft.settings.letterSpacing = '0.8px'"
+            />
+            <label for="spWide">加宽</label>
+            <input
+              type="radio"
+              name="letterSpacing"
+              id="spExtra"
+              value="1.5px"
+              :checked="state.draft.settings.letterSpacing === '1.5px'"
+              @change="state.draft.settings.letterSpacing = '1.5px'"
+            />
+            <label for="spExtra">宽松</label>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue';
+import { NInput } from 'naive-ui';
+import { state } from '../stores/appStore.js';
+import { computePageLayout, renderPracticeSheetHtml } from '../core/layout.js';
+
+const isPageCollapsed = ref(true);
+const isWordCollapsed = ref(true);
+const isGridCollapsed = ref(true);
+const isTypoCollapsed = ref(true);
+
+const titleFontSizeNum = computed(() => parseFloat(state.draft.settings.titleFontSize) || 18);
+
+function toggleGroup(groupName, e) {
+  let isCol;
+  if (groupName === 'page') {
+    isPageCollapsed.value = !isPageCollapsed.value;
+    isCol = isPageCollapsed.value;
+  } else if (groupName === 'word') {
+    isWordCollapsed.value = !isWordCollapsed.value;
+    isCol = isWordCollapsed.value;
+  } else if (groupName === 'grid') {
+    isGridCollapsed.value = !isGridCollapsed.value;
+    isCol = isGridCollapsed.value;
+  } else if (groupName === 'typo') {
+    isTypoCollapsed.value = !isTypoCollapsed.value;
+    isCol = isTypoCollapsed.value;
+  }
+  const sec = e?.currentTarget?.closest?.('.settings-group');
+  if (sec && typeof isCol === 'boolean') {
+    sec.classList.toggle('collapsed', isCol);
+  }
+}
+
+const PAPER_SPECS = {
+  A4: { width: '210mm', height: '297mm' },
+  B4: { width: '257mm', height: '364mm' },
+  '8K': { width: '260mm', height: '370mm' }
+};
+
+function syncSheetContainer() {
+  const container = document.getElementById('sheetsStreamContainer');
+  if (container) {
+    const layout = computePageLayout(state.draft.items, state.draft.settings);
+    container.innerHTML = renderPracticeSheetHtml(layout, state.draft.settings);
+  }
+}
+
+function onPaperSizeChange(size) {
+  state.draft.settings.paperSize = size;
+  const spec = PAPER_SPECS[size];
+  if (spec) {
+    document.querySelectorAll('.sheet-page').forEach(page => {
+      page.style.width = spec.width;
+      page.style.height = spec.height;
+    });
+  }
+  syncSheetContainer();
+}
+
+function onTitleFontSizeInput(e) {
+  const val = parseFloat(e.target.value);
+  state.draft.settings.titleFontSize = `${val}pt`;
+  const valEl = document.getElementById('valTitleFontSize');
+  if (valEl) valEl.textContent = `${val}pt`;
+  document.querySelectorAll('.sheet-title-text').forEach(el => {
+    el.style.fontSize = `${val}pt`;
+  });
+}
+
+function onPromptFontSizeInput(e) {
+  const val = parseFloat(e.target.value);
+  state.draft.settings.promptFontSize = val;
+  const valEl = document.getElementById('valPromptFontSize');
+  if (valEl) valEl.textContent = `${val}pt`;
+  document.querySelectorAll('.meaning.word-prompt-row').forEach(el => {
+    el.style.fontSize = `${val}pt`;
+  });
+}
+</script>
+
+<style scoped>
+.settings-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-group {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  user-select: none;
+}
+
+.settings-group.collapsible .group-header {
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.settings-group.collapsible:not(.collapsed) .group-header {
+  margin-bottom: 12px;
+}
+
+.group-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.collapse-arrow {
+  font-size: 14px;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+  transform: rotate(90deg);
+}
+
+.settings-group.collapsed .collapse-arrow {
+  transform: rotate(0deg);
+}
+
+.settings-group.collapsed .group-body {
+  display: none;
+}
+
+.group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  gap: 12px;
+}
+
+.form-row label {
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.segmented-control {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.segmented-control input[type="radio"] {
+  display: none;
+}
+
+.segmented-control label {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.segmented-control input[type="radio"]:checked + label {
+  background: #ffffff;
+  color: #0284c7;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.form-range-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 220px;
+}
+
+.form-range {
+  flex: 1;
+  height: 5px;
+  accent-color: #0284c7;
+  cursor: pointer;
+}
+
+.form-range-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0284c7;
+  min-width: 42px;
+  text-align: right;
+  font-family: monospace;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  accent-color: #0284c7;
+  cursor: pointer;
+}
+
+.form-select {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1e293b;
+  cursor: pointer;
+  outline: none;
+}
+</style>

@@ -1,0 +1,37 @@
+{
+  "name": "dictationsheetgen",
+  "version": "2.0.0",
+  "description": "中小学英语默写纸生成器。采用 Vue 3 + Naive UI 现代架构，支持离线单文件运行、四线三格排版、句子挖空与本地离线词库。",
+  "main": "test_acceptance.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node test_acceptance.js",
+    "test:p2": "node test_phase2.js",
+    "test:p3": "node test_phase3.js",
+    "test:all": "node test_acceptance.js && node test_phase2.js && node test_phase3.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XavierWang3P/DictationSheetGen.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/XavierWang3P/DictationSheetGen/issues"
+  },
+  "homepage": "https://github.com/XavierWang3P/DictationSheetGen#readme",
+  "dependencies": {
+    "@vitejs/plugin-vue": "^6.0.10",
+    "naive-ui": "^2.45.3",
+    "vite": "^8.3.4",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vue": "^3.5.44"
+  }
+}

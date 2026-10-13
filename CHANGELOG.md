@@ -2,6 +2,26 @@
 
 本项目遵循 [Semantic Versioning 2.0.0](https://semver.org/lang/zh-CN/) 语义化版本规范。
 
+## [2.0.0] - 2026-10-13
+
+### 重大变更 (Major Changes)
+- **技术栈现代化升级为 Vue 3 + Naive UI**：
+  - 项目架构整体迁移为 **Vue 3**（Composition API、`<script setup>`）+ **Vite**；
+  - 引入现代设计风格桌面级 UI 框架 **Naive UI**，对顶部操作栏、侧边栏设置卡片、按钮控件、通知反馈等进行全方位美化与交互体验提升；
+  - 使用 `vite-plugin-singlefile` 插件生成完全独立的单文件产物 `dist/index.html`（~412KB），完美保留“免安装、免运行环境、双击单文件离线即用”的核心优势。
+- **代码全面模块化与工程化解耦**：
+  - `src/core/tokenizer.js`：涵盖多格式文本识别、智能分词切词算法与可视化挖空标记；
+  - `src/core/storage.js`：提供 IndexedDB 存储适配、多版本数据导入校验与查重算法；
+  - `src/core/layout.js`：提供高精度的纯函数式试卷排版计算、四线三格 SVG 矢量生成与模板渲染；
+  - `src/stores/appStore.js`：统一的响应式全局状态管理，支持 LocalStorage 防抖持久化及对旧测试脚本的向下兼容代理；
+  - `src/components/`：业务功能高度组件化（快捷录入、本地词库、可视化挖空、版式设置、预览舞台与四线格网格渲染）。
+- **原生单文件版本安全归档 (Backup)**：
+  - 在重构前将完整的 v1.3.0 原生单文件版本归档至 `backup/v1.3.0-vanilla/`，并创建了对应的 Git Tag `v1.3.0-vanilla`，便于任何时候回溯或对比原生基线。
+- **全套自动化测试套件通过验证**：
+  - 核心 7 项验收标准测试 (`test_acceptance.js`) 100% 通过；
+  - Phase 2 存储与导入校验测试 (`test_phase2.js`) 100% 通过；
+  - Phase 3 词库与可视化挖空测试 (`test_phase3.js`) 100% 通过。
+
 ---
 
 ## [1.3.0] - 2026-10-13

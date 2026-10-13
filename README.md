@@ -59,8 +59,10 @@
 - **标题自定义**：支持自定义试卷标题与 12~32pt 字号滑动调节。
 - **列数与容量**：支持 1 列（长句通栏）、2 列、3 列、4 列排版；每页单词容量 3~25 词自适应分页。
 
-### 7. 存储与离线使用
-- **纯前端单文件**：所有 HTML、CSS 样式与 JavaScript 逻辑整合在单个 `index.html` 中，无外部网络请求。
+### 7. 技术架构与离线使用
+- **现代化架构**：基于 **Vue 3**（Composition API）+ **Naive UI** + **Vite** 构建，界面现代细腻，代码模块化易维护。
+- **纯前端单文件分发**：通过 `vite-plugin-singlefile` 打包为完全独立的单个 HTML 文件（`dist/index.html`，~412KB），内置所有 CSS、JS 与矢量资源，双击即可在任何离线电脑浏览器中秒开使用。
+- **安全备份体系**：原始单文件版本已完整归档至 `backup/v1.3.0-vanilla/`，并设立了对应 Git 标签。
 - **轻量记忆**：`localStorage` 仅持久化草稿与排版参数，大容量内容库交由 IndexedDB 处理。
 - **配置与词库导出导入**：支持将试卷排版或词库独立导出为 JSON 文件，或导入历史配置与纯文本。
 
@@ -106,23 +108,31 @@ She is reading a book now. | 她正在看书。
 
 ---
 
-## 本地运行与测试
-
-本项目为原生单文件网页，无需 Node.js 环境即可直接使用。
-
-如果需要运行自动化验收测试套件：
+## 本地开发与构建
 
 ### 环境要求
 - Node.js 18+
-- Microsoft Edge 浏览器（Windows 默认内置）
+- Microsoft Edge 浏览器（用于自动化测试）
 
-### 运行测试
+### 开发调试
 ```bash
-# 执行 7 大核心标准自动化验收测试
-node test_acceptance.js
+# 安装依赖
+npm install
 
-# 生成预览截图与测试 PDF
-node test_capture.js
+# 启动本地热重载开发服务器
+npm run dev
+
+# 编译为独立的离线单文件 (dist/index.html)
+npm run build
+```
+
+### 运行自动化测试套件
+```bash
+# 运行全部测试套件（基础验收 + Phase 2 存储 + Phase 3 词库与挖空）
+npm run test:all
+
+# 单独执行核心验收测试
+npm run test
 ```
 
 ---
@@ -131,14 +141,35 @@ node test_capture.js
 
 ```text
 DictationSheetGen/
-├── index.html           # 主程序文件（HTML + CSS + JS 单文件）
-├── README.md            # 项目说明文档
-├── CHANGELOG.md         # 版本更新记录
-├── .gitignore           # Git 忽略文件配置
-├── docs/
-│   └── screenshots/     # 文档插图与预览截图
-├── test_acceptance.js   # CDP 自动化验收测试套件（覆盖 7 项功能标准）
-└── test_capture.js      # 自动化截图与 PDF 导出脚本
+├── dist/
+│   └── index.html           # 编译产物：自包含单文件离线网页（推荐分发与使用）
+├── backup/
+│   └── v1.3.0-vanilla/      # 原始原生无构建单文件历史备份归档
+├── src/
+│   ├── main.js              # Vue 应用挂载入口
+│   ├── App.vue              # 根组件与打印全局样式
+│   ├── stores/
+│   │   └── appStore.js      # 全局响应式状态与持久化
+│   ├── core/
+│   │   ├── layout.js        # 纯函数排版计算、四线格矢量绘制与模板生成
+│   │   ├── storage.js       # IndexedDB 封装、校验与查重
+│   │   └── tokenizer.js     # 智能分词切词、可视化挖空胶囊
+│   └── components/          # Naive UI 组件与视图模块
+│       ├── AppHeader.vue        # 顶部工具栏与打印导出
+│       ├── SidebarTabs.vue      # 四工作区 Tab 导航栏
+│       ├── QuickInputPane.vue   # 快速录入与当前试卷
+│       ├── WordLibraryPane.vue  # 本地离线词库检索与管理
+│       ├── VisualClozePane.vue  # 句子可视化选词挖空
+│       ├── SettingsPane.vue     # 细粒度版式参数设置
+│       ├── PreviewViewport.vue  # 纸张舞台与缩放控制
+│       ├── PracticePage.vue     # 试卷单页渲染
+│       └── PracticeGridSvg.vue  # 四线三格矢量格线组件
+├── test_acceptance.js       # 核心验收测试套件（7 大标准）
+├── test_phase2.js           # Phase 2 存储与导入校验测试
+├── test_phase3.js           # Phase 3 词库与可视化挖空测试
+├── package.json             # 依赖与脚本定义
+├── vite.config.js           # Vite 与单文件构建配置
+└── README.md                # 项目使用说明
 ```
 
 ---

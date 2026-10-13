@@ -1,0 +1,256 @@
+<template>
+  <header class="app-header no-print">
+    <div class="header-brand">
+      <button
+        class="btn-toggle-sidebar"
+        id="btnToggleSidebar"
+        title="展开/收起左侧控制栏"
+        @click="state.ui.isSidebarCollapsed = !state.ui.isSidebarCollapsed"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div class="brand-text">
+        <h1 class="brand-title">小学/初中英语默写纸生成器</h1>
+        <span class="brand-subtitle">中小学英语单词 / 句子标准四线三格多联打印排版工具</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="badge-status" id="quickStatBadge">
+        已选 {{ layout.totalItems }} 词 · 每页 {{ layout.copiesPerPage }} 份 · 共 {{ layout.totalPages }} 页
+      </div>
+
+      <n-button size="small" id="btnGeneratePreview" @click="handleRefreshPreview" title="根据当前设置重绘打印预览">
+        🔄 生成预览
+      </n-button>
+      <n-button size="small" id="btnExportConfig" @click="handleExportConfig" title="将当前设置与词表导出为 JSON 文件">
+        💾 导出配置
+      </n-button>
+      <n-button size="small" id="btnTriggerImport" @click="triggerFileInput" title="导入已保存的配置或词表文件">
+        📂 导入数据
+      </n-button>
+      <input type="file" ref="fileInputRef" id="fileImportInput" accept=".json,.txt" style="display:none;" @change="handleFileChange" />
+
+      <n-popconfirm @positive-click="handleResetDefaults">
+        <template #trigger>
+          <n-button size="small" type="error" ghost id="btnResetDefaults" title="恢复为默认测试数据与版式参数">
+            ↺ 恢复默认
+          </n-button>
+        </template>
+        确定要恢复为默认设置和测试词汇吗？
+      </n-popconfirm>
+
+      <n-button type="primary" id="btnPrintSheet" @click="handlePrint" title="呼出打印窗口或直接保存为高清矢量 PDF">
+        🖨️ 打印 / 导出 PDF
+      </n-button>
+    </div>
+  </header>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue';
+import { NButton, NPopconfirm, useMessage } from 'naive-ui';
+import { state, db } from '../stores/appStore.js';
+import { computePageLayout, DEFAULT_SETTINGS, DEFAULT_WORDS_RAW, createDraftItem } from '../core/layout.js';
+import { validateImportData, detectDuplicates } from '../core/storage.js';
+import { parseCustomText } from '../core/tokenizer.js';
+
+const message = useMessage();
+const fileInputRef = ref(null);
+
+const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
+
+function handleRefreshPreview() {
+  message.success('预览已刷新！');
+}
+
+function handlePrint() {
+  window.print();
+}
+
+function handleExportConfig() {
+  const configData = {
+    app: 'DictationSheetGen',
+    version: '4.0',
+    exportedAt: new Date().toISOString(),
+    draft: {
+      items: state.draft.items,
+      settings: state.draft.settings
+    },
+    library: {
+      wordsCount: state.library.words.length,
+      sentencesCount: state.library.sentences.length,
+      words: state.library.words,
+      sentences: state.library.sentences
+    },
+    words: state.draft.items,
+    settings: state.draft.settings
+  };
+  const blob = new Blob([JSON.stringify(configData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dictation_config_${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  message.success('配置已导出为 JSON 文件（含草稿与词库数据）！');
+}
+
+function triggerFileInput() {
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+    fileInputRef.value.click();
+  }
+}
+
+function handleFileChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const content = event.target.result;
+      if (file.name.endsWith('.json')) {
+        let parsed;
+        try {
+          parsed = JSON.parse(content);
+        } catch {
+          message.error('JSON 格式损坏，无法解析文件');
+          return;
+        }
+
+        const validation = validateImportData(parsed);
+        if (!validation.valid) {
+          message.error(validation.message);
+          return;
+        }
+
+        if (validation.draftItems.length > 0) {
+          const newItems = validation.draftItems.map(it => createDraftItem(it));
+          const dupCheck = detectDuplicates(state.draft.items, newItems);
+          state.draft.items = newItems;
+          const dupTip = dupCheck.duplicates.length > 0 ? ` (包含 ${dupCheck.duplicates.length} 条已存在词条)` : '';
+          message.success(`已成功导入试卷 (${newItems.length} 词)${dupTip}！`);
+        }
+
+        if (validation.draftSettings) {
+          state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, validation.draftSettings);
+        }
+
+        if (validation.libraryWords.length > 0) {
+          state.library.words = validation.libraryWords.map(w => createDraftItem({ ...w, type: 'word' }));
+          await db.bulkPut('words', state.library.words);
+        }
+
+        if (validation.librarySentences.length > 0) {
+          state.library.sentences = validation.librarySentences.map(s => createDraftItem({ ...s, type: 'sentence' }));
+          await db.bulkPut('sentences', state.library.sentences);
+        }
+      } else {
+        // txt 纯文本
+        const list = parseCustomText(content);
+        if (list.length > 0) {
+          const dupCheck = detectDuplicates(state.draft.items, list);
+          state.draft.items = list;
+          const dupTip = dupCheck.duplicates.length > 0 ? ` (其中 ${dupCheck.duplicates.length} 条已存在)` : '';
+          message.success(`已成功从文本导入 ${list.length} 个单词${dupTip}！`);
+        } else {
+          message.warning('未能识别有效单词文本');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      message.error('文件处理异常，请检查文件内容');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function handleResetDefaults() {
+  state.draft.items = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
+  state.draft.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  message.success('已恢复为默认设置！');
+}
+</script>
+
+<style scoped>
+.app-header {
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-toggle-sidebar {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #475569;
+  transition: all 0.15s ease;
+}
+
+.btn-toggle-sidebar:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+</style>

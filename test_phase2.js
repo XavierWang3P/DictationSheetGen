@@ -1,11 +1,11 @@
-const { spawn } = require('child_process');
+import { spawn } from 'child_process';
 
 async function testPhase2() {
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', [
     '--headless',
     '--remote-debugging-port=9253',
     '--disable-gpu',
-    'file:///d:/DictationSheetGen/index.html'
+    'file:///d:/DictationSheetGen/dist/index.html'
   ]);
 
   await new Promise(r => setTimeout(r, 1500));
