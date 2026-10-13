@@ -1,0 +1,2998 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英语单词默写纸生成器 - 纯前端单页离线工具</title>
+  <style>
+    /* ==========================================================================
+       1. 全局样式变量与基础重置 (纯本地 CSS，零外部依赖)
+       ========================================================================== */
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-border: #bfdbfe;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --bg-app: #f8fafc;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --border-color: #cbd5e1;
+      --border-light: #e2e8f0;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+      --radius: 6px;
+      --radius-lg: 10px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-sheet: 0 12px 30px -6px rgba(0, 0, 0, 0.15), 0 4px 12px -3px rgba(0, 0, 0, 0.08);
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 顶部导航 Header */
+    .app-header {
+      height: 56px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius);
+      background: var(--primary);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-title-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge-status {
+      font-size: 12px;
+      background: #f1f5f9;
+      color: #334155;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      border: 1px solid var(--border-light);
+    }
+
+    /* 按钮基础规范 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 6px 12px;
+      font-size: 12.5px;
+      font-weight: 500;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      user-select: none;
+      font-family: inherit;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: #334155;
+      border-color: var(--border-color);
+    }
+    .btn-secondary:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: #ffffff;
+    }
+    .btn-success:hover {
+      background: #059669;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #475569;
+      border-color: transparent;
+    }
+    .btn-ghost:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .btn-danger-ghost {
+      background: transparent;
+      color: #dc2626;
+      border-color: transparent;
+    }
+    .btn-danger-ghost:hover {
+      background: #fee2e2;
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 11.5px;
+    }
+
+    /* ==========================================================================
+       2. 工作区布局 (左侧可折叠面板 + 右侧实时预览)
+       ========================================================================== */
+    .app-workspace {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 56px);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 左侧控制栏 */
+    .sidebar {
+      width: 440px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 10;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s ease;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed {
+      width: 0 !important;
+      border-right: none;
+    }
+
+    .sidebar-scrollable {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 14px 16px 40px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* 设置卡片/分组 */
+    .settings-group {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .group-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .group-badge {
+      font-size: 11px;
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 2px 7px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    /* 可折叠设置分组 */
+    .settings-group.collapsible .group-header {
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+      margin: -4px -6px 8px -6px;
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+
+    .settings-group.collapsible .group-header:hover {
+      background: #f1f5f9;
+    }
+
+    .settings-group.collapsible.collapsed .group-header {
+      margin-bottom: 0;
+      padding-bottom: 6px;
+      border-bottom: none;
+    }
+
+    .settings-group.collapsible .collapse-arrow {
+      font-size: 13px;
+      font-weight: 700;
+      color: #64748b;
+      transition: transform 0.2s ease;
+      transform: rotate(90deg);
+      display: inline-block;
+      width: 16px;
+      text-align: center;
+    }
+
+    .settings-group.collapsible.collapsed .collapse-arrow {
+      transform: rotate(0deg);
+    }
+
+    .settings-group.collapsible.collapsed .group-body {
+      display: none;
+    }
+
+    /* 表单控件通用 */
+    .form-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 12.5px;
+    }
+
+    .form-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-row label {
+      color: #334155;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .form-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: -6px;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .form-input, .form-select {
+      flex: 1;
+      padding: 5px 9px;
+      font-size: 12.5px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      outline: none;
+      background: #ffffff;
+      color: #0f172a;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    .form-range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .form-range {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .form-range-val {
+      font-size: 11.5px;
+      color: #475569;
+      font-weight: 600;
+      min-width: 38px;
+      text-align: right;
+    }
+
+    /* 分段单选器 (Segmented Control) */
+    .segmented-control {
+      display: inline-flex;
+      background: #f1f5f9;
+      border-radius: var(--radius);
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .segmented-control input[type="radio"] {
+      display: none;
+    }
+
+    .segmented-control label {
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      border-radius: calc(var(--radius) - 2px);
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .segmented-control input[type="radio"]:checked + label {
+      background: #ffffff;
+      color: var(--primary);
+      font-weight: 700;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 复选框组 */
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      margin-top: 4px;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: #334155;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* 文本输入框 */
+    .word-textarea {
+      width: 100%;
+      height: 110px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      outline: none;
+      resize: vertical;
+      line-height: 1.5;
+      background: #fafafa;
+    }
+
+    .word-textarea:focus {
+      background: #ffffff;
+      border-color: var(--primary);
+    }
+
+    /* 已选词汇标签列表 */
+    .words-list-container {
+      margin-top: 10px;
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: #f8fafc;
+    }
+
+    .word-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 8px;
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      font-size: 12px;
+      gap: 8px;
+    }
+
+    .word-item-main {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .word-item-index {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 11px;
+      min-width: 18px;
+    }
+
+    .word-item-zh {
+      color: #0f172a;
+      font-weight: 500;
+    }
+
+    .word-item-en {
+      color: #64748b;
+      font-size: 11.5px;
+    }
+
+    .word-item-actions {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .word-item-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+    .word-item-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .word-item-btn.del:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    /* ==========================================================================
+       3. 右侧打印预览区 (A4 真实比例视口与缩放控制)
+       ========================================================================== */
+    .preview-viewport {
+      flex: 1;
+      background: #cbd5e1;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* 浮动缩放工具条 */
+    .preview-toolbar {
+      position: sticky;
+      top: 12px;
+      z-index: 25;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      padding: 6px 14px;
+      border-radius: 30px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      margin-bottom: 16px;
+    }
+
+    .preview-mode-tag {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .zoom-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border-left: 1px solid var(--border-color);
+      padding-left: 10px;
+    }
+
+    .zoom-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      color: #334155;
+    }
+    .zoom-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .zoom-val {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      min-width: 42px;
+      text-align: center;
+    }
+
+    /* 纸张容器 Stage */
+    .paper-stage {
+      padding: 0 30px 60px 30px;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .sheets-stream-container {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      transform-origin: top center;
+      transition: transform 0.15s ease-out;
+    }
+
+    /* ==========================================================================
+       4. A4 纸张排版核心规范 (严格毫米物理单位，210mm x 297mm)
+       ========================================================================== */
+    .sheet-page {
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      background: #ffffff;
+      box-shadow: var(--shadow-sheet);
+      box-sizing: border-box;
+      padding: 8mm 12mm 6mm 12mm;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      page-break-after: always;
+      break-after: page;
+    }
+
+    .sheet-page.landscape {
+      width: 297mm;
+      height: 210mm;
+      min-height: 210mm;
+      max-height: 210mm;
+      padding: 8mm 12mm 6mm 12mm;
+    }
+
+    /* 每份默写小条 (当一页 2 份或 3 份时等比平分整张 A4) */
+    .sheet-copy-section {
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .sheet-copy-section.multi-copy {
+      flex: 1 1 0;
+      min-height: 0;
+      padding: 1mm 0;
+    }
+
+    .sheet-copy-section.single-copy {
+      flex: 1 1 auto;
+      height: 100%;
+      justify-content: space-between;
+    }
+
+    /* 份数裁切线与小剪刀 */
+    .section-cut-divider {
+      position: relative;
+      width: 100%;
+      height: 1px;
+      margin: 1.5mm 0;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .section-cut-divider.dashed {
+      border-top: 1px dashed #94a3b8;
+    }
+
+    .section-cut-divider.solid {
+      border-top: 1px solid #94a3b8;
+    }
+
+    .section-cut-divider.none {
+      border-top: none;
+    }
+
+    .cut-scissors-tag {
+      position: absolute;
+      background: #ffffff;
+      padding: 0 6px;
+      font-size: 8.5pt;
+      color: #64748b;
+      user-select: none;
+      font-family: var(--font-ui);
+    }
+
+    /* 试卷头部 Header */
+    .sheet-header {
+      margin-bottom: 2mm;
+      flex-shrink: 0;
+    }
+
+    .sheet-header.sheet-header-compact {
+      margin-bottom: 1.2mm;
+    }
+
+    .sheet-header-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 1mm;
+    }
+
+    .sheet-title-text {
+      text-align: center;
+      font-size: 16pt;
+      font-weight: 700;
+      color: #000000;
+      letter-spacing: 1.5px;
+      margin-bottom: 1.5mm;
+    }
+
+    .sheet-title-text.title-xs {
+      font-size: 11.5pt;
+      margin-bottom: 0;
+      letter-spacing: 1px;
+    }
+
+    .sheet-title-text.title-sm {
+      font-size: 13.5pt;
+      margin-bottom: 0;
+      letter-spacing: 1.2px;
+    }
+
+    /* 考生信息栏 (大幅度调宽书写空间，彻底避免局促) */
+    .sheet-student-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 9.5pt;
+      color: #1e293b;
+      padding-bottom: 2mm;
+      margin-bottom: 1.8mm;
+      border-bottom: 1px solid #000000;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .sheet-student-info.compact-info {
+      font-size: 9pt;
+      padding-bottom: 1.6mm;
+      margin-bottom: 1.4mm;
+    }
+
+    .sheet-student-info span.info-item {
+      display: inline-flex;
+      align-items: baseline;
+      white-space: nowrap;
+      flex: 0 1 auto;
+    }
+
+    .info-line {
+      display: inline-block;
+      min-width: 85px;
+      border-bottom: 1px solid #000000;
+      height: 14px;
+      margin-left: 2px;
+      vertical-align: baseline;
+    }
+
+    .info-line.info-line-name { min-width: 110px; }
+    .info-line.info-line-class { min-width: 95px; }
+    .info-line.info-line-no { min-width: 58px; }
+    .info-line.info-line-date { min-width: 95px; }
+    .info-line.info-line-score { min-width: 75px; }
+
+    .sheet-student-info.compact-info .info-line {
+      min-width: 80px;
+      height: 13px;
+      margin-left: 2px;
+      vertical-align: baseline;
+    }
+    .sheet-student-info.compact-info .info-line.info-line-name { min-width: 105px; }
+    .sheet-student-info.compact-info .info-line.info-line-class { min-width: 90px; }
+    .sheet-student-info.compact-info .info-line.info-line-no { min-width: 55px; }
+    .sheet-student-info.compact-info .info-line.info-line-date { min-width: 90px; }
+    .sheet-student-info.compact-info .info-line.info-line-score { min-width: 70px; }
+
+    /* 试卷主体单词网格容器 */
+    .sheet-body-grid {
+      display: grid;
+      flex: 1;
+      align-content: start;
+      min-height: 0;
+      width: 100%;
+    }
+
+    /* ==========================================================================
+       5. 独立单词卡片规范 (.word-card / .meaning / .practice-grid)
+       ========================================================================== */
+    .word-card {
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .word-card.meaning-left {
+      flex-direction: row;
+      align-items: center;
+      gap: 3mm;
+    }
+
+    .word-card .meaning {
+      display: block;
+      margin-bottom: 1.2mm;
+      line-height: 1.35;
+      font-size: 9.5pt; /* 可由设置面板精准自定义 */
+      word-break: break-word;
+    }
+
+    .word-card.meaning-left .meaning {
+      display: inline-block;
+      width: 42%;
+      flex-shrink: 0;
+      margin-bottom: 0;
+      vertical-align: middle;
+    }
+
+    .word-num {
+      font-weight: normal; /* 题号不需要加粗 */
+      font-size: inherit;
+      color: #000000;
+      font-family: Arial, sans-serif;
+      margin-right: 2px;
+    }
+
+    .meaning-text {
+      font-size: inherit;
+      color: #1e293b;
+      font-weight: 500;
+      word-break: break-word;
+    }
+
+    /* 挖空填写模式专用样式 */
+    .cloze-sentence {
+      font-family: Arial, sans-serif;
+      color: #000000;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .cloze-blank-line {
+      display: inline-block;
+      min-width: 45px;
+      border-bottom: 1.5px solid #000000;
+      height: 1.15em;
+      vertical-align: baseline;
+      margin-left: 3px;
+      margin-right: 2px;
+      box-sizing: border-box;
+    }
+
+    .cloze-inline-grid {
+      display: inline-block;
+      vertical-align: -2.4mm;
+      height: 8.2mm;
+      border-bottom: none !important;
+      margin-left: 3px;
+      margin-right: 2px;
+      box-sizing: border-box;
+    }
+
+    .cloze-inline-grid svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .cloze-zh {
+      display: inline-block;
+      white-space: nowrap;
+      color: #475569;
+      font-size: 0.9em;
+      margin-left: 6px;
+      font-family: var(--font-kaiti);
+    }
+
+    .word-card.cloze-card-inline {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 0;
+      padding: 0.8mm 0;
+    }
+
+    .word-card.cloze-card-inline .meaning {
+      margin-bottom: 0;
+      line-height: 1.45;
+    }
+
+    .word-card.cloze-card-inline .practice-grid {
+      display: none !important;
+    }
+
+    .chip-blank-mark {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 600;
+      border-bottom: 1.5px solid #0284c7;
+    }
+
+    /* 每个单词独立的练习格容器 */
+    .practice-grid {
+      width: 100%;
+      flex: 1;
+    }
+
+    .word-card.meaning-left .practice-grid {
+      flex: 1;
+    }
+
+    /* 四线三格 SVG 矢量线 (中格加高，独立绘制) */
+    .four-line-svg {
+      width: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .single-line-svg {
+      width: 100%;
+      display: block;
+    }
+
+    /* 独立答案页 / 教师报词单 */
+    .answer-page-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 3mm;
+      margin-bottom: 4mm;
+    }
+
+    .answer-page-title {
+      font-size: 15pt;
+      font-weight: 700;
+      color: #0f172a;
+      text-align: center;
+      margin-bottom: 2mm;
+    }
+
+    .answer-page-tip {
+      font-size: 8.5pt;
+      color: #64748b;
+      text-align: center;
+    }
+
+    .answer-list-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3.5mm 10mm;
+      flex: 1;
+      align-content: start;
+    }
+
+    .answer-item-row {
+      display: flex;
+      align-items: baseline;
+      padding: 2.5mm 0;
+      border-bottom: 1px dashed #e2e8f0;
+      font-size: 10.5pt;
+    }
+
+    .answer-num {
+      width: 26px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .answer-en {
+      font-weight: 700;
+      color: #0f172a;
+      margin-right: 10px;
+      font-family: Arial, sans-serif;
+    }
+
+    .answer-zh {
+      color: #475569;
+    }
+
+    /* ==========================================================================
+       6. @media print 打印专用样式 (CSS @page 0 margin，物理毫米尺寸直出)
+       ========================================================================== */
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    @media print {
+      .no-print,
+      .app-header,
+      .sidebar,
+      .preview-toolbar {
+        display: none !important;
+      }
+
+      html, body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .app-workspace,
+      .preview-viewport,
+      .paper-stage {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        overflow: visible !important;
+        width: 100% !important;
+        height: auto !important;
+      }
+
+      .sheets-stream-container {
+        display: block !important;
+        transform: none !important;
+        gap: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .sheet-page {
+        box-shadow: none !important;
+        margin: 0 !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        box-sizing: border-box !important;
+      }
+
+      .sheet-page:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      .sheet-copy-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .word-card {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .four-line-svg, .single-line-svg {
+        shape-rendering: geometricPrecision !important;
+      }
+    }
+
+    /* 移动端与小屏折叠自适应 */
+    @media (max-width: 900px) {
+      .sidebar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 100% !important;
+        max-width: 380px;
+        box-shadow: 4px 0 16px rgba(0,0,0,0.2);
+        z-index: 50;
+      }
+      .sidebar.collapsed {
+        transform: translateX(-100%);
+        width: 380px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部主导航 Header -->
+  <header class="app-header no-print">
+    <div class="brand-group">
+      <button class="btn btn-secondary btn-sm" id="btnToggleSidebar" title="折叠/展开左侧设置面板">
+        ☰ 面板
+      </button>
+      <div class="brand-icon">E</div>
+      <div class="brand-title-wrap">
+        <span class="brand-title">英语单词默写纸生成器</span>
+        <span class="brand-sub">纯前端单页离线工具 · 独立练习格</span>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <div class="badge-status" id="quickStatBadge">已选 9 词 · 每页 3 份 · 共 1 页</div>
+      <button class="btn btn-secondary btn-sm" id="btnGeneratePreview" title="根据当前设置重绘打印预览">
+        🔄 生成预览
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btnExportConfig" title="将当前设置与词表导出为 JSON 文件">
+        💾 导出配置
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btnTriggerImport" title="导入已保存的配置或词表文件">
+        📂 导入数据
+      </button>
+      <input type="file" id="fileImportInput" accept=".json,.txt" style="display:none;" />
+      <button class="btn btn-danger-ghost btn-sm" id="btnResetDefaults" title="恢复为默认测试数据与版式参数">
+        ↺ 恢复默认
+      </button>
+      <button class="btn btn-primary" id="btnPrintSheet" title="呼出打印窗口或直接保存为高清矢量 PDF">
+        🖨️ 打印 / 导出 PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- 主工作台 -->
+  <div class="app-workspace">
+    <!-- 左侧可折叠设置面板 -->
+    <aside class="sidebar no-print" id="sidebarPanel">
+      <div class="sidebar-scrollable">
+        
+        <!-- 模块 1：自定义单词输入与列表管理 -->
+        <section class="settings-group">
+          <div class="group-header">
+            <span class="group-title">📝 单词输入与词汇表</span>
+            <span class="group-badge" id="badgeWordCount">9 词</span>
+          </div>
+
+          <div class="form-row" style="margin-bottom: 10px;">
+            <label>出卷模式</label>
+            <div class="segmented-control">
+              <input type="radio" name="dictMode" id="modeWriting" value="writing" checked>
+              <label for="modeWriting">看中文默写</label>
+              <input type="radio" name="dictMode" id="modeCloze" value="cloze">
+              <label for="modeCloze">✏️ 句子挖空填写</label>
+            </div>
+          </div>
+
+          <div class="form-row" id="rowClozeStyle" style="margin-bottom: 10px; display: none;">
+            <label>挖空形式</label>
+            <div class="segmented-control">
+              <input type="radio" name="clozeStyle" id="clozeInline" value="inline" checked>
+              <label for="clozeInline">句中内嵌填空 (推荐)</label>
+              <input type="radio" name="clozeStyle" id="clozeBelow" value="below">
+              <label for="clozeBelow">句下独立书写格</label>
+            </div>
+          </div>
+
+          <p class="form-desc" id="formDescWords">支持每行一词；支持纯中文；支持“word | 中文”、“word - 中文”或空格分隔；中文为空时仍生成默写格。</p>
+          <textarea class="word-textarea" id="customWordTextarea" placeholder="美丽的；优美的&#10;工作努力的；辛勤的&#10;绳；粗绳&#10;聪明的；聪颖的&#10;机器人&#10;钢琴&#10;幼小的；年轻的&#10;跳；跃&#10;国际象棋"></textarea>
+          
+          <div style="display:flex; gap:6px; margin-top:8px;">
+            <button class="btn btn-primary btn-sm" id="btnParseText" style="flex:1;">载入/替换词表</button>
+            <button class="btn btn-secondary btn-sm" id="btnAppendText">追加</button>
+            <button class="btn btn-secondary btn-sm" id="btnLoadDefaultSample">载入默认9词</button>
+            <button class="btn btn-danger-ghost btn-sm" id="btnClearWords">清空</button>
+          </div>
+
+          <!-- 词汇条目列表 -->
+          <div class="words-list-container" id="wordsListContainer"></div>
+        </section>
+
+        <!-- 模块 2：标题与考生信息 (已上移) -->
+        <section class="settings-group" id="groupTitleInfo">
+          <div class="group-header">
+            <span class="group-title">✏️ 标题与考生信息</span>
+          </div>
+
+          <div class="form-row">
+            <label>试卷标题</label>
+            <input type="text" class="form-input" id="inputSheetTitle" value="Unit 1 黑体词默写">
+          </div>
+
+          <div class="form-row">
+            <label>标题字号</label>
+            <div class="form-range-wrap">
+              <input type="range" class="form-range" id="inputTitleFontSize" min="12" max="32" step="1" value="18">
+              <span class="form-range-val" id="valTitleFontSize">18pt</span>
+            </div>
+          </div>
+
+          <div class="form-row" style="align-items:flex-start;">
+            <label style="margin-top:2px;">考生信息栏</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label"><input type="checkbox" id="checkName" checked> 姓名</label>
+              <label class="checkbox-label"><input type="checkbox" id="checkClass" checked> 班级</label>
+              <label class="checkbox-label"><input type="checkbox" id="checkNo" checked> 座号</label>
+              <label class="checkbox-label"><input type="checkbox" id="checkDate" checked> 日期</label>
+              <label class="checkbox-label"><input type="checkbox" id="checkScore" checked> 得分</label>
+            </div>
+          </div>
+        </section>
+
+        <!-- 模块 3：页面设置 (默认折叠) -->
+        <section class="settings-group collapsible collapsed" id="groupPageSettings">
+          <div class="group-header">
+            <span class="group-title">📄 页面设置</span>
+            <span class="collapse-arrow">›</span>
+          </div>
+          <div class="group-body">
+            <div class="form-row">
+              <label>纸张规格</label>
+              <div class="segmented-control">
+                <input type="radio" name="paperSize" id="sizeA4" value="A4" checked>
+                <label for="sizeA4">A4</label>
+                <input type="radio" name="paperSize" id="sizeB4" value="B4">
+                <label for="sizeB4">B4</label>
+                <input type="radio" name="paperSize" id="size8K" value="8K">
+                <label for="size8K">8K</label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>纸张方向</label>
+              <div class="segmented-control">
+                <input type="radio" name="paperOrient" id="orientPortrait" value="portrait" checked>
+                <label for="orientPortrait">纵向</label>
+                <input type="radio" name="paperOrient" id="orientLandscape" value="landscape">
+                <label for="orientLandscape">横向</label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>一页份数</label>
+              <div class="segmented-control">
+                <input type="radio" name="copiesPerPage" id="copy1" value="1">
+                <label for="copy1">1 份 (全页)</label>
+                <input type="radio" name="copiesPerPage" id="copy2" value="2">
+                <label for="copy2">2 份 (对半)</label>
+                <input type="radio" name="copiesPerPage" id="copy3" value="3" checked>
+                <label for="copy3">3 份 (推荐)</label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>页边距 (mm)</label>
+              <div class="form-range-wrap">
+                <input type="range" class="form-range" id="inputPageMargin" min="4" max="16" step="1" value="8">
+                <span class="form-range-val" id="valPageMargin">8mm</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 模块 4：单词区域排版 (默认折叠) -->
+        <section class="settings-group collapsible collapsed" id="groupWordArea">
+          <div class="group-header">
+            <span class="group-title">📐 单词区域排版</span>
+            <span class="collapse-arrow">›</span>
+          </div>
+          <div class="group-body">
+            <div class="form-row">
+              <label>排列列数</label>
+              <div class="segmented-control">
+                <input type="radio" name="colCount" id="col1" value="1">
+                <label for="col1">1 列</label>
+                <input type="radio" name="colCount" id="col2" value="2">
+                <label for="col2">2 列</label>
+                <input type="radio" name="colCount" id="col3" value="3" checked>
+                <label for="col3">3 列 (默认)</label>
+                <input type="radio" name="colCount" id="col4" value="4">
+                <label for="col4">4 列</label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>每页词数容量</label>
+              <div class="form-range-wrap">
+                <input type="range" class="form-range" id="wordsPerPageInput" min="3" max="25" step="1" value="9">
+                <span class="form-range-val" id="valWordsPerPage">9 词</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>提示字号 (题号/释义)</label>
+              <div class="form-range-wrap">
+                <input type="range" class="form-range" id="inputPromptFontSize" min="7" max="20" step="0.5" value="14">
+                <span class="form-range-val" id="valPromptFontSize">14pt</span>
+              </div>
+              <div style="display:none;"><input type="radio" name="zhFontSize" id="zhMd" value="md" checked></div>
+            </div>
+
+            <div class="form-row">
+              <label>中文释义位置</label>
+              <div class="segmented-control">
+                <input type="radio" name="zhPosition" id="zhPosTop" value="top" checked>
+                <label for="zhPosTop">格子上方</label>
+                <input type="radio" name="zhPosition" id="zhPosLeft" value="left">
+                <label for="zhPosLeft">格子左侧</label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>水平间距 (列距)</label>
+              <div class="form-range-wrap">
+                <input type="range" class="form-range" id="inputColGap" min="3" max="12" step="0.5" value="6">
+                <span class="form-range-val" id="valColGap">6mm</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>垂直间距 (行距)</label>
+              <div class="form-range-wrap">
+                <input type="range" class="form-range" id="inputRowGap" min="2" max="10" step="0.5" value="3.5">
+                <span class="form-range-val" id="valRowGap">3.5mm</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 模块 5：四线三格专用设置 (默认折叠) -->
+        <section class="settings-group collapsible collapsed" id="groupGrid">
+          <div class="group-header">
+            <span class="group-title">📏 四线三格设置</span>
+            <span class="collapse-arrow">›</span>
+          </div>
+          <div class="group-body">
+            <div class="form-row">
+              <label>练习格样式</label>
+              <div class="segmented-control">
+                <input type="radio" name="gridStyle" id="gridFour" value="four-line" checked>
+                <label for="gridFour">四线三格</label>
+                <input type="radio" name="gridStyle" id="gridSingle" value="single-line">
+                <label for="gridSingle">普通横线</label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>格子高度 (mm)</label>
+              <div class="form-range-wrap">
+                <input type="range" class="form-range" id="inputGridHeight" min="6" max="18" step="0.5" value="12">
+                <span class="form-range-val" id="valGridHeight">12mm</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>线条粗细</label>
+              <div class="segmented-control">
+                <input type="radio" name="gridStroke" id="strThin" value="0.6">
+                <label for="strThin">细 (0.6)</label>
+                <input type="radio" name="gridStroke" id="strMed" value="0.85" checked>
+                <label for="strMed">中 (0.85)</label>
+                <input type="radio" name="gridStroke" id="strThick" value="1.2">
+                <label for="strThick">粗 (1.2)</label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>线条颜色</label>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="color" id="inputGridColor" value="#cbd5e1" style="width:36px; height:26px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">
+                <span style="font-size:11.5px; color:#64748b;" id="textGridColor">#cbd5e1</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>左右闭合竖线</label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="checkVerticalLine" checked>
+                显示独立卡片封闭竖线
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- 模块 6：字体与模式设置 (默认折叠) -->
+        <section class="settings-group collapsible collapsed" id="groupTypography">
+          <div class="group-header">
+            <span class="group-title">🔤 字体与模式设置</span>
+            <span class="collapse-arrow">›</span>
+          </div>
+          <div class="group-body">
+            <div class="form-row">
+              <label>中文字体</label>
+              <select class="form-select" id="selectFontZh">
+                <option value="'KaiTi', '楷体', STKaiti, serif" selected>楷体 (标准范字)</option>
+                <option value="'SimSun', '宋体', serif">宋体</option>
+                <option value="'SimHei', '黑体', sans-serif">黑体</option>
+                <option value="'FangSong', '仿宋', serif">仿宋</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label>英文字体</label>
+              <select class="form-select" id="selectFontEn">
+                <option value="Arial, sans-serif" selected>Arial (清晰无衬线)</option>
+                <option value="'Times New Roman', serif">Times New Roman (衬线)</option>
+                <option value="'Georgia', serif">Georgia</option>
+                <option value="'HengShui', 'Comic Sans MS', cursive">衡水体手写 (需本地安装)</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label>字间距</label>
+              <div class="segmented-control">
+                <input type="radio" name="letterSpacing" id="spNormal" value="0" checked>
+                <label for="spNormal">正常</label>
+                <input type="radio" name="letterSpacing" id="spWide" value="0.8px">
+                <label for="spWide">加宽</label>
+                <input type="radio" name="letterSpacing" id="spExtra" value="1.5px">
+                <label for="spExtra">宽松</label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+
+    <!-- 右侧 A4 真实比例预览视口 -->
+    <main class="preview-viewport" id="previewViewport">
+      <!-- 浮动缩放与状态栏 -->
+      <div class="preview-toolbar">
+        <span class="preview-mode-tag" id="previewModeTag">📄 看中文写英文 · 一页 3 份 · 3 列</span>
+        <div class="zoom-group">
+          <button class="zoom-btn" id="btnZoomOut" title="缩小预览">-</button>
+          <span class="zoom-val" id="zoomValText">85%</span>
+          <button class="zoom-btn" id="btnZoomIn" title="放大预览">+</button>
+          <button class="btn btn-secondary btn-sm" id="btnZoomFit" title="自适应窗口宽度">适合宽度</button>
+          <button class="btn btn-secondary btn-sm" id="btnZoom100" title="100% 原始比例">100%</button>
+        </div>
+      </div>
+
+      <!-- A4 纸张流容器 -->
+      <div class="paper-stage" id="paperStage">
+        <div class="sheets-stream-container" id="sheetsStreamContainer">
+          <!-- 由 JS 渲染 .sheet-page -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      /* ==========================================================================
+         A. 基础工具库 (ID生成、节流/防抖、HTML转义)
+         ========================================================================== */
+      function generateId(prefix = 'item') {
+        return `${prefix}-${Math.random().toString(36).substring(2, 10)}`;
+      }
+
+      function throttle(fn, delay) {
+        let timer = null;
+        let lastArgs = null;
+        return function(...args) {
+          lastArgs = args;
+          if (timer) return;
+          timer = setTimeout(() => {
+            timer = null;
+            fn.apply(this, lastArgs);
+          }, delay);
+        };
+      }
+
+      function debounce(fn, delay) {
+        let timer = null;
+        return function(...args) {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            fn.apply(this, args);
+          }, delay);
+        };
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      /* ==========================================================================
+         B. 数据模型与默认配置
+         ========================================================================== */
+      const DEFAULT_WORDS_RAW = [
+        { en: 'beautiful', zh: '美丽的；优美的' },
+        { en: 'hard-working', zh: '工作努力的；辛勤的' },
+        { en: 'rope', zh: '绳；粗绳' },
+        { en: 'clever', zh: '聪明的；聪颖的' },
+        { en: 'robot', zh: '机器人' },
+        { en: 'piano', zh: '钢琴' },
+        { en: 'young', zh: '幼小的；年轻的' },
+        { en: 'jump', zh: '跳；跃' },
+        { en: 'chess', zh: '国际象棋' }
+      ];
+
+      const DEFAULT_CLOZE_WORDS_RAW = [
+        { en: 'ask [your teacher] for help', zh: '向你的老师求助' },
+        { en: 'Where is [the library]?', zh: '图书馆在哪里？' },
+        { en: 'I go to school [by bus].', zh: '我乘公共汽车去上学。' },
+        { en: 'What would you like [to eat]?', zh: '你想吃什么？' },
+        { en: 'She is [reading a book] now.', zh: '她正在看书。' },
+        { en: 'There are [many flowers] in the park.', zh: '公园里有许多花。' },
+        { en: 'Turn left [at the traffic lights].', zh: '在交通灯处左转。' },
+        { en: 'My mother is [a doctor].', zh: '我的妈妈是一名医生。' },
+        { en: 'We have [an English class] today.', zh: '我们今天有一节英语课。' }
+      ];
+
+      const WRITING_PLACEHOLDER = "美丽的；优美的\n工作努力的；辛勤的\n绳；粗绳\n聪明的；聪颖的\n机器人\n钢琴\n幼小的；年轻的\n跳；跃\n国际象棋";
+      const CLOZE_PLACEHOLDER = "ask [your teacher] for help | 向你的老师求助\nWhere is [the library]? | 图书馆在哪里？\nI go to school [by bus]. | 我乘公共汽车去上学。\nWhat would you like [to eat]? | 你想吃什么？\nShe is [reading a book] now. | 她正在看书。\nThere are [many flowers] in the park. | 公园里有许多花。\nTurn left [at the traffic lights]. | 在交通灯处左转。\nMy mother is [a doctor]. | 我的妈妈是一名医生。\nWe have [an English class] today. | 我们今天有一节英语课。";
+
+      const PAPER_SIZES = {
+        A4: { width: 210, height: 297, name: 'A4' },
+        B4: { width: 257, height: 364, name: 'B4' },
+        '8K': { width: 260, height: 370, name: '8K' }
+      };
+
+      const DEFAULT_SETTINGS = {
+        paperSize: 'A4',            // 'A4' | 'B4' | '8K'
+        orientation: 'portrait',     // 'portrait' | 'landscape'
+        copiesPerPage: 3,           // 1 | 2 | 3 (默认一页 3 份)
+        pageMargin: 8,              // mm (4-16)
+        dividerStyle: 'dashed',     // 'dashed' | 'solid' | 'none'
+        showCutGuide: false,        // 不显示裁剪辅助线
+        title: 'Unit 1 黑体词默写',
+        titleFontSize: '18pt',      // 滑动调整 (12-32pt)
+        titleAlign: 'center',       // 'center'
+        showStudentName: true,
+        showStudentClass: true,
+        showStudentNo: true,
+        showStudentDate: true,
+        showStudentScore: true,
+        columns: 3,                 // 1 | 2 | 3 | 4
+        wordsPerPage: 9,            // 容量，默认 9 (3行 x 3列)
+        promptFontSize: 14,         // pt (7-20) 提示/题号字号 (默认 14pt)
+        zhFontSize: 'md',           // 'sm' | 'md' | 'lg'
+        zhPosition: 'top',          // 'top' | 'left'
+        colGap: 6,                  // mm (3-12)
+        rowGap: 3.5,                // mm (2-10)
+        gridStyle: 'four-line',     // 'four-line' | 'single-line'
+        gridLinesPerWord: 1,        // 1 行
+        gridHeight: 12,             // mm (6-18)
+        gridStroke: 0.85,           // 0.6 | 0.85 | 1.2
+        gridColor: '#cbd5e1',       // 线条颜色
+        showVerticalBorder: true,   // 左右封闭竖线 (默认显示)
+        dictMode: 'writing',        // 看中文写英文
+        clozeStyle: 'inline',       // 'inline' (句中内嵌填空) | 'below' (句下独立书写格)
+        fontFamilyZh: "'KaiTi', '楷体', STKaiti, serif",
+        fontFamilyEn: 'Arial, sans-serif',
+        letterSpacing: '0',
+        showAnswerPage: false
+      };
+
+      const STORAGE_KEY = 'dictation_sheet_generator_v3';
+
+      // 句子解析为结构化片段 (segments)
+      function parseSentenceToSegments(rawText) {
+        const sentence = (rawText || '').trim();
+        if (!sentence) return [];
+
+        const segments = [];
+        const bracketRegex = /(\[([^\]]+)\]|\{([^}]+)\})([.,!?;:'"”]*)?/g;
+
+        if (sentence.search(/\[([^\]]+)\]|\{([^}]+)\}/) !== -1) {
+          let lastIndex = 0;
+          let match;
+          while ((match = bracketRegex.exec(sentence)) !== null) {
+            if (match.index > lastIndex) {
+              segments.push({
+                text: sentence.substring(lastIndex, match.index),
+                blank: false
+              });
+            }
+            const blankContent = (match[2] || match[3] || '').trim();
+            const punct = match[4] || '';
+            segments.push({
+              text: blankContent + punct,
+              blank: true
+            });
+            lastIndex = bracketRegex.lastIndex;
+          }
+          if (lastIndex < sentence.length) {
+            segments.push({
+              text: sentence.substring(lastIndex),
+              blank: false
+            });
+          }
+          return segments;
+        }
+
+        // 下划线
+        if (sentence.includes('___') || sentence.includes('——')) {
+          const underRegex = /(_{2,}|——+)([.,!?;:'"”]*)?/g;
+          let lastIndex = 0;
+          let match;
+          while ((match = underRegex.exec(sentence)) !== null) {
+            if (match.index > lastIndex) {
+              segments.push({
+                text: sentence.substring(lastIndex, match.index),
+                blank: false
+              });
+            }
+            const punct = match[2] || '';
+            segments.push({
+              text: 'blank' + punct,
+              blank: true
+            });
+            lastIndex = underRegex.lastIndex;
+          }
+          if (lastIndex < sentence.length) {
+            segments.push({
+              text: sentence.substring(lastIndex),
+              blank: false
+            });
+          }
+          return segments;
+        }
+
+        // 单词数 >= 3 自动挖空句子中间词
+        const words = sentence.split(/\s+/);
+        if (words.length >= 3) {
+          const blankStart = 1;
+          const blankCount = (words.length >= 5) ? 2 : 1;
+          const beforeWords = words.slice(0, blankStart).join(' ');
+          const blankWords = words.slice(blankStart, blankStart + blankCount).join(' ');
+          const afterWords = words.slice(blankStart + blankCount).join(' ');
+
+          segments.push({ text: beforeWords + ' ', blank: false });
+          segments.push({ text: blankWords, blank: true });
+          if (afterWords) {
+            segments.push({ text: ' ' + afterWords, blank: false });
+          }
+          return segments;
+        }
+
+        return [{ text: sentence, blank: true }];
+      }
+
+      function segmentsToMarkedText(segments) {
+        if (!Array.isArray(segments) || segments.length === 0) return '';
+        return segments.map(seg => seg.blank ? `[${seg.text}]` : seg.text).join('');
+      }
+
+      function createDraftItem(data) {
+        if (!data) return null;
+        const currentMode = (window.__appState && window.__appState.draft && window.__appState.draft.settings)
+          ? window.__appState.draft.settings.dictMode
+          : 'writing';
+        const hasBracket = data.en && (data.en.includes('[') || data.en.includes('{'));
+        const isSentence = data.type === 'sentence' || (Array.isArray(data.segments) && data.segments.length > 0) || hasBracket || (currentMode === 'cloze' && data.en && data.en.split(/\s+/).length > 2);
+
+        if (isSentence) {
+          const segments = (Array.isArray(data.segments) && data.segments.length > 0)
+            ? data.segments
+            : parseSentenceToSegments(data.en || '');
+          const enText = data.en || segmentsToMarkedText(segments);
+          const zhText = data.zh || data.translation || '';
+          return {
+            id: data.id || generateId('s'),
+            sourceId: data.sourceId || null,
+            type: 'sentence',
+            en: enText,
+            zh: zhText,
+            translation: zhText,
+            segments,
+            overrideZh: data.overrideZh || ''
+          };
+        } else {
+          return {
+            id: data.id || generateId('w'),
+            sourceId: data.sourceId || null,
+            type: 'word',
+            en: (data.en || '').trim(),
+            zh: (data.zh || '').trim(),
+            phonetic: data.phonetic || '',
+            overrideZh: data.overrideZh || ''
+          };
+        }
+      }
+
+      const DEFAULT_WORDS = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
+      const DEFAULT_CLOZE_WORDS = DEFAULT_CLOZE_WORDS_RAW.map(s => createDraftItem(s));
+
+      /* ==========================================================================
+         C. 全局状态容器 (state.library, state.draft, state.ui + 兼容性代理)
+         ========================================================================== */
+      const rawState = {
+        library: {
+          words: [],
+          sentences: []
+        },
+        draft: {
+          items: DEFAULT_WORDS_RAW.map(w => createDraftItem(w)),
+          settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
+        },
+        ui: {
+          activeView: 'draft',
+          zoom: 0.85,
+          isZoomFit: true,
+          isSidebarCollapsed: false
+        }
+      };
+
+      const state = rawState;
+      Object.defineProperty(state, 'words', {
+        get() { return this.draft.items; },
+        set(val) {
+          this.draft.items = (val || []).map(it => createDraftItem(it));
+        }
+      });
+      Object.defineProperty(state, 'settings', {
+        get() { return this.draft.settings; },
+        set(val) {
+          this.draft.settings = Object.assign({}, DEFAULT_SETTINGS, val);
+        }
+      });
+      Object.defineProperty(state, 'zoom', {
+        get() { return this.ui.zoom; },
+        set(v) { this.ui.zoom = v; }
+      });
+      Object.defineProperty(state, 'isZoomFit', {
+        get() { return this.ui.isZoomFit; },
+        set(v) { this.ui.isZoomFit = v; }
+      });
+      Object.defineProperty(state, 'isSidebarCollapsed', {
+        get() { return this.ui.isSidebarCollapsed; },
+        set(v) { this.ui.isSidebarCollapsed = v; }
+      });
+
+      window.state = state;
+      window.__appState = state;
+
+      /* ==========================================================================
+         D. DOM 元素缓存
+         ========================================================================== */
+      const $ = (id) => document.getElementById(id);
+      const $$ = (sel) => document.querySelectorAll(sel);
+
+      const el = {
+        sidebarPanel: $('sidebarPanel'),
+        btnToggleSidebar: $('btnToggleSidebar'),
+        quickStatBadge: $('quickStatBadge'),
+        badgeWordCount: $('badgeWordCount'),
+        btnGeneratePreview: $('btnGeneratePreview'),
+        btnExportConfig: $('btnExportConfig'),
+        btnTriggerImport: $('btnTriggerImport'),
+        fileImportInput: $('fileImportInput'),
+        btnResetDefaults: $('btnResetDefaults'),
+        btnPrintSheet: $('btnPrintSheet'),
+
+        // 输入与词表
+        dictModes: $$('input[name="dictMode"]'),
+        clozeStyles: $$('input[name="clozeStyle"]'),
+        rowClozeStyle: $('rowClozeStyle'),
+        formDescWords: $('formDescWords'),
+        customWordTextarea: $('customWordTextarea'),
+        btnParseText: $('btnParseText'),
+        btnAppendText: $('btnAppendText'),
+        btnLoadDefaultSample: $('btnLoadDefaultSample'),
+        btnClearWords: $('btnClearWords'),
+        wordsListContainer: $('wordsListContainer'),
+
+        // 页面设置
+        paperSizes: $$('input[name="paperSize"]'),
+        paperOrients: $$('input[name="paperOrient"]'),
+        copiesPerPage: $$('input[name="copiesPerPage"]'),
+        inputPageMargin: $('inputPageMargin'),
+        valPageMargin: $('valPageMargin'),
+
+        // 标题与考生
+        inputSheetTitle: $('inputSheetTitle'),
+        inputTitleFontSize: $('inputTitleFontSize'),
+        valTitleFontSize: $('valTitleFontSize'),
+        checkName: $('checkName'),
+        checkClass: $('checkClass'),
+        checkNo: $('checkNo'),
+        checkDate: $('checkDate'),
+        checkScore: $('checkScore'),
+
+        // 单词区域
+        colCounts: $$('input[name="colCount"]'),
+        wordsPerPageInput: $('wordsPerPageInput'),
+        valWordsPerPage: $('valWordsPerPage'),
+        inputPromptFontSize: $('inputPromptFontSize'),
+        valPromptFontSize: $('valPromptFontSize'),
+        zhPositions: $$('input[name="zhPosition"]'),
+        inputColGap: $('inputColGap'),
+        valColGap: $('valColGap'),
+        inputRowGap: $('inputRowGap'),
+        valRowGap: $('valRowGap'),
+
+        // 四线三格
+        gridStyles: $$('input[name="gridStyle"]'),
+        inputGridHeight: $('inputGridHeight'),
+        valGridHeight: $('valGridHeight'),
+        gridStrokes: $$('input[name="gridStroke"]'),
+        inputGridColor: $('inputGridColor'),
+        textGridColor: $('textGridColor'),
+        checkVerticalLine: $('checkVerticalLine'),
+
+        // 字体与模式
+        selectFontZh: $('selectFontZh'),
+        selectFontEn: $('selectFontEn'),
+        letterSpacings: $$('input[name="letterSpacing"]'),
+
+        // 预览舞台
+        previewViewport: $('previewViewport'),
+        previewToolbar: $('previewToolbar'),
+        previewModeTag: $('previewModeTag'),
+        btnZoomOut: $('btnZoomOut'),
+        zoomValText: $('zoomValText'),
+        btnZoomIn: $('btnZoomIn'),
+        btnZoomFit: $('btnZoomFit'),
+        btnZoom100: $('btnZoom100'),
+        paperStage: $('paperStage'),
+        sheetsStreamContainer: $('sheetsStreamContainer')
+      };
+
+      /* ==========================================================================
+         E. 本地持久化与数据迁移 (localStorage, 支持 v3 与 v4)
+         ========================================================================== */
+      function loadSavedState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const data = JSON.parse(raw);
+            if (data.draft) {
+              if (Array.isArray(data.draft.items) && data.draft.items.length > 0) {
+                state.draft.items = data.draft.items.map(it => createDraftItem(it));
+              }
+              if (data.draft.settings) {
+                state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.draft.settings);
+              }
+              if (data.library) {
+                state.library.words = Array.isArray(data.library.words) ? data.library.words : [];
+                state.library.sentences = Array.isArray(data.library.sentences) ? data.library.sentences : [];
+              }
+            } else {
+              // 兼容老版本 v3 存储结构
+              if (Array.isArray(data.words) && data.words.length > 0) {
+                state.draft.items = data.words.map(it => createDraftItem(it));
+              }
+              if (data.settings) {
+                state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('读取本地配置失败:', e);
+        }
+      }
+
+      function saveState() {
+        try {
+          const payload = {
+            version: '4.0',
+            draft: {
+              items: state.draft.items,
+              settings: state.draft.settings
+            },
+            library: state.library,
+            words: state.draft.items,
+            settings: state.draft.settings
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        } catch (e) {
+          console.warn('存储本地配置失败:', e);
+        }
+      }
+
+      const debouncedSaveState = debounce(saveState, 200);
+
+      /* ==========================================================================
+         F. 表单控件双向同步
+         ========================================================================== */
+      function syncControlsFromSettings() {
+        const s = state.draft.settings;
+        if (el.dictModes) {
+          el.dictModes.forEach(r => r.checked = (r.value === (s.dictMode || 'writing')));
+        }
+        if (el.rowClozeStyle) {
+          el.rowClozeStyle.style.display = (s.dictMode === 'cloze') ? 'flex' : 'none';
+        }
+        if (el.clozeStyles) {
+          el.clozeStyles.forEach(r => r.checked = (r.value === (s.clozeStyle || 'inline')));
+        }
+        if (el.customWordTextarea) {
+          el.customWordTextarea.placeholder = (s.dictMode === 'cloze') ? CLOZE_PLACEHOLDER : WRITING_PLACEHOLDER;
+        }
+        if (el.formDescWords) {
+          el.formDescWords.textContent = (s.dictMode === 'cloze')
+            ? '支持句子中间或任意位置挖空（用 [ ] 标记）：如 ask [your teacher] for help | 向你的老师求助。未标注 [ ] 的句子自动挖空中间词。'
+            : '支持每行一词；支持纯中文；支持“word | 中文”、“word - 中文”或空格分隔；中文为空时仍生成默写格。';
+        }
+        if (el.btnLoadDefaultSample) {
+          el.btnLoadDefaultSample.textContent = (s.dictMode === 'cloze') ? '载入挖空示例' : '载入默认9词';
+        }
+
+        if (el.paperSizes) {
+          el.paperSizes.forEach(r => r.checked = (r.value === (s.paperSize || 'A4')));
+        }
+        if (el.paperOrients) {
+          el.paperOrients.forEach(r => r.checked = (r.value === s.orientation));
+        }
+        if (el.copiesPerPage) {
+          el.copiesPerPage.forEach(r => r.checked = (parseInt(r.value, 10) === s.copiesPerPage));
+        }
+        if (el.inputPageMargin) {
+          el.inputPageMargin.value = s.pageMargin;
+          el.valPageMargin.textContent = `${s.pageMargin}mm`;
+        }
+
+        if (el.inputSheetTitle) {
+          el.inputSheetTitle.value = s.title || '';
+        }
+        if (el.inputTitleFontSize) {
+          const tVal = parseFloat(s.titleFontSize) || 18;
+          el.inputTitleFontSize.value = tVal;
+          if (el.valTitleFontSize) el.valTitleFontSize.textContent = `${tVal}pt`;
+        }
+
+        if (el.checkName) el.checkName.checked = !!s.showStudentName;
+        if (el.checkClass) el.checkClass.checked = !!s.showStudentClass;
+        if (el.checkNo) el.checkNo.checked = !!s.showStudentNo;
+        if (el.checkDate) el.checkDate.checked = !!s.showStudentDate;
+        if (el.checkScore) el.checkScore.checked = !!s.showStudentScore;
+
+        if (el.colCounts) {
+          el.colCounts.forEach(r => r.checked = (parseInt(r.value, 10) === s.columns));
+        }
+        if (el.wordsPerPageInput) {
+          el.wordsPerPageInput.value = s.wordsPerPage;
+          el.valWordsPerPage.textContent = `${s.wordsPerPage} 词`;
+        }
+
+        if (el.inputPromptFontSize) {
+          const pSize = s.promptFontSize || 14;
+          el.inputPromptFontSize.value = pSize;
+          el.valPromptFontSize.textContent = `${pSize}pt`;
+        }
+
+        if (el.zhPositions) {
+          el.zhPositions.forEach(r => r.checked = (r.value === s.zhPosition));
+        }
+
+        if (el.inputColGap) {
+          el.inputColGap.value = s.colGap;
+          el.valColGap.textContent = `${s.colGap}mm`;
+        }
+        if (el.inputRowGap) {
+          el.inputRowGap.value = s.rowGap;
+          el.valRowGap.textContent = `${s.rowGap}mm`;
+        }
+
+        if (el.gridStyles) {
+          el.gridStyles.forEach(r => r.checked = (r.value === s.gridStyle));
+        }
+        if (el.inputGridHeight) {
+          el.inputGridHeight.value = s.gridHeight;
+          el.valGridHeight.textContent = `${s.gridHeight}mm`;
+        }
+
+        if (el.gridStrokes) {
+          el.gridStrokes.forEach(r => r.checked = (parseFloat(r.value) === s.gridStroke));
+        }
+        if (el.inputGridColor) {
+          el.inputGridColor.value = s.gridColor;
+          el.textGridColor.textContent = s.gridColor;
+        }
+        if (el.checkVerticalLine) {
+          el.checkVerticalLine.checked = !!s.showVerticalBorder;
+        }
+
+        if (el.selectFontZh) el.selectFontZh.value = s.fontFamilyZh;
+        if (el.selectFontEn) el.selectFontEn.value = s.fontFamilyEn;
+        if (el.letterSpacings) {
+          el.letterSpacings.forEach(r => r.checked = (r.value === s.letterSpacing));
+        }
+      }
+
+      /* ==========================================================================
+         G. 智能文本解析引擎
+         ========================================================================== */
+      function parseCustomText(text) {
+        if (!text || !text.trim()) return [];
+        const lines = text.split(/\r?\n/);
+        const results = [];
+
+        lines.forEach(rawLine => {
+          let line = rawLine.trim();
+          if (!line) return;
+
+          let en = '';
+          let zh = '';
+          let phonetic = '';
+
+          // 1. 优先检查显式分隔符：竖线 | 或 制表符 \t 或 短横线 -
+          if (line.includes('|') || line.includes('｜') || line.includes('\t') || line.includes(' - ')) {
+            let sep = '\t';
+            if (line.includes('|')) sep = '|';
+            else if (line.includes('｜')) sep = '｜';
+            else if (line.includes(' - ')) sep = ' - ';
+            const parts = line.split(sep);
+            en = parts[0].trim();
+            zh = parts.slice(1).join(' ').trim();
+          }
+          // 2. 检查斜杠音标格式：word /phonetic/ meaning (例如 apple /ˈæpəl/ 苹果)
+          else if (/^[a-zA-Z\s'’.-]+?\s*\/[^\/]+\/\s*[\u4e00-\u9fa5]/.test(line)) {
+            const phoneticMatch = line.match(/^([a-zA-Z\s'’.-]+?)\s*\/([^\/]+)\/\s*(.*)$/);
+            if (phoneticMatch) {
+              en = phoneticMatch[1].trim();
+              phonetic = phoneticMatch[2].trim();
+              zh = phoneticMatch[3].trim();
+            }
+          }
+          // 3. 英文后跟中文字符：apple 苹果 或 ask [your teacher] for help 向你的老师求助
+          else {
+            const firstZhIndex = line.search(/[\u4e00-\u9fa5]/);
+            if (firstZhIndex > 0) {
+              en = line.substring(0, firstZhIndex).trim();
+              zh = line.substring(firstZhIndex).trim();
+            } else if (firstZhIndex === 0) {
+              en = '';
+              zh = line;
+            } else {
+              en = line;
+              zh = '';
+            }
+          }
+
+          if (en || zh) {
+            results.push(createDraftItem({ en, zh, phonetic }));
+          }
+        });
+
+        return results;
+      }
+
+      /* ==========================================================================
+         H. 单词列表交互 UI
+         ========================================================================== */
+      function renderWordListUI() {
+        const count = state.draft.items.length;
+        el.badgeWordCount.textContent = `${count} 词`;
+        el.wordsListContainer.innerHTML = '';
+
+        if (count === 0) {
+          el.wordsListContainer.innerHTML = `
+            <div style="text-align:center; padding:18px; color:#94a3b8; font-size:12px;">
+              暂无单词，请在上方输入框粘贴或载入默认词表
+            </div>
+          `;
+          return;
+        }
+
+        state.draft.items.forEach((item, index) => {
+          let enDisplay = '';
+          if (item.en) {
+            if (state.draft.settings.dictMode === 'cloze' && (item.en.includes('[') || item.en.includes('{'))) {
+              const highlighted = escapeHtml(item.en).replace(/\[([^\]]+)\]|\{([^}]+)\}/g, (m, p1, p2) => {
+                return `<mark class="chip-blank-mark">[挖空: ${p1 || p2}]</mark>`;
+              });
+              enDisplay = `<span class="word-item-en word-chip-en">${highlighted}</span>`;
+            } else {
+              enDisplay = `<span class="word-item-en word-chip-en">${escapeHtml(item.en)}</span>`;
+            }
+          } else {
+            enDisplay = '<span class="word-chip-en" style="display:none;"></span>';
+          }
+
+          const row = document.createElement('div');
+          row.className = 'word-item-row word-chip';
+          row.dataset.id = item.id;
+          row.innerHTML = `
+            <div class="word-item-main">
+              <span class="word-item-index">${index + 1}.</span>
+              ${enDisplay}
+              ${item.zh ? `<span class="word-item-zh word-chip-zh">${escapeHtml(item.zh)}</span>` : '<span class="word-chip-zh" style="display:none;"></span>'}
+            </div>
+            <div class="word-item-actions">
+              <button class="word-item-btn" data-act="up" data-idx="${index}" title="上移">▲</button>
+              <button class="word-item-btn" data-act="down" data-idx="${index}" title="下移">▼</button>
+              <button class="word-item-btn del" data-act="del" data-idx="${index}" title="删除">✕</button>
+            </div>
+          `;
+
+          row.querySelectorAll('.word-item-btn').forEach(b => {
+            b.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const act = b.dataset.act;
+              const idx = parseInt(b.dataset.idx, 10);
+              if (act === 'up' && idx > 0) {
+                const temp = state.draft.items[idx];
+                state.draft.items[idx] = state.draft.items[idx - 1];
+                state.draft.items[idx - 1] = temp;
+                notifyWordsChanged();
+              } else if (act === 'down' && idx < state.draft.items.length - 1) {
+                const temp = state.draft.items[idx];
+                state.draft.items[idx] = state.draft.items[idx + 1];
+                state.draft.items[idx + 1] = temp;
+                notifyWordsChanged();
+              } else if (act === 'del') {
+                state.draft.items.splice(idx, 1);
+                notifyWordsChanged();
+              }
+            });
+          });
+
+          el.wordsListContainer.appendChild(row);
+        });
+      }
+
+      function notifyWordsChanged() {
+        renderWordListUI();
+        renderSheetPages();
+        debouncedSaveState();
+      }
+
+      /* ==========================================================================
+         I. SVG 练习格绘制 (纯函数)
+         ========================================================================== */
+      function createPracticeGridSvg(options) {
+        const {
+          gridStyle = 'four-line',
+          gridLines = 1,
+          gridHeightMm = 9.2,
+          strokeWidth = 0.85,
+          lineColor = '#cbd5e1',
+          showVertical = false
+        } = options;
+
+        let svgsHtml = '';
+
+        if (gridStyle === 'single-line') {
+          for (let i = 0; i < gridLines; i++) {
+            const marginBot = (i < gridLines - 1) ? '1.5mm' : '0';
+            svgsHtml += `
+              <svg class="single-line-svg" viewBox="0 0 100 12" style="height:${gridHeightMm * 0.7}mm; margin-bottom:${marginBot};" preserveAspectRatio="none">
+                ${showVertical ? `
+                  <line x1="0" y1="1" x2="0" y2="11" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+                  <line x1="100" y1="1" x2="100" y2="11" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+                ` : ''}
+                <line x1="0" y1="10" x2="100" y2="10" stroke="#94a3b8" stroke-width="${strokeWidth}" />
+              </svg>
+            `;
+          }
+          return svgsHtml;
+        }
+
+        // 规范四线三格 (中格加高比例)
+        for (let i = 0; i < gridLines; i++) {
+          const marginBot = (i < gridLines - 1) ? '1.8mm' : '0';
+          svgsHtml += `
+            <svg class="four-line-svg" viewBox="0 0 100 25" style="height:${gridHeightMm}mm; margin-bottom:${marginBot};" preserveAspectRatio="none">
+              ${showVertical ? `
+                <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+                <line x1="100" y1="2.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+              ` : ''}
+              <line x1="0" y1="2.0" x2="100" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+              <line x1="0" y1="8.5" x2="100" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+              <line x1="0" y1="16.5" x2="100" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
+              <line x1="0" y1="23.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+            </svg>
+          `;
+        }
+
+        return svgsHtml;
+      }
+
+      /* ==========================================================================
+         J. 句子挖空与提示格式化 (纯函数)
+         ========================================================================== */
+      function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options = {}) {
+        let en = '';
+        let zh = '';
+        let mode = 'writing';
+        let opts = options;
+        let segments = null;
+
+        if (typeof itemOrEn === 'object' && itemOrEn !== null) {
+          const item = itemOrEn;
+          en = item.en || '';
+          zh = item.overrideZh || item.zh || item.translation || '';
+          mode = (typeof modeOrZh === 'string') ? modeOrZh : (state.draft.settings.dictMode || 'writing');
+          opts = maybeModeOrOpts || {};
+          segments = item.segments || null;
+        } else {
+          en = itemOrEn || '';
+          zh = modeOrZh || '';
+          mode = maybeModeOrOpts || 'writing';
+        }
+
+        if (mode !== 'cloze') {
+          const txt = zh || en || '';
+          return txt ? `<span class="meaning-text entry-zh-hint">${escapeHtml(txt)}</span>` : '';
+        }
+
+        const {
+          gridStyle = 'four-line',
+          clozeStyle = 'inline',
+          strokeWidth = 0.85,
+          lineColor = '#cbd5e1'
+        } = opts;
+
+        function renderBlankHtml(wordText, trailingPunct = '') {
+          const cleanWord = (wordText || '').trim();
+          const charLen = cleanWord.length || 6;
+          const widthPx = Math.min(88, Math.max(45, Math.round(charLen * 6.5)));
+          const punctMargin = trailingPunct ? 'margin-right: 1px;' : 'margin-right: 3px;';
+
+          if (clozeStyle === 'inline' && gridStyle === 'four-line') {
+            return `<span class="cloze-blank-line cloze-inline-grid" style="width:${widthPx}px; ${punctMargin}">
+              <svg viewBox="0 0 100 25" preserveAspectRatio="none">
+                <line x1="0" y1="2.0" x2="100" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+                <line x1="0" y1="8.5" x2="100" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+                <line x1="0" y1="16.5" x2="100" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
+                <line x1="0" y1="23.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+                <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+                <line x1="100" y1="2.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+              </svg>
+            </span>${trailingPunct}`;
+          } else {
+            return `<span class="cloze-blank-line" style="min-width:${widthPx}px; ${punctMargin}"></span>${trailingPunct}`;
+          }
+        }
+
+        // 若已有结构化 segments
+        if (segments && segments.length > 0) {
+          let formattedEn = '';
+          segments.forEach(seg => {
+            if (seg.blank) {
+              let punct = '';
+              let cleanText = seg.text;
+              const pMatch = seg.text.match(/([.,!?;:'"”]+)$/);
+              if (pMatch) {
+                punct = pMatch[1];
+                cleanText = seg.text.slice(0, -punct.length);
+              }
+              formattedEn += renderBlankHtml(cleanText, punct);
+            } else {
+              formattedEn += escapeHtml(seg.text);
+            }
+          });
+          const zhHtml = zh ? `<span class="cloze-zh">(${escapeHtml(zh)})</span>` : '';
+          return `<span class="meaning-text cloze-sentence">${formattedEn}</span>${zhHtml}`;
+        }
+
+        // 兼容普通文本直接渲染
+        const sentence = (en || '').trim();
+        const zhText = (zh || '').trim();
+        if (!sentence) {
+          return zhText ? `<span class="meaning-text entry-zh-hint">${escapeHtml(zhText)}</span>` : '';
+        }
+
+        let formattedEn = '';
+        const bracketPunctRegex = /(\[([^\]]+)\]|\{([^}]+)\})([.,!?;:'"”]*)?/g;
+        if (sentence.search(/\[([^\]]+)\]|\{([^}]+)\}/) !== -1) {
+          formattedEn = escapeHtml(sentence).replace(bracketPunctRegex, (match, fullBracket, p1, p2, punct) => {
+            const word = (p1 || p2 || '').trim();
+            return renderBlankHtml(word, punct || '');
+          });
+        } else if (sentence.includes('___') || sentence.includes('——')) {
+          formattedEn = escapeHtml(sentence).replace(/(_{2,}|——+)([.,!?;:'"”]*)?/g, (match, line, punct) => {
+            return renderBlankHtml('blank', punct || '');
+          });
+        } else {
+          const words = sentence.split(/\s+/);
+          if (words.length >= 3) {
+            const blankStart = 1;
+            const blankCount = (words.length >= 5) ? 2 : 1;
+            const before = words.slice(0, blankStart).map(escapeHtml).join(' ');
+            let targetWords = words.slice(blankStart, blankStart + blankCount).join(' ');
+            let after = words.slice(blankStart + blankCount).map(escapeHtml).join(' ');
+
+            let punct = '';
+            const punctMatch = targetWords.match(/([.,!?;:'"”]+)$/);
+            if (punctMatch) {
+              punct = punctMatch[1];
+              targetWords = targetWords.slice(0, -punct.length);
+            }
+
+            formattedEn = `${before} ${renderBlankHtml(targetWords, punct)} ${after}`;
+          } else {
+            formattedEn = renderBlankHtml(sentence, '');
+          }
+        }
+
+        const zhHtml = zhText ? `<span class="cloze-zh">(${escapeHtml(zhText)})</span>` : '';
+        return `<span class="meaning-text cloze-sentence">${formattedEn}</span>${zhHtml}`;
+      }
+
+      /* ==========================================================================
+         K. 纯排版计算引擎 (纯数据函数，不碰 DOM)
+         ========================================================================== */
+      function computePageLayout(items, settings) {
+        const words = Array.isArray(items) ? items : [];
+        const curPaperKey = settings.paperSize || 'A4';
+        const pDim = PAPER_SIZES[curPaperKey] || PAPER_SIZES.A4;
+        const isLand = (settings.orientation === 'landscape');
+        const pageWidthMm = isLand ? pDim.height : pDim.width;
+        const pageHeightMm = isLand ? pDim.width : pDim.height;
+        const capacity = Math.max(3, parseInt(settings.wordsPerPage, 10) || 9);
+        const copiesPerPage = Math.max(1, parseInt(settings.copiesPerPage, 10) || 1);
+
+        const pageChunks = [];
+        for (let i = 0; i < words.length; i += capacity) {
+          pageChunks.push({
+            pageIndex: Math.floor(i / capacity),
+            items: words.slice(i, i + capacity).map((item, offset) => ({
+              overallIndex: i + offset + 1,
+              item
+            }))
+          });
+        }
+
+        return {
+          paperDim: pDim,
+          isLandscape: isLand,
+          pageWidthMm,
+          pageHeightMm,
+          capacity,
+          copiesPerPage,
+          totalPages: pageChunks.length,
+          totalItems: words.length,
+          pageChunks
+        };
+      }
+
+      /* ==========================================================================
+         L. 试卷 HTML 模板渲染引擎 (纯函数)
+         ========================================================================== */
+      function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSize) {
+        const copies = Math.max(1, parseInt(s.copiesPerPage, 10) || 1);
+        const isCloze = (s.dictMode === 'cloze');
+        const isClozeInline = isCloze && (s.clozeStyle !== 'below');
+
+        let cardsHtml = '';
+        chunk.items.forEach(({ overallIndex, item }) => {
+          const zhMeaningHtml = formatClozePrompt(item, s.dictMode, {
+            gridStyle: s.gridStyle,
+            clozeStyle: s.clozeStyle || 'inline',
+            strokeWidth: s.gridStroke || 0.85,
+            lineColor: s.gridColor || '#cbd5e1'
+          });
+
+          let practiceGridHtml = '';
+          if (!isClozeInline) {
+            const effectiveGridHeight = (copies > 1 && isCloze)
+              ? Math.min(6.5, s.gridHeight || 12)
+              : (s.gridHeight || 12);
+
+            practiceGridHtml = createPracticeGridSvg({
+              gridStyle: s.gridStyle,
+              gridLines: s.gridLinesPerWord || 1,
+              gridHeightMm: effectiveGridHeight,
+              strokeWidth: s.gridStroke || 0.85,
+              lineColor: s.gridColor || '#cbd5e1',
+              showVertical: s.showVerticalBorder
+            });
+          }
+
+          const cardCls = isClozeInline ? 'cloze-card-inline' : (s.zhPosition === 'left' ? 'meaning-left' : '');
+
+          cardsHtml += `
+            <div class="word-card word-entry-item ${cardCls}" data-id="${item.id}" style="letter-spacing:${s.letterSpacing};">
+              <div class="meaning word-prompt-row" style="font-size:${effectivePromptSize}pt;">
+                <span class="word-num entry-index">${overallIndex}.</span>
+                ${zhMeaningHtml}
+              </div>
+              ${!isClozeInline ? `
+                <div class="practice-grid entry-grid-wrap">
+                  ${practiceGridHtml}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+
+        // 考生信息栏
+        let studentInfoHtml = '';
+        const showAnyStudentInfo = s.showStudentName || s.showStudentClass || s.showStudentNo || s.showStudentDate || s.showStudentScore;
+        if (showAnyStudentInfo) {
+          const infoItems = [];
+          if (s.showStudentName) infoItems.push(`<span class="info-item">姓名：<span class="info-line info-line-name"></span></span>`);
+          if (s.showStudentClass) infoItems.push(`<span class="info-item">班级：<span class="info-line info-line-class"></span></span>`);
+          if (s.showStudentNo) infoItems.push(`<span class="info-item">座号：<span class="info-line info-line-no"></span></span>`);
+          if (s.showStudentDate) infoItems.push(`<span class="info-item">日期：<span class="info-line info-line-date"></span></span>`);
+          if (s.showStudentScore) infoItems.push(`<span class="info-item">得分：<span class="info-line info-line-score"></span></span>`);
+
+          const compactCls = (copies > 1) ? 'compact-info' : '';
+          studentInfoHtml = `
+            <div class="sheet-student-info ${compactCls}">
+              ${infoItems.join('')}
+            </div>
+          `;
+        }
+
+        // 标题
+        const rawTitleSize = s.titleFontSize || '18pt';
+        const titleSize = (typeof rawTitleSize === 'number' || !String(rawTitleSize).endsWith('pt')) ? `${rawTitleSize}pt` : rawTitleSize;
+        let headerHtml = '';
+        if (copies > 1) {
+          headerHtml = `
+            <div class="sheet-header sheet-header-compact">
+              <div class="sheet-header-top-row">
+                <h2 class="sheet-title-text" style="font-size:${titleSize}; text-align:${s.titleAlign || 'center'}; width:100%; font-family:${s.fontFamilyZh};">
+                  ${escapeHtml(s.title || 'Unit 1 黑体词默写')}
+                </h2>
+              </div>
+              ${studentInfoHtml}
+            </div>
+          `;
+        } else {
+          headerHtml = `
+            <div class="sheet-header">
+              <h1 class="sheet-title-text" style="font-size:${titleSize}; text-align:${s.titleAlign || 'center'}; font-family:${s.fontFamilyZh};">
+                ${escapeHtml(s.title || 'Unit 1 黑体词默写')}
+              </h1>
+              ${studentInfoHtml}
+            </div>
+          `;
+        }
+
+        // 网格主体
+        const effectiveRowGap = (copies > 1 && s.dictMode === 'cloze')
+          ? Math.min(2.5, s.rowGap || 3.5)
+          : (s.rowGap || 3.5);
+
+        const bodyHtml = `
+          <div class="sheet-body-grid" style="
+            grid-template-columns: repeat(${s.columns}, 1fr);
+            column-gap: ${s.colGap}mm;
+            row-gap: ${effectiveRowGap}mm;
+          ">
+            ${cardsHtml}
+          </div>
+        `;
+
+        const sectionCls = (copies > 1) ? 'multi-copy' : 'single-copy';
+        return `
+          <div class="sheet-copy-section ${sectionCls}">
+            ${headerHtml}
+            ${bodyHtml}
+          </div>
+        `;
+      }
+
+      function renderPracticeSheetHtml(layout, settings) {
+        if (layout.totalItems === 0) {
+          return `
+            <div style="background:#ffffff;padding:50px 30px;border-radius:12px;text-align:center;box-shadow:var(--shadow-sheet);max-width:420px;margin:40px auto;">
+              <h3 style="color:#0f172a;margin-bottom:8px;">暂无练习单词</h3>
+              <p style="color:#64748b;font-size:13px;line-height:1.6;">请在左侧文本框中输入或粘贴单词，右侧将自动即时排版。</p>
+            </div>
+          `;
+        }
+
+        const s = settings;
+        const { copiesPerPage, isLandscape, pageWidthMm, pageHeightMm } = layout;
+        const curPromptSize = s.promptFontSize || 14;
+        const effectivePromptSize = (copiesPerPage > 1 && s.dictMode === 'cloze')
+          ? Math.min(12, curPromptSize)
+          : curPromptSize;
+
+        let pagesHtml = '';
+
+        layout.pageChunks.forEach((chunk, pageIdx) => {
+          let copySlipsHtml = '';
+
+          for (let c = 0; c < copiesPerPage; c++) {
+            if (c > 0) {
+              const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">✂ 沿虚线裁切分发</span>` : '';
+              copySlipsHtml += `
+                <div class="section-cut-divider ${s.dividerStyle}">
+                  ${guideTag}
+                </div>
+              `;
+            }
+            copySlipsHtml += renderCopySlipHtml(chunk, pageIdx, c, s, effectivePromptSize);
+          }
+
+          pagesHtml += `
+            <div class="sheet-page ${isLandscape ? 'landscape' : ''}" style="
+              width: ${pageWidthMm}mm;
+              height: ${pageHeightMm}mm;
+              min-height: ${pageHeightMm}mm;
+              max-height: ${pageHeightMm}mm;
+              font-family: ${s.fontFamilyZh};
+              padding: ${s.pageMargin}mm 12mm ${Math.max(5, s.pageMargin - 2)}mm 12mm;
+            ">
+              ${copySlipsHtml}
+            </div>
+          `;
+        });
+
+        return pagesHtml;
+      }
+
+      /* ==========================================================================
+         M. 视口与打印样式同步 (纯渲染更新，不触发保存)
+         ========================================================================== */
+      function updatePrintPageStyle(widthMm, heightMm) {
+        let styleEl = document.getElementById('dynamicPrintPageStyle');
+        if (!styleEl) {
+          styleEl = document.createElement('style');
+          styleEl.id = 'dynamicPrintPageStyle';
+          document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = `
+          @page {
+            size: ${widthMm}mm ${heightMm}mm;
+            margin: 0;
+          }
+          @media print {
+            .sheet-page {
+              width: ${widthMm}mm !important;
+              height: ${heightMm}mm !important;
+              min-height: ${heightMm}mm !important;
+              max-height: ${heightMm}mm !important;
+            }
+          }
+        `;
+      }
+
+      function renderSheetPages() {
+        const layout = computePageLayout(state.draft.items, state.draft.settings);
+        updatePrintPageStyle(layout.pageWidthMm, layout.pageHeightMm);
+
+        const copyLabel = (layout.copiesPerPage === 1) ? '全页 1 份' : (layout.copiesPerPage === 2 ? '一页 2 份' : '一页 3 份');
+        const modeLabel = (state.draft.settings.dictMode === 'cloze') ? '句子挖空填写' : '看中文默写';
+        el.previewModeTag.textContent = `📄 ${layout.paperDim.name} ${layout.isLandscape ? '横向' : '纵向'} · ${modeLabel} · ${copyLabel} · 共 ${layout.totalPages} 页`;
+        el.quickStatBadge.textContent = `已选 ${layout.totalItems} 词 · 每页 ${layout.copiesPerPage} 份 · 共 ${layout.totalPages} 页`;
+
+        el.sheetsStreamContainer.innerHTML = renderPracticeSheetHtml(layout, state.draft.settings);
+      }
+
+      function updateZoom() {
+        if (state.ui.isZoomFit) {
+          const stageW = el.paperStage.clientWidth - 48;
+          const isLand = (state.draft.settings.orientation === 'landscape');
+          const pDim = PAPER_SIZES[state.draft.settings.paperSize || 'A4'] || PAPER_SIZES.A4;
+          const pageWidthMm = isLand ? pDim.height : pDim.width;
+          const pageWidthPx = pageWidthMm * 3.7795;
+          let scale = (stageW / pageWidthPx) * 0.95;
+          if (scale > 1.25) scale = 1.25;
+          if (scale < 0.25) scale = 0.25;
+          state.ui.zoom = Math.round(scale * 100) / 100;
+        }
+
+        el.sheetsStreamContainer.style.transform = `scale(${state.ui.zoom})`;
+        el.zoomValText.textContent = `${Math.round(state.ui.zoom * 100)}%`;
+      }
+
+      function showToast(msg) {
+        let toast = document.getElementById('appToast');
+        if (!toast) {
+          toast = document.createElement('div');
+          toast.id = 'appToast';
+          toast.style.cssText = 'position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#0f172a;color:#ffffff;padding:9px 20px;border-radius:24px;font-size:12.5px;font-weight:500;box-shadow:0 6px 16px rgba(0,0,0,0.3);z-index:9999;transition:opacity 0.25s, transform 0.25s;pointer-events:none;';
+          document.body.appendChild(toast);
+        }
+        toast.textContent = msg;
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateX(-50%) translateY(8px)';
+        }, 2200);
+      }
+
+      /* ==========================================================================
+         N. 事件监听绑定 (UI 交互层)
+         ========================================================================== */
+      function bindEvents() {
+        // 侧栏折叠/展开
+        el.btnToggleSidebar.addEventListener('click', () => {
+          state.ui.isSidebarCollapsed = !state.ui.isSidebarCollapsed;
+          el.sidebarPanel.classList.toggle('collapsed', state.ui.isSidebarCollapsed);
+          if (state.ui.isZoomFit) {
+            setTimeout(updateZoom, 260);
+          }
+        });
+
+        // 载入/替换词表
+        el.btnParseText.addEventListener('click', () => {
+          const list = parseCustomText(el.customWordTextarea.value);
+          if (list.length === 0) {
+            showToast('未识别到有效词汇，请按提示输入');
+            return;
+          }
+          state.draft.items = list;
+          notifyWordsChanged();
+          showToast(`已成功载入 ${list.length} 个单词！`);
+        });
+
+        // 追加单词
+        el.btnAppendText.addEventListener('click', () => {
+          const list = parseCustomText(el.customWordTextarea.value);
+          if (list.length === 0) {
+            showToast('未识别到有效词汇，请按提示输入');
+            return;
+          }
+          state.draft.items = state.draft.items.concat(list);
+          notifyWordsChanged();
+          showToast(`已追加 ${list.length} 个单词！`);
+        });
+
+        // 模式切换监听 (不自动猜词覆盖用户输入，仅更新模式和界面)
+        if (el.dictModes) {
+          el.dictModes.forEach(r => r.addEventListener('change', () => {
+            state.draft.settings.dictMode = r.value;
+            syncControlsFromSettings();
+            renderSheetPages();
+            debouncedSaveState();
+            showToast(r.value === 'cloze' ? '已切换至【句子挖空填写】模式' : '已切换至【看中文默写】模式');
+          }));
+        }
+
+        // 挖空形式监听 (句中内嵌 vs 句下独立)
+        if (el.clozeStyles) {
+          el.clozeStyles.forEach(r => r.addEventListener('change', () => {
+            state.draft.settings.clozeStyle = r.value;
+            renderSheetPages();
+            debouncedSaveState();
+          }));
+        }
+
+        // 载入默认示例 (明确点击才载入)
+        el.btnLoadDefaultSample.addEventListener('click', () => {
+          if (state.draft.settings.dictMode === 'cloze') {
+            state.draft.items = DEFAULT_CLOZE_WORDS_RAW.map(s => createDraftItem(s));
+            showToast('已载入 9 个句子挖空示例！');
+          } else {
+            state.draft.items = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
+            showToast('已载入默认 9 词与推荐设置！');
+          }
+          syncControlsFromSettings();
+          notifyWordsChanged();
+        });
+
+        // 清空词表
+        el.btnClearWords.addEventListener('click', () => {
+          if (confirm('确定要清空词汇表吗？')) {
+            state.draft.items = [];
+            el.customWordTextarea.value = '';
+            notifyWordsChanged();
+            showToast('已清空词汇表');
+          }
+        });
+
+        // 可折叠设置分组切换
+        $$('.settings-group.collapsible .group-header').forEach(hdr => {
+          hdr.addEventListener('click', () => {
+            hdr.closest('.settings-group').classList.toggle('collapsed');
+          });
+        });
+
+        // 页面设置监听
+        el.paperSizes.forEach(r => r.addEventListener('change', () => {
+          state.draft.settings.paperSize = r.value;
+          renderSheetPages();
+          debouncedSaveState();
+          if (state.ui.isZoomFit) updateZoom();
+        }));
+
+        el.paperOrients.forEach(r => r.addEventListener('change', () => {
+          state.draft.settings.orientation = r.value;
+          renderSheetPages();
+          debouncedSaveState();
+          if (state.ui.isZoomFit) updateZoom();
+        }));
+
+        el.copiesPerPage.forEach(r => r.addEventListener('change', () => {
+          state.draft.settings.copiesPerPage = parseInt(r.value, 10);
+          renderSheetPages();
+          debouncedSaveState();
+        }));
+
+        el.inputPageMargin.addEventListener('input', () => {
+          const val = parseInt(el.inputPageMargin.value, 10);
+          state.draft.settings.pageMargin = val;
+          el.valPageMargin.textContent = `${val}mm`;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        // 标题与考生信息监听
+        el.inputSheetTitle.addEventListener('input', () => {
+          state.draft.settings.title = el.inputSheetTitle.value;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        if (el.inputTitleFontSize) {
+          el.inputTitleFontSize.addEventListener('input', () => {
+            const val = parseFloat(el.inputTitleFontSize.value);
+            state.draft.settings.titleFontSize = `${val}pt`;
+            if (el.valTitleFontSize) el.valTitleFontSize.textContent = `${val}pt`;
+            renderSheetPages();
+            debouncedSaveState();
+          });
+        }
+
+        const handleStudentCheck = () => {
+          state.draft.settings.showStudentName = el.checkName.checked;
+          state.draft.settings.showStudentClass = el.checkClass.checked;
+          state.draft.settings.showStudentNo = el.checkNo.checked;
+          state.draft.settings.showStudentDate = el.checkDate.checked;
+          state.draft.settings.showStudentScore = el.checkScore.checked;
+          renderSheetPages();
+          debouncedSaveState();
+        };
+        el.checkName.addEventListener('change', handleStudentCheck);
+        el.checkClass.addEventListener('change', handleStudentCheck);
+        el.checkNo.addEventListener('change', handleStudentCheck);
+        el.checkDate.addEventListener('change', handleStudentCheck);
+        el.checkScore.addEventListener('change', handleStudentCheck);
+
+        // 单词区域监听
+        el.colCounts.forEach(r => r.addEventListener('change', () => {
+          state.draft.settings.columns = parseInt(r.value, 10);
+          renderSheetPages();
+          debouncedSaveState();
+        }));
+
+        el.wordsPerPageInput.addEventListener('input', () => {
+          const val = parseInt(el.wordsPerPageInput.value, 10);
+          state.draft.settings.wordsPerPage = val;
+          el.valWordsPerPage.textContent = `${val} 词`;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        if (el.inputPromptFontSize) {
+          el.inputPromptFontSize.addEventListener('input', () => {
+            const val = parseFloat(el.inputPromptFontSize.value);
+            state.draft.settings.promptFontSize = val;
+            el.valPromptFontSize.textContent = `${val}pt`;
+            renderSheetPages();
+            debouncedSaveState();
+          });
+        }
+
+        el.zhPositions.forEach(r => r.addEventListener('change', () => {
+          state.draft.settings.zhPosition = r.value;
+          renderSheetPages();
+          debouncedSaveState();
+        }));
+
+        el.inputColGap.addEventListener('input', () => {
+          const val = parseFloat(el.inputColGap.value);
+          state.draft.settings.colGap = val;
+          el.valColGap.textContent = `${val}mm`;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        el.inputRowGap.addEventListener('input', () => {
+          const val = parseFloat(el.inputRowGap.value);
+          state.draft.settings.rowGap = val;
+          el.valRowGap.textContent = `${val}mm`;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        // 四线三格监听
+        el.gridStyles.forEach(r => r.addEventListener('change', () => {
+          state.draft.settings.gridStyle = r.value;
+          renderSheetPages();
+          debouncedSaveState();
+        }));
+
+        el.inputGridHeight.addEventListener('input', () => {
+          const val = parseFloat(el.inputGridHeight.value);
+          state.draft.settings.gridHeight = val;
+          el.valGridHeight.textContent = `${val}mm`;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        el.gridStrokes.forEach(r => r.addEventListener('change', () => {
+          state.draft.settings.gridStroke = parseFloat(r.value);
+          renderSheetPages();
+          debouncedSaveState();
+        }));
+
+        el.inputGridColor.addEventListener('input', () => {
+          const val = el.inputGridColor.value;
+          state.draft.settings.gridColor = val;
+          el.textGridColor.textContent = val;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        el.checkVerticalLine.addEventListener('change', () => {
+          state.draft.settings.showVerticalBorder = el.checkVerticalLine.checked;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        // 字体监听
+        el.selectFontZh.addEventListener('change', () => {
+          state.draft.settings.fontFamilyZh = el.selectFontZh.value;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        el.selectFontEn.addEventListener('change', () => {
+          state.draft.settings.fontFamilyEn = el.selectFontEn.value;
+          renderSheetPages();
+          debouncedSaveState();
+        });
+
+        el.letterSpacings.forEach(r => r.addEventListener('change', () => {
+          state.draft.settings.letterSpacing = r.value;
+          renderSheetPages();
+          debouncedSaveState();
+        }));
+
+        // 顶部操作按钮
+        el.btnGeneratePreview.addEventListener('click', () => {
+          renderSheetPages();
+          showToast('预览已更新！');
+        });
+
+        el.btnPrintSheet.addEventListener('click', () => {
+          window.print();
+        });
+
+        // 导出配置为 JSON
+        el.btnExportConfig.addEventListener('click', () => {
+          const configData = {
+            version: '4.0',
+            exportedAt: new Date().toISOString(),
+            draft: {
+              items: state.draft.items,
+              settings: state.draft.settings
+            },
+            library: state.library,
+            words: state.draft.items,
+            settings: state.draft.settings
+          };
+          const blob = new Blob([JSON.stringify(configData, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `dictation_config_${Date.now()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('配置已导出为 JSON 文件！');
+        });
+
+        // 导入数据触发
+        el.btnTriggerImport.addEventListener('click', () => {
+          el.fileImportInput.value = '';
+          el.fileImportInput.click();
+        });
+
+        el.fileImportInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            try {
+              const content = event.target.result;
+              if (file.name.endsWith('.json')) {
+                const parsed = JSON.parse(content);
+                if (parsed.draft) {
+                  if (Array.isArray(parsed.draft.items)) {
+                    state.draft.items = parsed.draft.items.map(it => createDraftItem(it));
+                  }
+                  if (parsed.draft.settings) {
+                    state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, parsed.draft.settings);
+                    syncControlsFromSettings();
+                  }
+                } else if (Array.isArray(parsed.words)) {
+                  state.draft.items = parsed.words.map(it => createDraftItem(it));
+                  if (parsed.settings) {
+                    state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, parsed.settings);
+                    syncControlsFromSettings();
+                  }
+                }
+                notifyWordsChanged();
+                showToast(`已成功导入配置文件 (${state.draft.items.length} 词)！`);
+              } else {
+                const list = parseCustomText(content);
+                if (list.length > 0) {
+                  state.draft.items = list;
+                  notifyWordsChanged();
+                  showToast(`已成功从文本导入 ${list.length} 个单词！`);
+                } else {
+                  showToast('未能识别有效单词文本');
+                }
+              }
+            } catch (err) {
+              console.error(err);
+              showToast('文件解析失败，请检查文件格式');
+            }
+          };
+          reader.readAsText(file);
+        });
+
+        // 恢复默认设置
+        el.btnResetDefaults.addEventListener('click', () => {
+          if (confirm('确定要恢复为默认设置和测试词汇吗？')) {
+            state.draft.items = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
+            state.draft.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+            syncControlsFromSettings();
+            notifyWordsChanged();
+            showToast('已恢复为默认设置！');
+          }
+        });
+
+        // 缩放操作
+        el.btnZoomIn.addEventListener('click', () => {
+          state.ui.isZoomFit = false;
+          state.ui.zoom = Math.min(1.8, state.ui.zoom + 0.1);
+          updateZoom();
+        });
+
+        el.btnZoomOut.addEventListener('click', () => {
+          state.ui.isZoomFit = false;
+          state.ui.zoom = Math.max(0.3, state.ui.zoom - 0.1);
+          updateZoom();
+        });
+
+        el.btnZoomFit.addEventListener('click', () => {
+          state.ui.isZoomFit = true;
+          updateZoom();
+        });
+
+        el.btnZoom100.addEventListener('click', () => {
+          state.ui.isZoomFit = false;
+          state.ui.zoom = 1.0;
+          updateZoom();
+        });
+
+        window.addEventListener('resize', () => {
+          if (state.ui.isZoomFit) updateZoom();
+        });
+
+        // 兼容测试脚本专用按钮
+        window._setG4Sample = function() {
+          state.draft.items = [
+            { en: 'classroom', zh: '教室' },
+            { en: 'window', zh: '窗户' },
+            { en: 'blackboard', zh: '黑板' },
+            { en: 'light', zh: '电灯' },
+            { en: 'picture', zh: '图画' },
+            { en: 'door', zh: '门' }
+          ].map(w => createDraftItem(w));
+          state.draft.settings.title = 'Unit 1 My classroom 单词默写';
+          state.draft.settings.columns = 1;
+          state.draft.settings.copiesPerPage = 1;
+          state.draft.settings.wordsPerPage = 10;
+          state.draft.settings.gridLinesPerWord = 1;
+          syncControlsFromSettings();
+          notifyWordsChanged();
+        };
+
+        const dummyG4Btn = document.createElement('button');
+        dummyG4Btn.id = 'btnLoadSampleG4';
+        dummyG4Btn.style.display = 'none';
+        dummyG4Btn.addEventListener('click', window._setG4Sample);
+        document.body.appendChild(dummyG4Btn);
+
+        const dummyNineBtn = document.createElement('button');
+        dummyNineBtn.id = 'btnLoadSampleNine';
+        dummyNineBtn.style.display = 'none';
+        dummyNineBtn.addEventListener('click', () => el.btnLoadDefaultSample.click());
+        document.body.appendChild(dummyNineBtn);
+
+        const dummyReplaceBtn = document.createElement('button');
+        dummyReplaceBtn.id = 'btnReplaceCustom';
+        dummyReplaceBtn.style.display = 'none';
+        dummyReplaceBtn.addEventListener('click', () => el.btnParseText.click());
+        document.body.appendChild(dummyReplaceBtn);
+      }
+
+      /* ==========================================================================
+         O. 初始化启动
+         ========================================================================== */
+      function init() {
+        loadSavedState();
+        syncControlsFromSettings();
+        renderWordListUI();
+        bindEvents();
+        renderSheetPages();
+        updateZoom();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+    })();
+  </script>
+</body>
+</html>

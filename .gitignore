@@ -1,0 +1,15 @@
+# 测试生成的临时 PDF 与预览图 (仅忽略根目录下的临时产物)
+/*.pdf
+/test_*.png
+/preview_*.png
+
+# 保留文档插图目录
+!docs/
+!docs/**
+
+# 操作系统与编辑器临时文件
+.DS_Store
+Thumbs.db
+*.tmp
+.vscode/
+.idea/
