@@ -1811,8 +1811,183 @@
       };
 
       /* ==========================================================================
-         E. 本地持久化与数据迁移 (localStorage, 支持 v3 与 v4)
+         E. 本地持久化 (IndexedDB 词库/句库 + localStorage 草稿/设置)
          ========================================================================== */
+      const DB_NAME = 'DictationSheetGenDB';
+      const DB_VERSION = 1;
+
+      class StorageDB {
+        constructor() {
+          this.db = null;
+          this.isSupported = (typeof indexedDB !== 'undefined');
+        }
+
+        async open() {
+          if (!this.isSupported) return null;
+          if (this.db) return this.db;
+
+          return new Promise((resolve) => {
+            try {
+              const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+              request.onupgradeneeded = (event) => {
+                const dbInstance = event.target.result;
+                if (!dbInstance.objectStoreNames.contains('words')) {
+                  const ws = dbInstance.createObjectStore('words', { keyPath: 'id' });
+                  ws.createIndex('en', 'en', { unique: false });
+                  ws.createIndex('updatedAt', 'updatedAt', { unique: false });
+                }
+                if (!dbInstance.objectStoreNames.contains('sentences')) {
+                  const ss = dbInstance.createObjectStore('sentences', { keyPath: 'id' });
+                  ss.createIndex('updatedAt', 'updatedAt', { unique: false });
+                }
+              };
+
+              request.onsuccess = (event) => {
+                this.db = event.target.result;
+                resolve(this.db);
+              };
+
+              request.onerror = (event) => {
+                console.warn('IndexedDB 初始化失败，自动降级为内存模式:', event.target.error);
+                resolve(null);
+              };
+            } catch (err) {
+              console.warn('IndexedDB 不可用:', err);
+              resolve(null);
+            }
+          });
+        }
+
+        async getAll(storeName) {
+          const dbInstance = await this.open();
+          if (!dbInstance) return [];
+          return new Promise((resolve) => {
+            try {
+              const tx = dbInstance.transaction(storeName, 'readonly');
+              const store = tx.objectStore(storeName);
+              const req = store.getAll();
+              req.onsuccess = () => resolve(req.result || []);
+              req.onerror = () => resolve([]);
+            } catch (e) {
+              resolve([]);
+            }
+          });
+        }
+
+        async bulkPut(storeName, items) {
+          if (!items || items.length === 0) return true;
+          const dbInstance = await this.open();
+          if (!dbInstance) return false;
+          return new Promise((resolve) => {
+            try {
+              const tx = dbInstance.transaction(storeName, 'readwrite');
+              const store = tx.objectStore(storeName);
+              items.forEach(it => store.put(it));
+              tx.oncomplete = () => resolve(true);
+              tx.onerror = () => resolve(false);
+            } catch (e) {
+              resolve(false);
+            }
+          });
+        }
+
+        async delete(storeName, id) {
+          const dbInstance = await this.open();
+          if (!dbInstance) return false;
+          return new Promise((resolve) => {
+            try {
+              const tx = dbInstance.transaction(storeName, 'readwrite');
+              const store = tx.objectStore(storeName);
+              const req = store.delete(id);
+              req.onsuccess = () => resolve(true);
+              req.onerror = () => resolve(false);
+            } catch (e) {
+              resolve(false);
+            }
+          });
+        }
+      }
+
+      const db = new StorageDB();
+      window.__appDB = db;
+      window.__appStorage = {
+        db,
+        detectDuplicates,
+        validateImportData
+      };
+
+      // 异步加载 IndexedDB 词库和句库数据
+      async function loadLibraryFromDB() {
+        try {
+          const words = await db.getAll('words');
+          const sentences = await db.getAll('sentences');
+          if (words && words.length > 0) {
+            state.library.words = words;
+          }
+          if (sentences && sentences.length > 0) {
+            state.library.sentences = sentences;
+          }
+        } catch (e) {
+          console.warn('加载词库句库失败:', e);
+        }
+      }
+
+      // 重复项检测 (基于 en 不区分大小写，或中文释义完全匹配)
+      function detectDuplicates(existingItems, newItems) {
+        const existingMap = new Map();
+        (existingItems || []).forEach(item => {
+          if (item.en) existingMap.set(item.en.trim().toLowerCase(), item);
+        });
+
+        const unique = [];
+        const duplicates = [];
+
+        (newItems || []).forEach(item => {
+          const key = (item.en || '').trim().toLowerCase();
+          if (key && existingMap.has(key)) {
+            duplicates.push({ newItem: item, existingItem: existingMap.get(key) });
+          } else {
+            unique.push(item);
+          }
+        });
+
+        return { unique, duplicates };
+      }
+
+      // 配置文件格式校验与版本迁移
+      function validateImportData(parsed) {
+        if (!parsed || typeof parsed !== 'object') {
+          return { valid: false, message: '无效的 JSON 配置文件' };
+        }
+
+        // v4 统一全量格式
+        if (parsed.draft || parsed.library) {
+          return {
+            valid: true,
+            version: parsed.version || '4.0',
+            draftItems: Array.isArray(parsed.draft?.items) ? parsed.draft.items : [],
+            draftSettings: parsed.draft?.settings || null,
+            libraryWords: Array.isArray(parsed.library?.words) ? parsed.library.words : [],
+            librarySentences: Array.isArray(parsed.library?.sentences) ? parsed.library.sentences : []
+          };
+        }
+
+        // v1 ~ v3 传统格式 ({ words: [...], settings: {...} })
+        if (Array.isArray(parsed.words) || parsed.settings) {
+          return {
+            valid: true,
+            version: parsed.version || '3.0',
+            draftItems: Array.isArray(parsed.words) ? parsed.words : [],
+            draftSettings: parsed.settings || null,
+            libraryWords: [],
+            librarySentences: []
+          };
+        }
+
+        return { valid: false, message: '未识别的试卷配置数据格式' };
+      }
+
       function loadSavedState() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
@@ -1825,15 +2000,9 @@
               if (data.draft.settings) {
                 state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.draft.settings);
               }
-              if (data.library) {
-                state.library.words = Array.isArray(data.library.words) ? data.library.words : [];
-                state.library.sentences = Array.isArray(data.library.sentences) ? data.library.sentences : [];
-              }
-            } else {
+            } else if (Array.isArray(data.words) && data.words.length > 0) {
               // 兼容老版本 v3 存储结构
-              if (Array.isArray(data.words) && data.words.length > 0) {
-                state.draft.items = data.words.map(it => createDraftItem(it));
-              }
+              state.draft.items = data.words.map(it => createDraftItem(it));
               if (data.settings) {
                 state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);
               }
@@ -1846,13 +2015,15 @@
 
       function saveState() {
         try {
+          // localStorage 瘦身：仅持久化当前试卷草稿与排版设置
           const payload = {
             version: '4.0',
+            savedAt: Date.now(),
             draft: {
               items: state.draft.items,
               settings: state.draft.settings
             },
-            library: state.library,
+            // 保留向下兼容字段
             words: state.draft.items,
             settings: state.draft.settings
           };
@@ -2822,16 +2993,23 @@
           window.print();
         });
 
-        // 导出配置为 JSON
+        // 导出配置为 JSON (包含草稿、独立版式以及词库/句库)
         el.btnExportConfig.addEventListener('click', () => {
           const configData = {
+            app: 'DictationSheetGen',
             version: '4.0',
             exportedAt: new Date().toISOString(),
             draft: {
               items: state.draft.items,
               settings: state.draft.settings
             },
-            library: state.library,
+            library: {
+              wordsCount: state.library.words.length,
+              sentencesCount: state.library.sentences.length,
+              words: state.library.words,
+              sentences: state.library.sentences
+            },
+            // 兼容旧版顶层解析
             words: state.draft.items,
             settings: state.draft.settings
           };
@@ -2844,7 +3022,7 @@
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          showToast('配置已导出为 JSON 文件！');
+          showToast('配置已导出为 JSON 文件（含草稿与词库数据）！');
         });
 
         // 导入数据触发
@@ -2857,41 +3035,69 @@
           const file = e.target.files[0];
           if (!file) return;
           const reader = new FileReader();
-          reader.onload = (event) => {
+          reader.onload = async (event) => {
             try {
               const content = event.target.result;
               if (file.name.endsWith('.json')) {
-                const parsed = JSON.parse(content);
-                if (parsed.draft) {
-                  if (Array.isArray(parsed.draft.items)) {
-                    state.draft.items = parsed.draft.items.map(it => createDraftItem(it));
-                  }
-                  if (parsed.draft.settings) {
-                    state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, parsed.draft.settings);
-                    syncControlsFromSettings();
-                  }
-                } else if (Array.isArray(parsed.words)) {
-                  state.draft.items = parsed.words.map(it => createDraftItem(it));
-                  if (parsed.settings) {
-                    state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, parsed.settings);
-                    syncControlsFromSettings();
-                  }
+                let parsed;
+                try {
+                  parsed = JSON.parse(content);
+                } catch (parseErr) {
+                  showToast('JSON 格式损坏，无法解析文件');
+                  return;
                 }
+
+                const validation = validateImportData(parsed);
+                if (!validation.valid) {
+                  showToast(validation.message);
+                  return;
+                }
+
+                // 恢复草稿
+                if (validation.draftItems.length > 0) {
+                  const newItems = validation.draftItems.map(it => createDraftItem(it));
+                  const dupCheck = detectDuplicates(state.draft.items, newItems);
+                  state.draft.items = newItems;
+
+                  let dupTip = '';
+                  if (dupCheck.duplicates.length > 0) {
+                    dupTip = ` (包含 ${dupCheck.duplicates.length} 条已存在词条)`;
+                  }
+                  showToast(`已成功导入试卷 (${newItems.length} 词)${dupTip}！`);
+                }
+
+                if (validation.draftSettings) {
+                  state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, validation.draftSettings);
+                  syncControlsFromSettings();
+                }
+
+                // 恢复词库 (若有) 并同步至 IndexedDB
+                if (validation.libraryWords.length > 0) {
+                  state.library.words = validation.libraryWords.map(w => createDraftItem({ ...w, type: 'word' }));
+                  await db.bulkPut('words', state.library.words);
+                }
+                if (validation.librarySentences.length > 0) {
+                  state.library.sentences = validation.librarySentences.map(s => createDraftItem({ ...s, type: 'sentence' }));
+                  await db.bulkPut('sentences', state.library.sentences);
+                }
+
                 notifyWordsChanged();
-                showToast(`已成功导入配置文件 (${state.draft.items.length} 词)！`);
               } else {
+                // txt 纯文本
                 const list = parseCustomText(content);
                 if (list.length > 0) {
+                  const dupCheck = detectDuplicates(state.draft.items, list);
                   state.draft.items = list;
                   notifyWordsChanged();
-                  showToast(`已成功从文本导入 ${list.length} 个单词！`);
+                  let dupTip = dupCheck.duplicates.length > 0 ? ` (其中 ${dupCheck.duplicates.length} 条已存在)` : '';
+                  showToast(`已成功从文本导入 ${list.length} 个单词${dupTip}！`);
                 } else {
                   showToast('未能识别有效单词文本');
                 }
               }
             } catch (err) {
               console.error(err);
-              showToast('文件解析失败，请检查文件格式');
+              showToast('文件处理异常，请检查文件内容');
             }
           };
           reader.readAsText(file);
@@ -2984,6 +3190,7 @@
         bindEvents();
         renderSheetPages();
         updateZoom();
+        loadLibraryFromDB(); // 异步载入 IndexedDB 词库与句库
       }
 
       if (document.readyState === 'loading') {
