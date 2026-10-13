@@ -263,7 +263,7 @@
           </div>
         </div>
 
-        <div class="form-row">
+        <div v-if="state.draft.settings.dictMode !== 'cloze'" class="form-row">
           <label>中文释义位置</label>
           <div class="segmented-control">
             <input
@@ -286,6 +286,93 @@
             <label for="zhPosLeft">格子左侧</label>
           </div>
         </div>
+
+        <!-- 句子挖空专属设置 (中文位置与四线格长) -->
+        <template v-if="state.draft.settings.dictMode === 'cloze'">
+          <div class="form-row">
+            <label>句子中文位置</label>
+            <div class="segmented-control mini">
+              <input
+                type="radio"
+                name="settingsClozeZhPos"
+                id="setClozeZhBelow"
+                value="below"
+                :checked="state.draft.settings.clozeZhPosition === 'below'"
+                @change="state.draft.settings.clozeZhPosition = 'below'"
+              />
+              <label for="setClozeZhBelow">句下独立行 (推荐)</label>
+              <input
+                type="radio"
+                name="settingsClozeZhPos"
+                id="setClozeZhRight"
+                value="right"
+                :checked="state.draft.settings.clozeZhPosition === 'right'"
+                @change="state.draft.settings.clozeZhPosition = 'right'"
+              />
+              <label for="setClozeZhRight">紧随句末</label>
+              <input
+                type="radio"
+                name="settingsClozeZhPos"
+                id="setClozeZhAbove"
+                value="above"
+                :checked="state.draft.settings.clozeZhPosition === 'above'"
+                @change="state.draft.settings.clozeZhPosition = 'above'"
+              />
+              <label for="setClozeZhAbove">句子上方</label>
+              <input
+                type="radio"
+                name="settingsClozeZhPos"
+                id="setClozeZhHide"
+                value="hide"
+                :checked="state.draft.settings.clozeZhPosition === 'hide'"
+                @change="state.draft.settings.clozeZhPosition = 'hide'"
+              />
+              <label for="setClozeZhHide">隐藏中文</label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>四线格挖空长度</label>
+            <div class="segmented-control mini">
+              <input
+                type="radio"
+                name="settingsClozeBlankWidth"
+                id="setBlankWidthAuto"
+                value="auto"
+                :checked="state.draft.settings.clozeBlankWidth === 'auto'"
+                @change="state.draft.settings.clozeBlankWidth = 'auto'"
+              />
+              <label for="setBlankWidthAuto">自适应</label>
+              <input
+                type="radio"
+                name="settingsClozeBlankWidth"
+                id="setBlankWidth1Word"
+                value="1word"
+                :checked="state.draft.settings.clozeBlankWidth === '1word'"
+                @change="state.draft.settings.clozeBlankWidth = '1word'"
+              />
+              <label for="setBlankWidth1Word">1 词长 (60px)</label>
+              <input
+                type="radio"
+                name="settingsClozeBlankWidth"
+                id="setBlankWidth2Words"
+                value="2words"
+                :checked="state.draft.settings.clozeBlankWidth === '2words'"
+                @change="state.draft.settings.clozeBlankWidth = '2words'"
+              />
+              <label for="setBlankWidth2Words">2 词长 (推荐)</label>
+              <input
+                type="radio"
+                name="settingsClozeBlankWidth"
+                id="setBlankWidth3Words"
+                value="3words"
+                :checked="state.draft.settings.clozeBlankWidth === '3words'"
+                @change="state.draft.settings.clozeBlankWidth = '3words'"
+              />
+              <label for="setBlankWidth3Words">3 词长 (150px)</label>
+            </div>
+          </div>
+        </template>
 
         <div class="form-row">
           <label>水平间距 (列距)</label>

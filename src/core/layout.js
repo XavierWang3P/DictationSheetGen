@@ -70,6 +70,8 @@ export const DEFAULT_SETTINGS = {
   showVerticalBorder: true,   // 左右封闭竖线 (默认显示)
   dictMode: 'writing',        // 看中文写英文
   clozeStyle: 'inline',       // 'inline' (句中内嵌填空) | 'below' (句下独立书写格)
+  clozeZhPosition: 'below',   // 'below' (句下独立行，推荐) | 'right' (紧随句末) | 'above' (句子上方) | 'hide' (隐藏中文)
+  clozeBlankWidth: '2words',  // 'auto' | '1word' | '2words' | '3words'
   fontFamilyZh: "'KaiTi', '楷体', STKaiti, serif",
   fontFamilyEn: 'Arial, sans-serif',
   letterSpacing: '0',
@@ -271,14 +273,45 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
   const {
     gridStyle = 'four-line',
     clozeStyle = 'inline',
+    clozeZhPosition = 'below',
+    clozeBlankWidth = '2words',
     strokeWidth = 0.85,
     lineColor = '#cbd5e1'
   } = opts;
 
   function renderBlankHtml(wordText, trailingPunct = '') {
-    const cleanWord = (wordText || '').trim();
+    let cleanWord = (wordText || '').trim();
+    let customWidth = null;
+
+    // 支持行内标记宽度，如 [word:1word]、[word:2words]、[word:100px] 等
+    const widthMatch = cleanWord.match(/:(1word|2words|3words|\d+px|\d+)$/i);
+    if (widthMatch) {
+      const tag = widthMatch[1].toLowerCase();
+      cleanWord = cleanWord.substring(0, widthMatch.index).trim();
+      if (tag === '1word' || tag === '1') customWidth = 62;
+      else if (tag === '2words' || tag === '2') customWidth = 108;
+      else if (tag === '3words' || tag === '3') customWidth = 152;
+      else if (tag.endsWith('px')) customWidth = parseInt(tag, 10);
+      else if (!isNaN(parseInt(tag, 10))) customWidth = parseInt(tag, 10);
+    }
+
     const charLen = cleanWord.length || 6;
-    const widthPx = Math.min(88, Math.max(45, Math.round(charLen * 6.5)));
+    let widthPx;
+    if (customWidth && customWidth > 0) {
+      widthPx = customWidth;
+    } else if (typeof clozeBlankWidth === 'number' && clozeBlankWidth > 0) {
+      widthPx = clozeBlankWidth;
+    } else if (clozeBlankWidth === '1word') {
+      widthPx = 62; // 1 词长 (约 16mm)
+    } else if (clozeBlankWidth === '2words') {
+      widthPx = 108; // 2 词长 (约 28mm，推荐)
+    } else if (clozeBlankWidth === '3words') {
+      widthPx = 152; // 3 词长 (约 40mm)
+    } else {
+      // 'auto' 按词自适应
+      widthPx = Math.min(160, Math.max(48, Math.round(charLen * 7.5)));
+    }
+
     const punctMargin = trailingPunct ? 'margin-right: 1px;' : 'margin-right: 3px;';
 
     if (clozeStyle === 'inline' && gridStyle === 'four-line') {
@@ -293,7 +326,24 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
         </svg>
       </span>${trailingPunct}`;
     } else {
-      return `<span class="cloze-blank-line" style="min-width:${widthPx}px; ${punctMargin}"></span>${trailingPunct}`;
+      return `<span class="cloze-blank-line" style="min-width:${widthPx}px; width:${widthPx}px; ${punctMargin}"></span>${trailingPunct}`;
+    }
+  }
+
+  function assembleClozeHtml(formattedEn, rawZh) {
+    const zhText = (rawZh || '').trim();
+    let zhHtml = '';
+    if (zhText && clozeZhPosition !== 'hide') {
+      zhHtml = `<span class="cloze-zh pos-${clozeZhPosition}">(${escapeHtml(zhText)})</span>`;
+    }
+
+    if (clozeZhPosition === 'below') {
+      return `<div class="cloze-content-wrap"><span class="meaning-text cloze-sentence">${formattedEn}</span>${zhHtml}</div>`;
+    } else if (clozeZhPosition === 'above') {
+      return `<div class="cloze-content-wrap">${zhHtml}<span class="meaning-text cloze-sentence">${formattedEn}</span></div>`;
+    } else {
+      // 'right' or 'hide'
+      return `<span class="meaning-text cloze-sentence">${formattedEn}</span>${zhHtml}`;
     }
   }
 
@@ -313,8 +363,7 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
         formattedEn += escapeHtml(seg.text);
       }
     });
-    const zhHtml = zh ? `<span class="cloze-zh">(${escapeHtml(zh)})</span>` : '';
-    return `<span class="meaning-text cloze-sentence">${formattedEn}</span>${zhHtml}`;
+    return assembleClozeHtml(formattedEn, zh);
   }
 
   const sentence = (en || '').trim();
@@ -356,8 +405,65 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
     }
   }
 
-  const zhHtml = zhText ? `<span class="cloze-zh">(${escapeHtml(zhText)})</span>` : '';
-  return `<span class="meaning-text cloze-sentence">${formattedEn}</span>${zhHtml}`;
+  return assembleClozeHtml(formattedEn, zhText);
+}
+
+/**
+ * 智能版面自适应：当题目数量较多超出版面承载范围时，自动切换 1页2份 或 1页1份
+ * @param {Array} items 当前题目列表
+ * @param {Object} settings 当前版式配置
+ * @returns {Object} 适配后的配置片段 { copiesPerPage, wordsPerPage }
+ */
+export function autoAdaptCopiesAndCapacity(items, settings) {
+  const count = Array.isArray(items) ? items.length : 0;
+  const currentSettings = settings || {};
+  if (count === 0) return { copiesPerPage: currentSettings.copiesPerPage || 3, wordsPerPage: currentSettings.wordsPerPage || 9 };
+
+  const mode = currentSettings.dictMode || 'writing';
+  let targetCopies = 3;
+  let targetCapacity = 9;
+
+  if (mode === 'cloze') {
+    // 句子挖空题型 (默认2列排版)
+    // 1 页 3 份：每份约 85mm，扣除标题考生栏，最多舒适容纳 6 句 (3行 x 2列)
+    // 1 页 2 份：每份约 135mm，最多容纳 12 句 (6行 x 2列)
+    // 1 页 1 份：整页约 270mm，容纳 13 句以上 (整页舒展排版)
+    if (count <= 6) {
+      targetCopies = 3;
+      targetCapacity = Math.max(6, count);
+    } else if (count <= 12) {
+      targetCopies = 2;
+      targetCapacity = Math.max(10, count);
+    } else {
+      targetCopies = 1;
+      targetCapacity = Math.max(20, count);
+    }
+  } else if (mode === 'alphabet') {
+    if (count === 26) {
+      targetCopies = 1;
+      targetCapacity = 26;
+    } else {
+      targetCopies = (count > 9) ? 2 : 3;
+      targetCapacity = count;
+    }
+  } else {
+    // 普通单词默写题型 (默认3列排版)
+    if (count <= 9) {
+      targetCopies = 3;
+      targetCapacity = 9;
+    } else if (count <= 18) {
+      targetCopies = 2;
+      targetCapacity = count;
+    } else {
+      targetCopies = 1;
+      targetCapacity = Math.max(25, count);
+    }
+  }
+
+  return {
+    copiesPerPage: targetCopies,
+    wordsPerPage: targetCapacity
+  };
 }
 
 // 纯函数：计算多页排版切片
@@ -369,8 +475,19 @@ export function computePageLayout(items, settings) {
   const isLand = (s.orientation === 'landscape');
   const pageWidthMm = isLand ? pDim.height : pDim.width;
   const pageHeightMm = isLand ? pDim.width : pDim.height;
-  const capacity = Math.max(3, parseInt(s.wordsPerPage, 10) || 9);
-  const copiesPerPage = Math.max(1, parseInt(s.copiesPerPage, 10) || 3);
+  let capacity = Math.max(3, parseInt(s.wordsPerPage, 10) || 9);
+  let copiesPerPage = Math.max(1, parseInt(s.copiesPerPage, 10) || 3);
+
+  // 物理版面防溢出保底：在句子挖空模式下，若题目较多导致单联超出版面范围
+  if (s.dictMode === 'cloze' && words.length > 0) {
+    if (words.length > 12 && copiesPerPage > 1) {
+      copiesPerPage = 1;
+      capacity = Math.max(capacity, words.length);
+    } else if (words.length > 6 && copiesPerPage === 3) {
+      copiesPerPage = 2;
+      capacity = Math.max(capacity, words.length);
+    }
+  }
 
   const pageChunks = [];
   for (let i = 0; i < words.length; i += capacity) {
@@ -482,6 +599,8 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
       const zhMeaningHtml = formatClozePrompt(item, s.dictMode, {
         gridStyle: s.gridStyle,
         clozeStyle: s.clozeStyle || 'inline',
+        clozeZhPosition: s.clozeZhPosition || 'below',
+        clozeBlankWidth: s.clozeBlankWidth || '2words',
         strokeWidth: s.gridStroke || 0.85,
         lineColor: s.gridColor || '#cbd5e1'
       });

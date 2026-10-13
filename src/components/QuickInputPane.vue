@@ -203,7 +203,7 @@
       </div>
 
       <!-- 挖空形式选择 (仅挖空模式显示) -->
-      <div v-if="state.draft.settings.dictMode === 'cloze'" class="form-row" id="rowClozeStyle" style="margin-bottom: 12px;">
+      <div v-if="state.draft.settings.dictMode === 'cloze'" class="form-row" id="rowClozeStyle" style="margin-bottom: 10px;">
         <label class="row-label">挖空形式</label>
         <div class="segmented-control">
           <input
@@ -224,6 +224,92 @@
             @change="onClozeStyleChange('below')"
           />
           <label for="clozeBelow">句下独立书写格</label>
+        </div>
+      </div>
+
+      <!-- 中文提示位置 (仅挖空模式显示) -->
+      <div v-if="state.draft.settings.dictMode === 'cloze'" class="form-row" id="rowClozeZhPos" style="margin-bottom: 10px;">
+        <label class="row-label">中文位置</label>
+        <div class="segmented-control mini">
+          <input
+            type="radio"
+            name="clozeZhPos"
+            id="clozeZhBelow"
+            value="below"
+            :checked="state.draft.settings.clozeZhPosition === 'below'"
+            @change="state.draft.settings.clozeZhPosition = 'below'"
+          />
+          <label for="clozeZhBelow">句下独立行 (推荐)</label>
+          <input
+            type="radio"
+            name="clozeZhPos"
+            id="clozeZhRight"
+            value="right"
+            :checked="state.draft.settings.clozeZhPosition === 'right'"
+            @change="state.draft.settings.clozeZhPosition = 'right'"
+          />
+          <label for="clozeZhRight">紧随句末</label>
+          <input
+            type="radio"
+            name="clozeZhPos"
+            id="clozeZhAbove"
+            value="above"
+            :checked="state.draft.settings.clozeZhPosition === 'above'"
+            @change="state.draft.settings.clozeZhPosition = 'above'"
+          />
+          <label for="clozeZhAbove">句子上方</label>
+          <input
+            type="radio"
+            name="clozeZhPos"
+            id="clozeZhHide"
+            value="hide"
+            :checked="state.draft.settings.clozeZhPosition === 'hide'"
+            @change="state.draft.settings.clozeZhPosition = 'hide'"
+          />
+          <label for="clozeZhHide">隐藏中文</label>
+        </div>
+      </div>
+
+      <!-- 四线三格挖空长度 (仅挖空模式显示) -->
+      <div v-if="state.draft.settings.dictMode === 'cloze'" class="form-row" id="rowClozeBlankWidth" style="margin-bottom: 12px;">
+        <label class="row-label">四线格长</label>
+        <div class="segmented-control mini">
+          <input
+            type="radio"
+            name="clozeBlankWidth"
+            id="blankWidthAuto"
+            value="auto"
+            :checked="state.draft.settings.clozeBlankWidth === 'auto'"
+            @change="state.draft.settings.clozeBlankWidth = 'auto'"
+          />
+          <label for="blankWidthAuto">按词自适应</label>
+          <input
+            type="radio"
+            name="clozeBlankWidth"
+            id="blankWidth1Word"
+            value="1word"
+            :checked="state.draft.settings.clozeBlankWidth === '1word'"
+            @change="state.draft.settings.clozeBlankWidth = '1word'"
+          />
+          <label for="blankWidth1Word">1 词长 (60px)</label>
+          <input
+            type="radio"
+            name="clozeBlankWidth"
+            id="blankWidth2Words"
+            value="2words"
+            :checked="state.draft.settings.clozeBlankWidth === '2words'"
+            @change="state.draft.settings.clozeBlankWidth = '2words'"
+          />
+          <label for="blankWidth2Words">2 词长 (105px 推荐)</label>
+          <input
+            type="radio"
+            name="clozeBlankWidth"
+            id="blankWidth3Words"
+            value="3words"
+            :checked="state.draft.settings.clozeBlankWidth === '3words'"
+            @change="state.draft.settings.clozeBlankWidth = '3words'"
+          />
+          <label for="blankWidth3Words">3 词长 (150px)</label>
         </div>
       </div>
 
@@ -317,7 +403,8 @@ import { parseCustomText, generateId } from '../core/tokenizer.js';
 import {
   DEFAULT_WORDS_RAW,
   DEFAULT_CLOZE_WORDS_RAW,
-  createDraftItem
+  createDraftItem,
+  autoAdaptCopiesAndCapacity
 } from '../core/layout.js';
 import { detectDuplicates } from '../core/storage.js';
 import {
@@ -407,6 +494,12 @@ function handleLoadAlphabetPreset(presetKey) {
 
 function onModeChange(mode) {
   state.draft.settings.dictMode = mode;
+  if (mode === 'cloze') {
+    state.draft.settings.columns = 2; // 句子挖空模式默认切换为 2 列
+    const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
+    state.draft.settings.copiesPerPage = adapted.copiesPerPage;
+    state.draft.settings.wordsPerPage = adapted.wordsPerPage;
+  }
   if (mode === 'alphabet' && state.draft.items.length === 0) {
     handleGenerateAlphabet(false);
   }
@@ -425,7 +518,16 @@ function handleParseText() {
     return;
   }
   state.draft.items = list;
-  message.success(`已成功载入 ${list.length} 个单词！`);
+  const adapted = autoAdaptCopiesAndCapacity(list, state.draft.settings);
+  const oldCopies = state.draft.settings.copiesPerPage;
+  state.draft.settings.copiesPerPage = adapted.copiesPerPage;
+  state.draft.settings.wordsPerPage = adapted.wordsPerPage;
+  if (state.draft.settings.dictMode === 'cloze') {
+    const tip = adapted.copiesPerPage !== oldCopies ? `（已自动优化为 1 页 ${adapted.copiesPerPage} 份）` : '';
+    message.success(`已成功载入 ${list.length} 个句子${tip}！`);
+  } else {
+    message.success(`已成功载入 ${list.length} 个单词！`);
+  }
 }
 
 function handleAppendText() {
@@ -437,7 +539,10 @@ function handleAppendText() {
     return;
   }
   state.draft.items = state.draft.items.concat(list);
-  message.success(`已追加 ${list.length} 个单词！`);
+  const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
+  state.draft.settings.copiesPerPage = adapted.copiesPerPage;
+  state.draft.settings.wordsPerPage = adapted.wordsPerPage;
+  message.success(`已追加 ${list.length} 个条目！`);
 }
 
 async function handleSaveDraftToLib() {
@@ -466,9 +571,16 @@ async function handleSaveDraftToLib() {
 function handleLoadDefault() {
   if (state.draft.settings.dictMode === 'cloze') {
     state.draft.items = DEFAULT_CLOZE_WORDS_RAW.map(s => createDraftItem(s));
-    message.success('已载入 9 个句子挖空示例！');
+    state.draft.settings.columns = 2; // 默认 2 列
+    const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
+    state.draft.settings.copiesPerPage = adapted.copiesPerPage;
+    state.draft.settings.wordsPerPage = adapted.wordsPerPage;
+    message.success('已载入 9 个句子挖空示例（已设为 2 列与 1页2份）！');
   } else {
     state.draft.items = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
+    state.draft.settings.wordsPerPage = 9;
+    state.draft.settings.copiesPerPage = 3;
+    state.draft.settings.columns = 3;
     message.success('已载入默认 9 词与推荐设置！');
   }
 }

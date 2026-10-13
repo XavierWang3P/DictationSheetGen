@@ -175,7 +175,7 @@ import {
   segmentsToMarkedText,
   generateId
 } from '../core/tokenizer.js';
-import { createDraftItem } from '../core/layout.js';
+import { createDraftItem, autoAdaptCopiesAndCapacity } from '../core/layout.js';
 
 const message = useMessage();
 
@@ -213,9 +213,11 @@ function handleAddToDraft() {
     segments: segments.value
   });
   state.draft.items.push(draftItem);
-  if (state.draft.settings.dictMode !== 'cloze') {
-    state.draft.settings.dictMode = 'cloze';
-  }
+  state.draft.settings.dictMode = 'cloze';
+  state.draft.settings.columns = 2; // 默认 2 列
+  const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
+  state.draft.settings.copiesPerPage = adapted.copiesPerPage;
+  state.draft.settings.wordsPerPage = adapted.wordsPerPage;
   message.success('已加入当前试卷并同步为句子挖空模式！');
 }
 
@@ -256,9 +258,11 @@ function handleAddSentenceToDraft(s) {
     sourceId: s.id
   });
   state.draft.items.push(draftItem);
-  if (state.draft.settings.dictMode !== 'cloze') {
-    state.draft.settings.dictMode = 'cloze';
-  }
+  state.draft.settings.dictMode = 'cloze';
+  state.draft.settings.columns = 2; // 默认 2 列
+  const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
+  state.draft.settings.copiesPerPage = adapted.copiesPerPage;
+  state.draft.settings.wordsPerPage = adapted.wordsPerPage;
   message.success('已将该句加入当前试卷！');
 }
 

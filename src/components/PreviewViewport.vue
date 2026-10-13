@@ -253,10 +253,32 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 
+.word-card.cloze-card-inline {
+  width: 100%;
+}
+
+.word-card.cloze-card-inline .meaning.word-prompt-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.cloze-content-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cloze-sentence {
+  line-height: 1.65;
+  color: #1e293b;
+}
+
 .cloze-blank-line {
   display: inline-block;
   border-bottom: 1.5px solid #0f172a;
-  min-width: 60px;
+  min-width: 50px;
   margin: 0 3px;
   vertical-align: baseline;
 }
@@ -273,9 +295,30 @@ onBeforeUnmount(() => {
 }
 
 .cloze-zh {
-  font-size: 0.85em;
+  font-size: 0.84em;
   color: #475569;
+}
+
+.cloze-zh.pos-below {
+  display: block;
+  margin-top: 2.5px;
+  line-height: 1.35;
+  color: #475569;
+  font-weight: 400;
+}
+
+.cloze-zh.pos-above {
+  display: block;
+  margin-bottom: 2.5px;
+  line-height: 1.35;
+  color: #475569;
+  font-weight: 400;
+}
+
+.cloze-zh.pos-right {
+  display: inline;
   margin-left: 6px;
+  font-weight: 400;
 }
 
 .four-line-svg {

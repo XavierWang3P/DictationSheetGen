@@ -414,4 +414,73 @@ html, body {
   width: 100%;
   display: block;
 }
+
+/* 句子挖空模式排版与中文位置样式 */
+.word-card.cloze-card-inline {
+  width: 100%;
+}
+
+.word-card.cloze-card-inline .meaning.word-prompt-row {
+  display: flex !important;
+  align-items: flex-start !important;
+  flex-wrap: nowrap !important;
+}
+
+.cloze-content-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cloze-sentence {
+  line-height: 1.65;
+  color: #1e293b;
+}
+
+.cloze-blank-line {
+  display: inline-block;
+  border-bottom: 1.5px solid #0f172a;
+  min-width: 50px;
+  margin: 0 3px;
+  vertical-align: baseline;
+}
+
+.cloze-blank-line.cloze-inline-grid {
+  height: 9.5mm;
+  vertical-align: bottom;
+}
+
+.cloze-blank-line.cloze-inline-grid svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cloze-zh {
+  font-size: 0.84em;
+  color: #475569;
+}
+
+.cloze-zh.pos-below {
+  display: block !important;
+  margin-top: 2.5px;
+  line-height: 1.35;
+  color: #475569;
+  font-weight: 400;
+}
+
+.cloze-zh.pos-above {
+  display: block !important;
+  margin-bottom: 2.5px;
+  line-height: 1.35;
+  color: #475569;
+  font-weight: 400;
+}
+
+.cloze-zh.pos-right {
+  display: inline !important;
+  margin-left: 6px;
+  font-weight: 400;
+}
 </style>
