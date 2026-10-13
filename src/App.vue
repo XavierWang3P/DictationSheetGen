@@ -259,4 +259,159 @@ html, body {
     break-after: page !important;
   }
 }
+
+/* 试卷列表项强保底样式 (彻底根治图一样式丢失) */
+.word-item-row,
+.word-chip {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 7px 10px !important;
+  background: var(--bg-sidebar, #fafbf9) !important;
+  border: 1px solid var(--border-light, #e2e7e4) !important;
+  border-radius: 6px !important;
+  font-size: 12.5px !important;
+  margin-bottom: 6px !important;
+  box-sizing: border-box !important;
+  transition: all 0.15s ease !important;
+}
+
+.word-item-row:hover,
+.word-chip:hover {
+  background: var(--bg-card, #ffffff) !important;
+  border-color: var(--primary-border, #b9cec7) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.word-item-main {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.word-item-index {
+  color: var(--primary, #2f6659) !important;
+  font-weight: 600 !important;
+  font-size: 11.5px !important;
+  min-width: 20px !important;
+  flex-shrink: 0 !important;
+}
+
+.word-item-en,
+.word-chip-en {
+  font-weight: 600 !important;
+  color: var(--text-main, #26332f) !important;
+  flex-shrink: 0 !important;
+}
+
+.word-item-zh,
+.word-chip-zh {
+  color: var(--text-muted, #68756f) !important;
+  font-size: 12px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.word-item-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+.word-item-btn {
+  background: var(--bg-app, #f3f5f2) !important;
+  border: 1px solid var(--border-color, #c9d3ce) !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  color: var(--text-muted, #68756f) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.word-item-btn:hover {
+  background: var(--primary-light, #e8f0ed) !important;
+  color: var(--primary, #2f6659) !important;
+  border-color: var(--primary, #2f6659) !important;
+}
+
+.word-item-btn.del:hover {
+  background: #faeceb !important;
+  color: var(--danger, #c5524a) !important;
+  border-color: var(--danger, #c5524a) !important;
+}
+
+/* 26个英文字母 3 行 9 列完整四线格专属排版 (满足第5条需求) */
+.alphabet-26-sheet-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5mm;
+  width: 100%;
+  margin-top: 3mm;
+}
+
+.alpha-26-grid-row {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.alpha-26-cell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #ffffff;
+  padding: 0;
+  margin: 0;
+}
+
+.alpha-cell-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 2px 2px;
+  font-size: 8pt;
+  line-height: 1.2;
+}
+
+.alpha-cell-top .entry-index {
+  font-weight: normal;
+  color: #94a3b8;
+  font-size: 7.5pt;
+}
+
+.alpha-cell-top .alpha-cell-hint {
+  font-size: 7.5pt;
+  color: var(--primary, #2f6659);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alpha-cell-grid {
+  width: 100%;
+}
+
+.alpha-cell-grid svg {
+  display: block;
+  width: 100%;
+}
+
+/* 字母左右邻居与大小写转换专属排版 (满足第4条需求) */
+.neighbor-svg-grid,
+.case-svg-grid {
+  width: 100%;
+  display: block;
+}
 </style>

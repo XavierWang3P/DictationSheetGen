@@ -159,6 +159,89 @@ export function createPracticeGridSvg(options = {}) {
   return svgsHtml;
 }
 
+// 字母左右邻居三联书写格 (四线三格 + 中间印已知字母)
+export function createNeighborPracticeGridSvg(item, options = {}) {
+  const {
+    gridHeightMm = 11,
+    strokeWidth = 0.85,
+    lineColor = '#cbd5e1'
+  } = options;
+  const nData = item.neighborData || {};
+  const type = nData.type || 'both';
+  const midChar = nData.midChar || '';
+  const prevChar = nData.prevChar || '';
+  const nextChar = nData.nextChar || '';
+
+  let slot1Text = '';
+  let slot2Text = '';
+  let slot3Text = '';
+
+  if (type === 'both') {
+    slot2Text = midChar;
+  } else if (type === 'middle') {
+    slot1Text = prevChar;
+    slot3Text = nextChar;
+  } else if (type === 'pre') {
+    slot2Text = midChar;
+  } else if (type === 'post') {
+    slot1Text = midChar;
+  }
+
+  return `
+    <svg class="four-line-svg neighbor-svg-grid" viewBox="0 0 300 25" style="height:${gridHeightMm}mm;" preserveAspectRatio="none">
+      <line x1="0" y1="2.0" x2="300" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="0" y1="8.5" x2="300" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="0" y1="16.5" x2="300" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
+      <line x1="0" y1="23.0" x2="300" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      
+      <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="100" y1="2.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="200" y1="2.0" x2="200" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="300" y1="2.0" x2="300" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+
+      ${slot1Text ? `<text x="50" y="16.0" font-size="11" font-weight="bold" text-anchor="middle" fill="#2f6659" font-family="'Century Gothic', Arial, sans-serif">${escapeHtml(slot1Text)}</text>` : ''}
+      ${slot2Text ? `<text x="150" y="16.0" font-size="11" font-weight="bold" text-anchor="middle" fill="#2f6659" font-family="'Century Gothic', Arial, sans-serif">${escapeHtml(slot2Text)}</text>` : ''}
+      ${slot3Text ? `<text x="250" y="16.0" font-size="11" font-weight="bold" text-anchor="middle" fill="#2f6659" font-family="'Century Gothic', Arial, sans-serif">${escapeHtml(slot3Text)}</text>` : ''}
+    </svg>
+  `;
+}
+
+// 字母大小写转换双联书写格
+export function createCasePracticeGridSvg(item, options = {}) {
+  const {
+    gridHeightMm = 11,
+    strokeWidth = 0.85,
+    lineColor = '#cbd5e1'
+  } = options;
+  const cData = item.caseData || {};
+  const dir = cData.dir || 'upper_to_lower';
+  const u = cData.upper || '';
+  const l = cData.lower || '';
+  const sourceChar = (dir === 'lower_to_upper') ? l : u;
+
+  return `
+    <svg class="four-line-svg case-svg-grid" viewBox="0 0 220 25" style="height:${gridHeightMm}mm;" preserveAspectRatio="none">
+      <line x1="0" y1="2.0" x2="95" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="0" y1="8.5" x2="95" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="0" y1="16.5" x2="95" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
+      <line x1="0" y1="23.0" x2="95" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="95" y1="2.0" x2="95" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+
+      <text x="47.5" y="16.0" font-size="11" font-weight="bold" text-anchor="middle" fill="#2f6659" font-family="'Century Gothic', Arial, sans-serif">${escapeHtml(sourceChar)}</text>
+
+      <text x="110" y="15.0" font-size="10" font-weight="bold" text-anchor="middle" fill="#94a3b8">➔</text>
+
+      <line x1="125" y1="2.0" x2="220" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="125" y1="8.5" x2="220" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="125" y1="16.5" x2="220" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
+      <line x1="125" y1="23.0" x2="220" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="125" y1="2.0" x2="125" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="220" y1="2.0" x2="220" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+    </svg>
+  `;
+}
+
 // 句子挖空与提示格式化 (纯函数)
 export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options = {}) {
   let en = '';
@@ -324,52 +407,135 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   const isCloze = (s.dictMode === 'cloze');
   const isClozeInline = isCloze && (s.clozeStyle !== 'below');
 
+  const isAlpha26 = (s.dictMode === 'alphabet' && chunk.items.length === 26);
   let cardsHtml = '';
-  chunk.items.forEach(({ overallIndex, item }) => {
-    const zhMeaningHtml = formatClozePrompt(item, s.dictMode, {
-      gridStyle: s.gridStyle,
-      clozeStyle: s.clozeStyle || 'inline',
-      strokeWidth: s.gridStroke || 0.85,
-      lineColor: s.gridColor || '#cbd5e1'
-    });
+  let alpha26RowsHtml = '';
 
-    let practiceGridHtml = '';
-    if (!isClozeInline) {
-      const effectiveGridHeight = (copies > 1 && isCloze)
-        ? Math.min(6.5, s.gridHeight || 12)
-        : (s.gridHeight || 12);
+  if (isAlpha26) {
+    const effectiveGridHeight = (copies > 1) ? 11 : 18;
+    const rows = [
+      chunk.items.slice(0, 9),
+      chunk.items.slice(9, 18),
+      chunk.items.slice(18, 26)
+    ];
 
-      practiceGridHtml = createPracticeGridSvg({
-        gridStyle: s.gridStyle,
-        gridLines: s.gridLinesPerWord || 1,
-        gridHeightMm: effectiveGridHeight,
-        strokeWidth: s.gridStroke || 0.85,
-        lineColor: s.gridColor || '#cbd5e1',
-        showVertical: s.showVerticalBorder
-      });
-    }
+    rows.forEach((rowItems, rIdx) => {
+      let cellsHtml = '';
+      rowItems.forEach(({ overallIndex, item }) => {
+        const safeCardId = escapeHtml(item.id);
+        const aData = item.alphaData || {};
+        const isPreprinted = !aData.isBlank && aData.subMode === 'gap';
+        const guideChar = aData.targetEn || item.en || '';
+        const cellLabel = (aData.caseStyle === 'upper')
+          ? (aData.upper || '')
+          : (aData.caseStyle === 'lower' ? (aData.lower || '') : `${aData.upper || ''}${aData.lower || ''}`);
 
-    const cardCls = isClozeInline ? 'cloze-card-inline' : (s.zhPosition === 'left' ? 'meaning-left' : '');
-
-    const safeCardId = escapeHtml(item.id);
-    const safeLetterSpacing = escapeHtml(String(s.letterSpacing || '0').replace(/[^0-9a-zA-Z. -]/g, ''));
-    const safeFontFamily = escapeHtml(s.fontFamilyZh || "'KaiTi', '楷体', STKaiti, serif");
-    const safeTitleAlign = escapeHtml(s.titleAlign || 'center');
-
-    cardsHtml += `
-      <div class="word-card word-entry-item ${cardCls}" data-id="${safeCardId}" style="letter-spacing:${safeLetterSpacing};">
-        <div class="meaning word-prompt-row" style="font-size:${effectivePromptSize}pt;">
-          <span class="word-num entry-index">${overallIndex}.</span>
-          ${zhMeaningHtml}
-        </div>
-        ${!isClozeInline ? `
-          <div class="practice-grid entry-grid-wrap">
-            ${practiceGridHtml}
+        cellsHtml += `
+          <div class="word-card alpha-26-cell" data-id="${safeCardId}">
+            <div class="alpha-cell-top">
+              <span class="word-num entry-index">${overallIndex}.</span>
+              <span class="alpha-cell-hint">${escapeHtml(cellLabel)}</span>
+            </div>
+            <div class="alpha-cell-grid">
+              <svg class="four-line-svg" viewBox="0 0 100 25" style="height:${effectiveGridHeight}mm;" preserveAspectRatio="none">
+                <line x1="0" y1="2.0" x2="100" y2="2.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+                <line x1="0" y1="8.5" x2="100" y2="8.5" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+                <line x1="0" y1="16.5" x2="100" y2="16.5" stroke="#94a3b8" stroke-width="${(s.gridStroke || 0.85) * 1.1}" />
+                <line x1="0" y1="23.0" x2="100" y2="23.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+                <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+                <line x1="100" y1="2.0" x2="100" y2="23.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+                ${isPreprinted ? `<text x="50" y="16.0" font-size="11" font-weight="bold" text-anchor="middle" fill="#2f6659" font-family="'Century Gothic', Arial, sans-serif">${escapeHtml(guideChar)}</text>` : ''}
+              </svg>
+            </div>
           </div>
-        ` : ''}
-      </div>
-    `;
-  });
+        `;
+      });
+
+      if (rIdx === 2) {
+        cellsHtml += `
+          <div class="alpha-26-cell alpha-dummy-cell">
+            <div class="alpha-cell-top">
+              <span class="alpha-cell-hint" style="color:#cbd5e1;">★</span>
+            </div>
+            <div class="alpha-cell-grid">
+              <svg class="four-line-svg" viewBox="0 0 100 25" style="height:${effectiveGridHeight}mm;" preserveAspectRatio="none">
+                <line x1="0" y1="2.0" x2="100" y2="2.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+                <line x1="0" y1="8.5" x2="100" y2="8.5" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+                <line x1="0" y1="16.5" x2="100" y2="16.5" stroke="#94a3b8" stroke-width="${(s.gridStroke || 0.85) * 1.1}" />
+                <line x1="0" y1="23.0" x2="100" y2="23.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+                <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+                <line x1="100" y1="2.0" x2="100" y2="23.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+              </svg>
+            </div>
+          </div>
+        `;
+      }
+
+      alpha26RowsHtml += `
+        <div class="alpha-26-grid-row">
+          ${cellsHtml}
+        </div>
+      `;
+    });
+  } else {
+    chunk.items.forEach(({ overallIndex, item }) => {
+      const zhMeaningHtml = formatClozePrompt(item, s.dictMode, {
+        gridStyle: s.gridStyle,
+        clozeStyle: s.clozeStyle || 'inline',
+        strokeWidth: s.gridStroke || 0.85,
+        lineColor: s.gridColor || '#cbd5e1'
+      });
+
+      let practiceGridHtml = '';
+      if (!isClozeInline) {
+        const effectiveGridHeight = (copies > 1 && isCloze)
+          ? Math.min(6.5, s.gridHeight || 12)
+          : (s.gridHeight || 12);
+
+        if (item.neighborData || item.id?.startsWith('neighbor') || (item.zh && item.zh.includes('邻居'))) {
+          practiceGridHtml = createNeighborPracticeGridSvg(item, {
+            gridHeightMm: effectiveGridHeight,
+            strokeWidth: s.gridStroke || 0.85,
+            lineColor: s.gridColor || '#cbd5e1'
+          });
+        } else if (item.caseData || item.id?.startsWith('case')) {
+          practiceGridHtml = createCasePracticeGridSvg(item, {
+            gridHeightMm: effectiveGridHeight,
+            strokeWidth: s.gridStroke || 0.85,
+            lineColor: s.gridColor || '#cbd5e1'
+          });
+        } else {
+          practiceGridHtml = createPracticeGridSvg({
+            gridStyle: s.gridStyle,
+            gridLines: s.gridLinesPerWord || 1,
+            gridHeightMm: effectiveGridHeight,
+            strokeWidth: s.gridStroke || 0.85,
+            lineColor: s.gridColor || '#cbd5e1',
+            showVertical: s.showVerticalBorder
+          });
+        }
+      }
+
+      const cardCls = isClozeInline ? 'cloze-card-inline' : (s.zhPosition === 'left' ? 'meaning-left' : '');
+
+      const safeCardId = escapeHtml(item.id);
+      const safeLetterSpacing = escapeHtml(String(s.letterSpacing || '0').replace(/[^0-9a-zA-Z. -]/g, ''));
+
+      cardsHtml += `
+        <div class="word-card word-entry-item ${cardCls}" data-id="${safeCardId}" style="letter-spacing:${safeLetterSpacing};">
+          <div class="meaning word-prompt-row" style="font-size:${effectivePromptSize}pt;">
+            <span class="word-num entry-index">${overallIndex}.</span>
+            ${zhMeaningHtml}
+          </div>
+          ${!isClozeInline ? `
+            <div class="practice-grid entry-grid-wrap">
+              ${practiceGridHtml}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    });
+  }
 
   // 考生信息栏
   let studentInfoHtml = '';
@@ -425,7 +591,11 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
     ? Math.min(2.5, s.rowGap || 3.5)
     : (s.rowGap || 3.5);
 
-  const bodyHtml = `
+  const bodyHtml = isAlpha26 ? `
+    <div class="alphabet-26-sheet-container">
+      ${alpha26RowsHtml}
+    </div>
+  ` : `
     <div class="sheet-body-grid" style="
       grid-template-columns: repeat(${s.columns}, 1fr);
       column-gap: ${s.colGap}mm;

@@ -83,7 +83,17 @@ export function generateAlphabetSequenceItems(options = {}) {
       type: 'word',
       en: targetEn,
       zh: promptZh,
-      phonetic: ''
+      phonetic: '',
+      alphaData: {
+        letterIdx,
+        seqIdx,
+        upper: u,
+        lower: l,
+        targetEn,
+        isBlank: subMode === 'gap' ? blankIndices.has(letterIdx) : (subMode === 'full' ? true : false),
+        caseStyle,
+        subMode
+      }
     });
   });
 }
@@ -142,16 +152,16 @@ export function generateLetterNeighborsItems(options = {}) {
     let targetEn = '';
 
     if (type === 'both') {
-      promptZh = `写出前后邻居:  _____  ${midChar}  _____`;
+      promptZh = `邻居: ___  ${midChar}  ___`;
       targetEn = `${prevChar}, ${nextChar}`;
     } else if (type === 'middle') {
-      promptZh = `写出中间字母:  ${prevChar}  _____  ${nextChar}`;
+      promptZh = `邻居: ${prevChar}  ___  ${nextChar}`;
       targetEn = midChar;
     } else if (type === 'pre') {
-      promptZh = `写出前一个邻居:  _____  ${midChar}`;
+      promptZh = `邻居: ___  ${midChar}`;
       targetEn = prevChar;
     } else if (type === 'post') {
-      promptZh = `写出后一个邻居:  ${midChar}  _____`;
+      promptZh = `邻居: ${midChar}  ___`;
       targetEn = nextChar;
     }
 
@@ -160,7 +170,14 @@ export function generateLetterNeighborsItems(options = {}) {
       type: 'word',
       en: targetEn,
       zh: promptZh,
-      phonetic: ''
+      phonetic: '',
+      neighborData: {
+        type,
+        midChar,
+        prevChar,
+        nextChar,
+        curCase
+      }
     });
   });
 }
@@ -199,13 +216,13 @@ export function generateCaseConversionItems(options = {}) {
     let targetEn = '';
 
     if (dir === 'upper_to_lower') {
-      promptZh = `写出对应的小写形式:  ${u}  ➔  _____`;
+      promptZh = `写小写:  ${u}  ➔  ___`;
       targetEn = l;
     } else if (dir === 'lower_to_upper') {
-      promptZh = `写出对应的大写形式:  ${l}  ➔  _____`;
+      promptZh = `写大写:  ${l}  ➔  ___`;
       targetEn = u;
     } else if (dir === 'pair_write') {
-      promptZh = `写出字母的大小写全形:  ${u}  ➔  _____`;
+      promptZh = `大小写:  ${u}  ➔  ___`;
       targetEn = `${u} ${l}`;
     }
 
@@ -214,7 +231,13 @@ export function generateCaseConversionItems(options = {}) {
       type: 'word',
       en: targetEn,
       zh: promptZh,
-      phonetic: ''
+      phonetic: '',
+      caseData: {
+        dir,
+        upper: u,
+        lower: l,
+        targetEn
+      }
     });
   });
 }
@@ -226,10 +249,10 @@ export const ALPHABET_PRESETS = [
   {
     key: 'alpha_26_pair',
     title: '三年级英语 26个英文字母规范书写卷 (大小写)',
-    description: '按 A 到 Z 顺序规范书写 26 个字母的大写和小写形式。',
+    description: '3行完整四线三格，每行9个字母，按 A 到 Z 顺序规范书写。',
     settings: {
       title: '三年级英语 26个英文字母规范书写卷 (大小写)',
-      columns: 3,
+      columns: 1,
       wordsPerPage: 26,
       copiesPerPage: 1
     },
@@ -237,11 +260,11 @@ export const ALPHABET_PRESETS = [
   },
   {
     key: 'alpha_26_gap',
-    title: '三年级英语 26个字母接龙填空卷',
-    description: '字母表随机挖空 13 个位置，考察字母表顺序熟练度。',
+    title: '三年级英语 26个英文字母接龙填空卷',
+    description: '3行完整四线三格，每行9个字母，随机挖空 13 个位置考察接龙。',
     settings: {
       title: '三年级英语 26个英文字母接龙填空卷',
-      columns: 3,
+      columns: 1,
       wordsPerPage: 26,
       copiesPerPage: 1
     },

@@ -95,12 +95,16 @@
             <span class="sub-label">默写形式:</span>
             <div class="segmented-control mini">
               <input type="radio" id="alphaSubFull" value="full" v-model="alphaSeqConfig.subMode" />
-              <label for="alphaSubFull">全字母顺序</label>
+              <label for="alphaSubFull">3行完整四线格 (全默写)</label>
               <input type="radio" id="alphaSubGap" value="gap" v-model="alphaSeqConfig.subMode" />
-              <label for="alphaSubGap">字母表接龙挖空</label>
+              <label for="alphaSubGap">字母表接龙填空</label>
               <input type="radio" id="alphaSubShuffle" value="shuffle" v-model="alphaSeqConfig.subMode" />
-              <label for="alphaSubShuffle">乱序听写默写</label>
+              <label for="alphaSubShuffle">乱序听写</label>
             </div>
+          </div>
+
+          <div style="font-size:11px; color:var(--primary); margin-top:2px; font-weight:500;">
+            ℹ️ 试卷将生成 3 行完整四线三格，每行 9 个独立书写格（按字母表规范排版）。
           </div>
         </div>
 
@@ -171,7 +175,7 @@
         </div>
 
         <!-- 经典精品推荐模板 -->
-        <div style="margin-top: 2px;">
+        <div style="margin-top: 4px;">
           <span style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">💡 经典推荐模板：</span>
           <div class="alpha-presets-wrap">
             <button
@@ -188,7 +192,7 @@
         </div>
 
         <!-- 操作按钮栏 -->
-        <div class="alpha-action-row">
+        <div class="alpha-action-row" style="margin-top: 6px;">
           <n-button type="primary" size="small" id="btnGenerateAlphabetSheet" style="flex:1;" @click="handleGenerateAlphabet(false)">
             ⚡ 载入 / 重新随机出卷
           </n-button>
@@ -240,9 +244,9 @@
           class="word-textarea"
           id="customWordTextarea"
           v-model="rawText"
-          rows="4"
+          rows="8"
           placeholder="美丽的；优美的&#10;工作努力的；辛勤的&#10;绳；粗绳&#10;聪明的；聪颖的&#10;机器人&#10;钢琴&#10;幼小的；年轻的&#10;跳；跃&#10;国际象棋"
-          style="width: 100%; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 8px; font-size: 13px; font-family: inherit; margin-bottom: 10px; resize: vertical;"
+          style="width: 100%; min-height: 180px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 10px; font-size: 13px; line-height: 1.55; font-family: inherit; margin-bottom: 10px; resize: vertical;"
         ></textarea>
 
         <div class="action-btn-row">
@@ -667,14 +671,10 @@ function removeItem(index) {
 }
 
 .alphabet-control-card {
-  background: var(--bg-sidebar);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 12px;
 }
 
 .alphabet-type-tabs {
@@ -716,10 +716,7 @@ function removeItem(index) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
+  padding: 4px 0;
 }
 
 .form-row-compact {
