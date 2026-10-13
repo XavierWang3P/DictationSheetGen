@@ -28,11 +28,14 @@
             <PreviewViewport />
           </div>
 
-          <!-- 兼容旧测试脚本专用隐藏桩按钮 -->
+          <!-- 兼容旧测试脚本与新功能专用隐藏桩按钮 -->
           <div style="display:none;">
             <button id="btnLoadSampleG4" @click="handleG4Sample"></button>
             <button id="btnLoadSampleNine" @click="handleNineSample"></button>
             <button id="btnReplaceCustom" @click="handleReplaceCustom"></button>
+            <button id="btnLoadAlphabet26" @click="handleAlphabet26Sample"></button>
+            <button id="btnLoadAlphabetNeighbors" @click="handleAlphabetNeighborsSample"></button>
+            <button id="btnLoadAlphabetCase" @click="handleAlphabetCaseSample"></button>
           </div>
         </div>
       </n-dialog-provider>
@@ -48,6 +51,12 @@ import { computePageLayout, createDraftItem } from './core/layout.js';
 import AppHeader from './components/AppHeader.vue';
 import SidebarTabs from './components/SidebarTabs.vue';
 import PreviewViewport from './components/PreviewViewport.vue';
+
+import {
+  generateAlphabetSequenceItems,
+  generateLetterNeighborsItems,
+  generateCaseConversionItems
+} from './core/alphabet.js';
 
 const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
 
@@ -129,10 +138,37 @@ function handleReplaceCustom() {
   document.getElementById('btnParseText')?.click();
 }
 
+function handleAlphabet26Sample() {
+  state.draft.settings.dictMode = 'alphabet';
+  state.draft.settings.title = 'PEP三年级英语 26个英文字母规范书写卷 (大小写)';
+  state.draft.settings.columns = 3;
+  state.draft.settings.copiesPerPage = 1;
+  state.draft.items = generateAlphabetSequenceItems({ caseStyle: 'pair', subMode: 'full' });
+}
+
+function handleAlphabetNeighborsSample() {
+  state.draft.settings.dictMode = 'alphabet';
+  state.draft.settings.title = 'PEP三年级英语 字母左右邻居专项练习卷';
+  state.draft.settings.columns = 3;
+  state.draft.settings.copiesPerPage = 3;
+  state.draft.items = generateLetterNeighborsItems({ count: 9, caseStyle: 'upper', neighborType: 'both' });
+}
+
+function handleAlphabetCaseSample() {
+  state.draft.settings.dictMode = 'alphabet';
+  state.draft.settings.title = 'PEP三年级英语 字母大小写转换专项练习卷';
+  state.draft.settings.columns = 3;
+  state.draft.settings.copiesPerPage = 3;
+  state.draft.items = generateCaseConversionItems({ count: 9, direction: 'random_switch' });
+}
+
 onMounted(async () => {
   loadSavedState();
   await loadLibraryFromDB();
   window._setG4Sample = handleG4Sample;
+  window._setAlphabet26Sample = handleAlphabet26Sample;
+  window._setAlphabetNeighborsSample = handleAlphabetNeighborsSample;
+  window._setAlphabetCaseSample = handleAlphabetCaseSample;
 });
 </script>
 

@@ -40,6 +40,10 @@ export const state = reactive({
   }
 });
 
+if (typeof window !== 'undefined') {
+  window.__appStoreState = state;
+}
+
 // 兼容性代理 (让测试脚本直接读写 state.words 和 state.settings)
 Object.defineProperty(state, 'words', {
   get() { return this.draft.items; },

@@ -8,13 +8,19 @@ async function testPhase2() {
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);
 
-  await new Promise(r => setTimeout(r, 1500));
-
   try {
-    const res = await fetch('http://127.0.0.1:9253/json');
-    const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
-    const ws = new WebSocket(target.webSocketDebuggerUrl);
+    let res = null;
+  for (let retry = 0; retry < 5; retry++) {
+    try {
+      await new Promise(r => setTimeout(r, 600));
+      res = await fetch('http://127.0.0.1:9253/json');
+      if (res.ok) break;
+    } catch (e) {}
+  }
+  if (!res) throw new Error('无法连接 Edge 调试端口 9253');
+  const tabs = await res.json();
+  const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+  const ws = new WebSocket(target.webSocketDebuggerUrl);
 
     let id = 1;
     function evalExpr(expr) {

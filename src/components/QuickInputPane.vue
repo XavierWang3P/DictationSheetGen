@@ -32,6 +32,169 @@
             @change="onModeChange('cloze')"
           />
           <label for="modeCloze">✏️ 句子挖空填写</label>
+          <input
+            type="radio"
+            name="dictMode"
+            id="modeAlphabet"
+            value="alphabet"
+            :checked="state.draft.settings.dictMode === 'alphabet'"
+            @click="onModeChange('alphabet')"
+            @change="onModeChange('alphabet')"
+          />
+          <label for="modeAlphabet">🔤 三年级字母专项</label>
+        </div>
+      </div>
+
+      <!-- 三年级字母专项设置块 (仅字母模式显示) -->
+      <div v-if="state.draft.settings.dictMode === 'alphabet'" class="alphabet-control-card" id="alphabetControlCard">
+        <div class="alphabet-type-tabs" id="alphabetTypeTabs">
+          <button
+            type="button"
+            class="alpha-type-btn"
+            :class="{ active: alphabetActiveType === 'sequence' }"
+            id="tabAlphaSeq"
+            @click="alphabetActiveType = 'sequence'"
+          >
+            🔤 26个字母默写
+          </button>
+          <button
+            type="button"
+            class="alpha-type-btn"
+            :class="{ active: alphabetActiveType === 'neighbors' }"
+            id="tabAlphaNeighbors"
+            @click="alphabetActiveType = 'neighbors'"
+          >
+            ↔️ 字母左右邻居
+          </button>
+          <button
+            type="button"
+            class="alpha-type-btn"
+            :class="{ active: alphabetActiveType === 'case' }"
+            id="tabAlphaCase"
+            @click="alphabetActiveType = 'case'"
+          >
+            🔠 大小写形式转换
+          </button>
+        </div>
+
+        <!-- 子面板 1: 26个字母默写 -->
+        <div v-if="alphabetActiveType === 'sequence'" class="alpha-sub-config" id="paneAlphaSeq">
+          <div class="form-row-compact">
+            <span class="sub-label">大小写样式:</span>
+            <div class="segmented-control mini">
+              <input type="radio" id="alphaCasePair" value="pair" v-model="alphaSeqConfig.caseStyle" />
+              <label for="alphaCasePair">大小写 (Aa)</label>
+              <input type="radio" id="alphaCaseUpper" value="upper" v-model="alphaSeqConfig.caseStyle" />
+              <label for="alphaCaseUpper">大写 (A-Z)</label>
+              <input type="radio" id="alphaCaseLower" value="lower" v-model="alphaSeqConfig.caseStyle" />
+              <label for="alphaCaseLower">小写 (a-z)</label>
+            </div>
+          </div>
+
+          <div class="form-row-compact">
+            <span class="sub-label">默写形式:</span>
+            <div class="segmented-control mini">
+              <input type="radio" id="alphaSubFull" value="full" v-model="alphaSeqConfig.subMode" />
+              <label for="alphaSubFull">全字母顺序</label>
+              <input type="radio" id="alphaSubGap" value="gap" v-model="alphaSeqConfig.subMode" />
+              <label for="alphaSubGap">字母表接龙挖空</label>
+              <input type="radio" id="alphaSubShuffle" value="shuffle" v-model="alphaSeqConfig.subMode" />
+              <label for="alphaSubShuffle">乱序听写默写</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 子面板 2: 字母左右邻居 -->
+        <div v-if="alphabetActiveType === 'neighbors'" class="alpha-sub-config" id="paneAlphaNeighbors">
+          <div class="form-row-compact">
+            <span class="sub-label">题目数量:</span>
+            <div class="segmented-control mini">
+              <input type="radio" id="neighCount6" :value="6" v-model="alphaNeighConfig.count" />
+              <label for="neighCount6">6 题</label>
+              <input type="radio" id="neighCount9" :value="9" v-model="alphaNeighConfig.count" />
+              <label for="neighCount9">9 题 (推荐)</label>
+              <input type="radio" id="neighCount12" :value="12" v-model="alphaNeighConfig.count" />
+              <label for="neighCount12">12 题</label>
+            </div>
+          </div>
+
+          <div class="form-row-compact">
+            <span class="sub-label">字母大小写:</span>
+            <div class="segmented-control mini">
+              <input type="radio" id="neighCaseUpper" value="upper" v-model="alphaNeighConfig.caseStyle" />
+              <label for="neighCaseUpper">大写 (B)</label>
+              <input type="radio" id="neighCaseLower" value="lower" v-model="alphaNeighConfig.caseStyle" />
+              <label for="neighCaseLower">小写 (b)</label>
+              <input type="radio" id="neighCaseMix" value="mix" v-model="alphaNeighConfig.caseStyle" />
+              <label for="neighCaseMix">混合</label>
+            </div>
+          </div>
+
+          <div class="form-row-compact">
+            <span class="sub-label">邻居形式:</span>
+            <div class="segmented-control mini">
+              <input type="radio" id="neighTypeBoth" value="both" v-model="alphaNeighConfig.neighborType" />
+              <label for="neighTypeBoth">左右两邻 (___ B ___)</label>
+              <input type="radio" id="neighTypeMiddle" value="middle" v-model="alphaNeighConfig.neighborType" />
+              <label for="neighTypeMiddle">中间填空 (A ___ C)</label>
+              <input type="radio" id="neighTypeRandom" value="random" v-model="alphaNeighConfig.neighborType" />
+              <label for="neighTypeRandom">随机题型</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 子面板 3: 大小写形式转换 -->
+        <div v-if="alphabetActiveType === 'case'" class="alpha-sub-config" id="paneAlphaCase">
+          <div class="form-row-compact">
+            <span class="sub-label">题目数量:</span>
+            <div class="segmented-control mini">
+              <input type="radio" id="caseCount6" :value="6" v-model="alphaCaseConfig.count" />
+              <label for="caseCount6">6 题</label>
+              <input type="radio" id="caseCount9" :value="9" v-model="alphaCaseConfig.count" />
+              <label for="caseCount9">9 题 (推荐)</label>
+              <input type="radio" id="caseCount12" :value="12" v-model="alphaCaseConfig.count" />
+              <label for="caseCount12">12 题</label>
+            </div>
+          </div>
+
+          <div class="form-row-compact">
+            <span class="sub-label">转换方向:</span>
+            <div class="segmented-control mini">
+              <input type="radio" id="caseDirUpperToLower" value="upper_to_lower" v-model="alphaCaseConfig.direction" />
+              <label for="caseDirUpperToLower">大写 ➔ 小写</label>
+              <input type="radio" id="caseDirLowerToUpper" value="lower_to_upper" v-model="alphaCaseConfig.direction" />
+              <label for="caseDirLowerToUpper">小写 ➔ 大写</label>
+              <input type="radio" id="caseDirRandom" value="random_switch" v-model="alphaCaseConfig.direction" />
+              <label for="caseDirRandom">随机互换</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 经典精品推荐模板 -->
+        <div style="margin-top: 2px;">
+          <span style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">💡 经典推荐模板：</span>
+          <div class="alpha-presets-wrap">
+            <button
+              v-for="p in ALPHABET_PRESETS"
+              :key="p.key"
+              type="button"
+              class="preset-chip-btn"
+              :id="'btnPreset_' + p.key"
+              @click="handleLoadAlphabetPreset(p.key)"
+            >
+              {{ p.title.replace('三年级英语 ', '') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 操作按钮栏 -->
+        <div class="alpha-action-row">
+          <n-button type="primary" size="small" id="btnGenerateAlphabetSheet" style="flex:1;" @click="handleGenerateAlphabet(false)">
+            ⚡ 载入/替换试卷
+          </n-button>
+          <n-button size="small" id="btnAppendAlphabetSheet" @click="handleGenerateAlphabet(true)">
+            ➕ 追加到试卷
+          </n-button>
         </div>
       </div>
 
@@ -58,6 +221,13 @@
           />
           <label for="clozeBelow">句下独立书写格</label>
         </div>
+      </div>
+
+      <div v-if="state.draft.settings.dictMode !== 'alphabet'" class="alpha-quick-entry-row" style="margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+        <span style="font-size:11px; color:var(--primary); font-weight:600;">🔤 三年级字母专项:</span>
+        <button type="button" class="preset-chip-btn" id="btnQuickAlpha26" @click="handleLoadAlphabetPreset('alpha_26_pair')">26字母全默写</button>
+        <button type="button" class="preset-chip-btn" id="btnQuickNeighbors" @click="handleLoadAlphabetPreset('alpha_neighbors_9')">左右邻居(9题)</button>
+        <button type="button" class="preset-chip-btn" id="btnQuickCase" @click="handleLoadAlphabetPreset('alpha_case_convert_9')">大小写转换(9题)</button>
       </div>
 
       <p class="form-desc" id="formDescWords">
@@ -153,6 +323,12 @@ import {
   escapeHtml
 } from '../core/layout.js';
 import { detectDuplicates } from '../core/storage.js';
+import {
+  generateAlphabetSequenceItems,
+  generateLetterNeighborsItems,
+  generateCaseConversionItems,
+  ALPHABET_PRESETS
+} from '../core/alphabet.js';
 
 const message = useMessage();
 const rawText = ref('');
@@ -213,9 +389,79 @@ function handleListClick(e) {
   }
 }
 
+const alphabetActiveType = ref('sequence');
+const alphaSeqConfig = ref({
+  caseStyle: 'pair',
+  subMode: 'full',
+  gapCount: 13
+});
+const alphaNeighConfig = ref({
+  count: 9,
+  caseStyle: 'upper',
+  neighborType: 'both'
+});
+const alphaCaseConfig = ref({
+  count: 9,
+  direction: 'upper_to_lower'
+});
+
+function handleGenerateAlphabet(isAppend = false) {
+  let newItems = [];
+  let defaultTitle = '';
+  let defaultCols = 3;
+  let defaultCopies = 3;
+
+  if (alphabetActiveType.value === 'sequence') {
+    newItems = generateAlphabetSequenceItems(alphaSeqConfig.value);
+    const subLabel = alphaSeqConfig.value.subMode === 'gap' ? '接龙填空' : (alphaSeqConfig.value.subMode === 'shuffle' ? '随机听写' : '规范书写');
+    defaultTitle = `三年级英语 26个英文字母${subLabel}卷`;
+    defaultCols = 3;
+    defaultCopies = 1;
+  } else if (alphabetActiveType.value === 'neighbors') {
+    newItems = generateLetterNeighborsItems(alphaNeighConfig.value);
+    defaultTitle = '三年级英语 字母左右邻居专项练习卷';
+    defaultCols = 3;
+    defaultCopies = 3;
+  } else if (alphabetActiveType.value === 'case') {
+    newItems = generateCaseConversionItems(alphaCaseConfig.value);
+    defaultTitle = '三年级英语 字母大小写转换专项练习卷';
+    defaultCols = 3;
+    defaultCopies = 3;
+  }
+
+  if (isAppend) {
+    state.draft.items.push(...newItems);
+    message.success(`已追加 ${newItems.length} 道字母题至当前试卷！`);
+  } else {
+    state.draft.items = newItems;
+    state.draft.settings.dictMode = 'alphabet';
+    state.draft.settings.title = defaultTitle;
+    state.draft.settings.columns = defaultCols;
+    state.draft.settings.copiesPerPage = defaultCopies;
+    message.success(`已生成 ${newItems.length} 道字母练习题并应用版式！`);
+  }
+  syncDom();
+}
+
+function handleLoadAlphabetPreset(presetKey) {
+  const preset = ALPHABET_PRESETS.find(p => p.key === presetKey);
+  if (!preset) return;
+  state.draft.settings.dictMode = 'alphabet';
+  state.draft.settings.title = preset.settings.title;
+  state.draft.settings.columns = preset.settings.columns;
+  state.draft.settings.copiesPerPage = preset.settings.copiesPerPage;
+  state.draft.items = preset.getItems();
+  message.success(`已载入「${preset.title}」！`);
+  syncDom();
+}
+
 function onModeChange(mode) {
   state.draft.settings.dictMode = mode;
-  syncDom();
+  if (mode === 'alphabet' && state.draft.items.length === 0) {
+    handleGenerateAlphabet(false);
+  } else {
+    syncDom();
+  }
 }
 
 function onClozeStyleChange(style) {
@@ -470,5 +716,109 @@ function removeItem(index) {
   background: #faeceb;
   color: var(--danger);
   border-color: var(--danger);
+}
+
+.alphabet-control-card {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alphabet-type-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-app);
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+}
+
+.alpha-type-btn {
+  flex: 1;
+  padding: 5px 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.alpha-type-btn:hover {
+  color: var(--primary);
+  background: var(--bg-card);
+}
+
+.alpha-type-btn.active {
+  color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.alpha-sub-config {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+}
+
+.form-row-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sub-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.segmented-control.mini label {
+  padding: 2px 7px;
+  font-size: 11px;
+}
+
+.alpha-presets-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preset-chip-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-chip-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.alpha-action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
 }
 </style>

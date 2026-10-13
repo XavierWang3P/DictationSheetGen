@@ -46,7 +46,11 @@ const stageRef = ref(null);
 const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
 const sheetHtml = computed(() => renderPracticeSheetHtml(layout.value, state.draft.settings));
 
-const modeLabel = computed(() => state.draft.settings.dictMode === 'cloze' ? '句子挖空填写' : '看中文默写');
+const modeLabel = computed(() => {
+  if (state.draft.settings.dictMode === 'alphabet') return '三年级字母默写';
+  if (state.draft.settings.dictMode === 'cloze') return '句子挖空填写';
+  return '看中文默写';
+});
 const copyLabel = computed(() => {
   const c = layout.value.copiesPerPage;
   return c === 1 ? '全页 1 份' : (c === 2 ? '一页 2 份' : '一页 3 份');
