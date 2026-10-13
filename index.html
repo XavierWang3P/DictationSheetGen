@@ -228,6 +228,132 @@
       gap: 14px;
     }
 
+    /* 顶部工作区 Tab 切换栏 */
+    .sidebar-tab-bar {
+      display: flex;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 12px 0 12px;
+      gap: 4px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+
+    .sidebar-tab-btn {
+      flex: 1;
+      min-width: 75px;
+      padding: 7px 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      text-align: center;
+      border-radius: 4px 4px 0 0;
+      font-family: inherit;
+    }
+
+    .sidebar-tab-btn:hover {
+      color: var(--primary);
+      background: #ffffff;
+    }
+
+    .sidebar-tab-btn.active {
+      color: var(--primary);
+      background: #ffffff;
+      border-bottom: 2px solid var(--primary);
+      font-weight: 700;
+      box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .sidebar-tab-pane {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .sidebar-tab-pane.active {
+      display: flex;
+    }
+
+    /* 词库列表项与复选框 */
+    .lib-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 8px;
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      font-size: 12px;
+      gap: 8px;
+    }
+
+    .lib-item-row:hover {
+      border-color: #cbd5e1;
+      background: #fafafa;
+    }
+
+    .lib-item-check {
+      cursor: pointer;
+    }
+
+    /* 可视化选词挖空交互 */
+    .visual-token-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px;
+      background: #f8fafc;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius);
+      min-height: 48px;
+      align-items: center;
+    }
+
+    .visual-token-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: Arial, sans-serif;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      color: #1e293b;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .visual-token-btn:hover {
+      background: #eff6ff;
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .visual-token-btn.is-blank {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(2, 132, 199, 0.35);
+    }
+
+    .visual-cloze-preview {
+      padding: 8px 10px;
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+    }
+
     /* 设置卡片/分组 */
     .settings-group {
       background: #ffffff;
@@ -1116,293 +1242,390 @@
   <div class="app-workspace">
     <!-- 左侧可折叠设置面板 -->
     <aside class="sidebar no-print" id="sidebarPanel">
+      <!-- 顶部工作区 Tab 切换栏 -->
+      <div class="sidebar-tab-bar" id="sidebarTabBar">
+        <button type="button" class="sidebar-tab-btn active" data-tab="paneQuick">📝 快速录入</button>
+        <button type="button" class="sidebar-tab-btn" data-tab="paneWordLib">📚 本地词库</button>
+        <button type="button" class="sidebar-tab-btn" data-tab="paneClozeVisual">✏️ 可视化挖空</button>
+        <button type="button" class="sidebar-tab-btn" data-tab="paneSettings">⚙️ 版式设置</button>
+      </div>
+
       <div class="sidebar-scrollable">
-        
-        <!-- 模块 1：自定义单词输入与列表管理 -->
-        <section class="settings-group">
-          <div class="group-header">
-            <span class="group-title">📝 单词输入与词汇表</span>
-            <span class="group-badge" id="badgeWordCount">9 词</span>
-          </div>
-
-          <div class="form-row" style="margin-bottom: 10px;">
-            <label>出卷模式</label>
-            <div class="segmented-control">
-              <input type="radio" name="dictMode" id="modeWriting" value="writing" checked>
-              <label for="modeWriting">看中文默写</label>
-              <input type="radio" name="dictMode" id="modeCloze" value="cloze">
-              <label for="modeCloze">✏️ 句子挖空填写</label>
+        <!-- 标签页 1：快速录入与当前试卷 -->
+        <div class="sidebar-tab-pane active" id="paneQuick">
+          <section class="settings-group">
+            <div class="group-header">
+              <span class="group-title">📝 单词输入与当前试卷</span>
+              <span class="group-badge" id="badgeWordCount">9 词</span>
             </div>
-          </div>
 
-          <div class="form-row" id="rowClozeStyle" style="margin-bottom: 10px; display: none;">
-            <label>挖空形式</label>
-            <div class="segmented-control">
-              <input type="radio" name="clozeStyle" id="clozeInline" value="inline" checked>
-              <label for="clozeInline">句中内嵌填空 (推荐)</label>
-              <input type="radio" name="clozeStyle" id="clozeBelow" value="below">
-              <label for="clozeBelow">句下独立书写格</label>
-            </div>
-          </div>
-
-          <p class="form-desc" id="formDescWords">支持每行一词；支持纯中文；支持“word | 中文”、“word - 中文”或空格分隔；中文为空时仍生成默写格。</p>
-          <textarea class="word-textarea" id="customWordTextarea" placeholder="美丽的；优美的&#10;工作努力的；辛勤的&#10;绳；粗绳&#10;聪明的；聪颖的&#10;机器人&#10;钢琴&#10;幼小的；年轻的&#10;跳；跃&#10;国际象棋"></textarea>
-          
-          <div style="display:flex; gap:6px; margin-top:8px;">
-            <button class="btn btn-primary btn-sm" id="btnParseText" style="flex:1;">载入/替换词表</button>
-            <button class="btn btn-secondary btn-sm" id="btnAppendText">追加</button>
-            <button class="btn btn-secondary btn-sm" id="btnLoadDefaultSample">载入默认9词</button>
-            <button class="btn btn-danger-ghost btn-sm" id="btnClearWords">清空</button>
-          </div>
-
-          <!-- 词汇条目列表 -->
-          <div class="words-list-container" id="wordsListContainer"></div>
-        </section>
-
-        <!-- 模块 2：标题与考生信息 (已上移) -->
-        <section class="settings-group" id="groupTitleInfo">
-          <div class="group-header">
-            <span class="group-title">✏️ 标题与考生信息</span>
-          </div>
-
-          <div class="form-row">
-            <label>试卷标题</label>
-            <input type="text" class="form-input" id="inputSheetTitle" value="Unit 1 黑体词默写">
-          </div>
-
-          <div class="form-row">
-            <label>标题字号</label>
-            <div class="form-range-wrap">
-              <input type="range" class="form-range" id="inputTitleFontSize" min="12" max="32" step="1" value="18">
-              <span class="form-range-val" id="valTitleFontSize">18pt</span>
-            </div>
-          </div>
-
-          <div class="form-row" style="align-items:flex-start;">
-            <label style="margin-top:2px;">考生信息栏</label>
-            <div class="checkbox-group">
-              <label class="checkbox-label"><input type="checkbox" id="checkName" checked> 姓名</label>
-              <label class="checkbox-label"><input type="checkbox" id="checkClass" checked> 班级</label>
-              <label class="checkbox-label"><input type="checkbox" id="checkNo" checked> 座号</label>
-              <label class="checkbox-label"><input type="checkbox" id="checkDate" checked> 日期</label>
-              <label class="checkbox-label"><input type="checkbox" id="checkScore" checked> 得分</label>
-            </div>
-          </div>
-        </section>
-
-        <!-- 模块 3：页面设置 (默认折叠) -->
-        <section class="settings-group collapsible collapsed" id="groupPageSettings">
-          <div class="group-header">
-            <span class="group-title">📄 页面设置</span>
-            <span class="collapse-arrow">›</span>
-          </div>
-          <div class="group-body">
-            <div class="form-row">
-              <label>纸张规格</label>
+            <div class="form-row" style="margin-bottom: 10px;">
+              <label>出卷模式</label>
               <div class="segmented-control">
-                <input type="radio" name="paperSize" id="sizeA4" value="A4" checked>
-                <label for="sizeA4">A4</label>
-                <input type="radio" name="paperSize" id="sizeB4" value="B4">
-                <label for="sizeB4">B4</label>
-                <input type="radio" name="paperSize" id="size8K" value="8K">
-                <label for="size8K">8K</label>
+                <input type="radio" name="dictMode" id="modeWriting" value="writing" checked>
+                <label for="modeWriting">看中文默写</label>
+                <input type="radio" name="dictMode" id="modeCloze" value="cloze">
+                <label for="modeCloze">✏️ 句子挖空填写</label>
               </div>
             </div>
 
-            <div class="form-row">
-              <label>纸张方向</label>
+            <div class="form-row" id="rowClozeStyle" style="margin-bottom: 10px; display: none;">
+              <label>挖空形式</label>
               <div class="segmented-control">
-                <input type="radio" name="paperOrient" id="orientPortrait" value="portrait" checked>
-                <label for="orientPortrait">纵向</label>
-                <input type="radio" name="paperOrient" id="orientLandscape" value="landscape">
-                <label for="orientLandscape">横向</label>
+                <input type="radio" name="clozeStyle" id="clozeInline" value="inline" checked>
+                <label for="clozeInline">句中内嵌填空 (推荐)</label>
+                <input type="radio" name="clozeStyle" id="clozeBelow" value="below">
+                <label for="clozeBelow">句下独立书写格</label>
               </div>
             </div>
 
-            <div class="form-row">
-              <label>一页份数</label>
-              <div class="segmented-control">
-                <input type="radio" name="copiesPerPage" id="copy1" value="1">
-                <label for="copy1">1 份 (全页)</label>
-                <input type="radio" name="copiesPerPage" id="copy2" value="2">
-                <label for="copy2">2 份 (对半)</label>
-                <input type="radio" name="copiesPerPage" id="copy3" value="3" checked>
-                <label for="copy3">3 份 (推荐)</label>
+            <p class="form-desc" id="formDescWords">支持每行一词；支持纯中文；支持“word | 中文”、“word - 中文”或空格分隔；中文为空时仍生成默写格。</p>
+            <textarea class="word-textarea" id="customWordTextarea" placeholder="美丽的；优美的&#10;工作努力的；辛勤的&#10;绳；粗绳&#10;聪明的；聪颖的&#10;机器人&#10;钢琴&#10;幼小的；年轻的&#10;跳；跃&#10;国际象棋"></textarea>
+            
+            <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm" id="btnParseText" style="flex:1;">载入/替换试卷</button>
+              <button class="btn btn-secondary btn-sm" id="btnAppendText">追加</button>
+              <button class="btn btn-secondary btn-sm" id="btnSaveDraftToLib" title="将当前试卷词汇保存到本地词库">📥 存入词库</button>
+              <button class="btn btn-secondary btn-sm" id="btnLoadDefaultSample">默认9词</button>
+              <button class="btn btn-danger-ghost btn-sm" id="btnClearWords">清空试卷</button>
+            </div>
+
+            <!-- 词汇条目列表 -->
+            <div class="words-list-container" id="wordsListContainer"></div>
+          </section>
+        </div>
+
+        <!-- 标签页 2：本地词库管理 -->
+        <div class="sidebar-tab-pane" id="paneWordLib">
+          <section class="settings-group">
+            <div class="group-header">
+              <span class="group-title">📚 本地离线词库</span>
+              <span class="group-badge" id="libStatBadge">共 0 词</span>
+            </div>
+
+            <p class="form-desc">独立离线词汇库，存储于浏览器 IndexedDB。从词库加入试卷后修改释义不会污染词库原始内容。</p>
+
+            <div class="form-row" style="margin-bottom: 8px;">
+              <input type="text" class="form-input" id="inputSearchLib" placeholder="🔍 搜索词库 (英文或中文)..." style="width:100%;">
+            </div>
+
+            <div style="display:flex; gap:6px; margin-bottom:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-secondary btn-sm" id="btnLibSelectAll">全选 / 反选</button>
+                <button class="btn btn-primary btn-sm" id="btnLibBatchAddToDraft">➕ 批量加入试卷</button>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-secondary btn-sm" id="btnLibExport" title="导出词库数据为 JSON">导出</button>
+                <button class="btn btn-danger-ghost btn-sm" id="btnLibClear" title="清空所有本地词库">清空</button>
               </div>
             </div>
 
-            <div class="form-row">
-              <label>页边距 (mm)</label>
-              <div class="form-range-wrap">
-                <input type="range" class="form-range" id="inputPageMargin" min="4" max="16" step="1" value="8">
-                <span class="form-range-val" id="valPageMargin">8mm</span>
-              </div>
+            <div id="libSelectedInfo" style="font-size:11.5px; color:#64748b; margin-bottom:8px;">
+              已选中 <strong id="libSelectedCount" style="color:var(--primary);">0</strong> 个单词
             </div>
-          </div>
-        </section>
 
-        <!-- 模块 4：单词区域排版 (默认折叠) -->
-        <section class="settings-group collapsible collapsed" id="groupWordArea">
-          <div class="group-header">
-            <span class="group-title">📐 单词区域排版</span>
-            <span class="collapse-arrow">›</span>
-          </div>
-          <div class="group-body">
+            <!-- 词库条目列表 -->
+            <div class="words-list-container" id="libWordsContainer" style="max-height: 480px;"></div>
+          </section>
+        </div>
+
+        <!-- 标签页 3：句子录入与可视化挖空 -->
+        <div class="sidebar-tab-pane" id="paneClozeVisual">
+          <section class="settings-group">
+            <div class="group-header">
+              <span class="group-title">✏️ 句子录入与可视化挖空</span>
+            </div>
+
+            <p class="form-desc">输入完整英文句子与中文释义，点击下方对应单词即可将其一键设为挖空或取消挖空。</p>
+
             <div class="form-row">
-              <label>排列列数</label>
-              <div class="segmented-control">
-                <input type="radio" name="colCount" id="col1" value="1">
-                <label for="col1">1 列</label>
-                <input type="radio" name="colCount" id="col2" value="2">
-                <label for="col2">2 列</label>
-                <input type="radio" name="colCount" id="col3" value="3" checked>
-                <label for="col3">3 列 (默认)</label>
-                <input type="radio" name="colCount" id="col4" value="4">
-                <label for="col4">4 列</label>
-              </div>
+              <label>英文句子</label>
+              <input type="text" class="form-input" id="inputVisualSentence" placeholder="例: Ask your teacher for help." value="Ask your teacher for help.">
             </div>
 
             <div class="form-row">
-              <label>每页词数容量</label>
-              <div class="form-range-wrap">
-                <input type="range" class="form-range" id="wordsPerPageInput" min="3" max="25" step="1" value="9">
-                <span class="form-range-val" id="valWordsPerPage">9 词</span>
-              </div>
+              <label>中文翻译</label>
+              <input type="text" class="form-input" id="inputVisualTranslation" placeholder="例: 向你的老师求助。" value="向你的老师求助。">
             </div>
 
-            <div class="form-row">
-              <label>提示字号 (题号/释义)</label>
-              <div class="form-range-wrap">
-                <input type="range" class="form-range" id="inputPromptFontSize" min="7" max="20" step="0.5" value="14">
-                <span class="form-range-val" id="valPromptFontSize">14pt</span>
-              </div>
-              <div style="display:none;"><input type="radio" name="zhFontSize" id="zhMd" value="md" checked></div>
-            </div>
-
-            <div class="form-row">
-              <label>中文释义位置</label>
-              <div class="segmented-control">
-                <input type="radio" name="zhPosition" id="zhPosTop" value="top" checked>
-                <label for="zhPosTop">格子上方</label>
-                <input type="radio" name="zhPosition" id="zhPosLeft" value="left">
-                <label for="zhPosLeft">格子左侧</label>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label>水平间距 (列距)</label>
-              <div class="form-range-wrap">
-                <input type="range" class="form-range" id="inputColGap" min="3" max="12" step="0.5" value="6">
-                <span class="form-range-val" id="valColGap">6mm</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label>垂直间距 (行距)</label>
-              <div class="form-range-wrap">
-                <input type="range" class="form-range" id="inputRowGap" min="2" max="10" step="0.5" value="3.5">
-                <span class="form-range-val" id="valRowGap">3.5mm</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 模块 5：四线三格专用设置 (默认折叠) -->
-        <section class="settings-group collapsible collapsed" id="groupGrid">
-          <div class="group-header">
-            <span class="group-title">📏 四线三格设置</span>
-            <span class="collapse-arrow">›</span>
-          </div>
-          <div class="group-body">
-            <div class="form-row">
-              <label>练习格样式</label>
-              <div class="segmented-control">
-                <input type="radio" name="gridStyle" id="gridFour" value="four-line" checked>
-                <label for="gridFour">四线三格</label>
-                <input type="radio" name="gridStyle" id="gridSingle" value="single-line">
-                <label for="gridSingle">普通横线</label>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label>格子高度 (mm)</label>
-              <div class="form-range-wrap">
-                <input type="range" class="form-range" id="inputGridHeight" min="6" max="18" step="0.5" value="12">
-                <span class="form-range-val" id="valGridHeight">12mm</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label>线条粗细</label>
-              <div class="segmented-control">
-                <input type="radio" name="gridStroke" id="strThin" value="0.6">
-                <label for="strThin">细 (0.6)</label>
-                <input type="radio" name="gridStroke" id="strMed" value="0.85" checked>
-                <label for="strMed">中 (0.85)</label>
-                <input type="radio" name="gridStroke" id="strThick" value="1.2">
-                <label for="strThick">粗 (1.2)</label>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label>线条颜色</label>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <input type="color" id="inputGridColor" value="#cbd5e1" style="width:36px; height:26px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">
-                <span style="font-size:11.5px; color:#64748b;" id="textGridColor">#cbd5e1</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label>左右闭合竖线</label>
-              <label class="checkbox-label">
-                <input type="checkbox" id="checkVerticalLine" checked>
-                显示独立卡片封闭竖线
+            <div style="margin-top: 10px;">
+              <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">
+                💡 点击单词设为挖空 (蓝色高亮为挖空目标)：
               </label>
-            </div>
-          </div>
-        </section>
-
-        <!-- 模块 6：字体与模式设置 (默认折叠) -->
-        <section class="settings-group collapsible collapsed" id="groupTypography">
-          <div class="group-header">
-            <span class="group-title">🔤 字体与模式设置</span>
-            <span class="collapse-arrow">›</span>
-          </div>
-          <div class="group-body">
-            <div class="form-row">
-              <label>中文字体</label>
-              <select class="form-select" id="selectFontZh">
-                <option value="'KaiTi', '楷体', STKaiti, serif" selected>楷体 (标准范字)</option>
-                <option value="'SimSun', '宋体', serif">宋体</option>
-                <option value="'SimHei', '黑体', sans-serif">黑体</option>
-                <option value="'FangSong', '仿宋', serif">仿宋</option>
-              </select>
+              <div class="visual-token-wrap" id="visualTokenWrap"></div>
             </div>
 
-            <div class="form-row">
-              <label>英文字体</label>
-              <select class="form-select" id="selectFontEn">
-                <option value="Arial, sans-serif" selected>Arial (清晰无衬线)</option>
-                <option value="'Times New Roman', serif">Times New Roman (衬线)</option>
-                <option value="'Georgia', serif">Georgia</option>
-                <option value="'HengShui', 'Comic Sans MS', cursive">衡水体手写 (需本地安装)</option>
-              </select>
+            <div style="margin-top: 12px;">
+              <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">
+                👀 默写纸挖空预览效果：
+              </label>
+              <div class="visual-cloze-preview" id="visualClozePreview"></div>
+            </div>
+
+            <div style="display:flex; gap:6px; margin-top:12px;">
+              <button class="btn btn-primary btn-sm" id="btnAddVisualToDraft" style="flex:1;">➕ 加入当前试卷</button>
+              <button class="btn btn-secondary btn-sm" id="btnSaveVisualToLib">💾 保存至句库</button>
+              <button class="btn btn-secondary btn-sm" id="btnClearVisualCloze">重置</button>
+            </div>
+          </section>
+
+          <!-- 本地句库列表 -->
+          <section class="settings-group">
+            <div class="group-header">
+              <span class="group-title">📚 本地句库列表</span>
+              <span class="group-badge" id="libSentenceBadge">共 0 句</span>
+            </div>
+
+            <div class="words-list-container" id="libSentencesContainer" style="max-height: 280px;"></div>
+          </section>
+        </div>
+
+        <!-- 标签页 4：版式与打印设置 -->
+        <div class="sidebar-tab-pane" id="paneSettings">
+          <!-- 模块 2：标题与考生信息 (已上移) -->
+          <section class="settings-group" id="groupTitleInfo">
+            <div class="group-header">
+              <span class="group-title">✏️ 标题与考生信息</span>
             </div>
 
             <div class="form-row">
-              <label>字间距</label>
-              <div class="segmented-control">
-                <input type="radio" name="letterSpacing" id="spNormal" value="0" checked>
-                <label for="spNormal">正常</label>
-                <input type="radio" name="letterSpacing" id="spWide" value="0.8px">
-                <label for="spWide">加宽</label>
-                <input type="radio" name="letterSpacing" id="spExtra" value="1.5px">
-                <label for="spExtra">宽松</label>
+              <label>试卷标题</label>
+              <input type="text" class="form-input" id="inputSheetTitle" value="Unit 1 黑体词默写">
+            </div>
+
+            <div class="form-row">
+              <label>标题字号</label>
+              <div class="form-range-wrap">
+                <input type="range" class="form-range" id="inputTitleFontSize" min="12" max="32" step="1" value="18">
+                <span class="form-range-val" id="valTitleFontSize">18pt</span>
               </div>
             </div>
-          </div>
-        </section>
 
+            <div class="form-row" style="align-items:flex-start;">
+              <label style="margin-top:2px;">考生信息栏</label>
+              <div class="checkbox-group">
+                <label class="checkbox-label"><input type="checkbox" id="checkName" checked> 姓名</label>
+                <label class="checkbox-label"><input type="checkbox" id="checkClass" checked> 班级</label>
+                <label class="checkbox-label"><input type="checkbox" id="checkNo" checked> 座号</label>
+                <label class="checkbox-label"><input type="checkbox" id="checkDate" checked> 日期</label>
+                <label class="checkbox-label"><input type="checkbox" id="checkScore" checked> 得分</label>
+              </div>
+            </div>
+          </section>
+
+          <!-- 模块 3：页面设置 (默认折叠) -->
+          <section class="settings-group collapsible collapsed" id="groupPageSettings">
+            <div class="group-header">
+              <span class="group-title">📄 页面设置</span>
+              <span class="collapse-arrow">›</span>
+            </div>
+            <div class="group-body">
+              <div class="form-row">
+                <label>纸张规格</label>
+                <div class="segmented-control">
+                  <input type="radio" name="paperSize" id="sizeA4" value="A4" checked>
+                  <label for="sizeA4">A4</label>
+                  <input type="radio" name="paperSize" id="sizeB4" value="B4">
+                  <label for="sizeB4">B4</label>
+                  <input type="radio" name="paperSize" id="size8K" value="8K">
+                  <label for="size8K">8K</label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>纸张方向</label>
+                <div class="segmented-control">
+                  <input type="radio" name="paperOrient" id="orientPortrait" value="portrait" checked>
+                  <label for="orientPortrait">纵向</label>
+                  <input type="radio" name="paperOrient" id="orientLandscape" value="landscape">
+                  <label for="orientLandscape">横向</label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>一页份数</label>
+                <div class="segmented-control">
+                  <input type="radio" name="copiesPerPage" id="copy1" value="1">
+                  <label for="copy1">1 份 (全页)</label>
+                  <input type="radio" name="copiesPerPage" id="copy2" value="2">
+                  <label for="copy2">2 份 (对半)</label>
+                  <input type="radio" name="copiesPerPage" id="copy3" value="3" checked>
+                  <label for="copy3">3 份 (推荐)</label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>页边距 (mm)</label>
+                <div class="form-range-wrap">
+                  <input type="range" class="form-range" id="inputPageMargin" min="4" max="16" step="1" value="8">
+                  <span class="form-range-val" id="valPageMargin">8mm</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 模块 4：单词区域排版 (默认折叠) -->
+          <section class="settings-group collapsible collapsed" id="groupWordArea">
+            <div class="group-header">
+              <span class="group-title">📐 单词区域排版</span>
+              <span class="collapse-arrow">›</span>
+            </div>
+            <div class="group-body">
+              <div class="form-row">
+                <label>排列列数</label>
+                <div class="segmented-control">
+                  <input type="radio" name="colCount" id="col1" value="1">
+                  <label for="col1">1 列</label>
+                  <input type="radio" name="colCount" id="col2" value="2">
+                  <label for="col2">2 列</label>
+                  <input type="radio" name="colCount" id="col3" value="3" checked>
+                  <label for="col3">3 列 (默认)</label>
+                  <input type="radio" name="colCount" id="col4" value="4">
+                  <label for="col4">4 列</label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>每页词数容量</label>
+                <div class="form-range-wrap">
+                  <input type="range" class="form-range" id="wordsPerPageInput" min="3" max="25" step="1" value="9">
+                  <span class="form-range-val" id="valWordsPerPage">9 词</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>提示字号 (题号/释义)</label>
+                <div class="form-range-wrap">
+                  <input type="range" class="form-range" id="inputPromptFontSize" min="7" max="20" step="0.5" value="14">
+                  <span class="form-range-val" id="valPromptFontSize">14pt</span>
+                </div>
+                <div style="display:none;"><input type="radio" name="zhFontSize" id="zhMd" value="md" checked></div>
+              </div>
+
+              <div class="form-row">
+                <label>中文释义位置</label>
+                <div class="segmented-control">
+                  <input type="radio" name="zhPosition" id="zhPosTop" value="top" checked>
+                  <label for="zhPosTop">格子上方</label>
+                  <input type="radio" name="zhPosition" id="zhPosLeft" value="left">
+                  <label for="zhPosLeft">格子左侧</label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>水平间距 (列距)</label>
+                <div class="form-range-wrap">
+                  <input type="range" class="form-range" id="inputColGap" min="3" max="12" step="0.5" value="6">
+                  <span class="form-range-val" id="valColGap">6mm</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>垂直间距 (行距)</label>
+                <div class="form-range-wrap">
+                  <input type="range" class="form-range" id="inputRowGap" min="2" max="10" step="0.5" value="3.5">
+                  <span class="form-range-val" id="valRowGap">3.5mm</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 模块 5：四线三格专用设置 (默认折叠) -->
+          <section class="settings-group collapsible collapsed" id="groupGrid">
+            <div class="group-header">
+              <span class="group-title">📏 四线三格设置</span>
+              <span class="collapse-arrow">›</span>
+            </div>
+            <div class="group-body">
+              <div class="form-row">
+                <label>练习格样式</label>
+                <div class="segmented-control">
+                  <input type="radio" name="gridStyle" id="gridFour" value="four-line" checked>
+                  <label for="gridFour">四线三格</label>
+                  <input type="radio" name="gridStyle" id="gridSingle" value="single-line">
+                  <label for="gridSingle">普通横线</label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>格子高度 (mm)</label>
+                <div class="form-range-wrap">
+                  <input type="range" class="form-range" id="inputGridHeight" min="6" max="18" step="0.5" value="12">
+                  <span class="form-range-val" id="valGridHeight">12mm</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>线条粗细</label>
+                <div class="segmented-control">
+                  <input type="radio" name="gridStroke" id="strThin" value="0.6">
+                  <label for="strThin">细 (0.6)</label>
+                  <input type="radio" name="gridStroke" id="strMed" value="0.85" checked>
+                  <label for="strMed">中 (0.85)</label>
+                  <input type="radio" name="gridStroke" id="strThick" value="1.2">
+                  <label for="strThick">粗 (1.2)</label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>线条颜色</label>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <input type="color" id="inputGridColor" value="#cbd5e1" style="width:36px; height:26px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">
+                  <span style="font-size:11.5px; color:#64748b;" id="textGridColor">#cbd5e1</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>左右闭合竖线</label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="checkVerticalLine" checked>
+                  显示独立卡片封闭竖线
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <!-- 模块 6：字体与模式设置 (默认折叠) -->
+          <section class="settings-group collapsible collapsed" id="groupTypography">
+            <div class="group-header">
+              <span class="group-title">🔤 字体与模式设置</span>
+              <span class="collapse-arrow">›</span>
+            </div>
+            <div class="group-body">
+              <div class="form-row">
+                <label>中文字体</label>
+                <select class="form-select" id="selectFontZh">
+                  <option value="'KaiTi', '楷体', STKaiti, serif" selected>楷体 (标准范字)</option>
+                  <option value="'SimSun', '宋体', serif">宋体</option>
+                  <option value="'SimHei', '黑体', sans-serif">黑体</option>
+                  <option value="'FangSong', '仿宋', serif">仿宋</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label>英文字体</label>
+                <select class="form-select" id="selectFontEn">
+                  <option value="Arial, sans-serif" selected>Arial (清晰无衬线)</option>
+                  <option value="'Times New Roman', serif">Times New Roman (衬线)</option>
+                  <option value="'Georgia', serif">Georgia</option>
+                  <option value="'HengShui', 'Comic Sans MS', cursive">衡水体手写 (需本地安装)</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label>字间距</label>
+                <div class="segmented-control">
+                  <input type="radio" name="letterSpacing" id="spNormal" value="0" checked>
+                  <label for="spNormal">正常</label>
+                  <input type="radio" name="letterSpacing" id="spWide" value="0.8px">
+                  <label for="spWide">加宽</label>
+                  <input type="radio" name="letterSpacing" id="spExtra" value="1.5px">
+                  <label for="spExtra">宽松</label>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </aside>
 
@@ -1807,7 +2030,36 @@
         btnZoomFit: $('btnZoomFit'),
         btnZoom100: $('btnZoom100'),
         paperStage: $('paperStage'),
-        sheetsStreamContainer: $('sheetsStreamContainer')
+        sheetsStreamContainer: $('sheetsStreamContainer'),
+
+        // Tab 栏
+        sidebarTabBar: $('sidebarTabBar'),
+        sidebarTabBtns: $$('.sidebar-tab-btn'),
+        sidebarTabPanes: $$('.sidebar-tab-pane'),
+
+        // 快速录入附加操作
+        btnSaveDraftToLib: $('btnSaveDraftToLib'),
+
+        // 本地词库
+        inputSearchLib: $('inputSearchLib'),
+        libStatBadge: $('libStatBadge'),
+        btnLibSelectAll: $('btnLibSelectAll'),
+        btnLibBatchAddToDraft: $('btnLibBatchAddToDraft'),
+        btnLibExport: $('btnLibExport'),
+        btnLibClear: $('btnLibClear'),
+        libSelectedCount: $('libSelectedCount'),
+        libWordsContainer: $('libWordsContainer'),
+
+        // 句子录入与可视化挖空
+        inputVisualSentence: $('inputVisualSentence'),
+        inputVisualTranslation: $('inputVisualTranslation'),
+        visualTokenWrap: $('visualTokenWrap'),
+        visualClozePreview: $('visualClozePreview'),
+        btnAddVisualToDraft: $('btnAddVisualToDraft'),
+        btnSaveVisualToLib: $('btnSaveVisualToLib'),
+        btnClearVisualCloze: $('btnClearVisualCloze'),
+        libSentenceBadge: $('libSentenceBadge'),
+        libSentencesContainer: $('libSentencesContainer')
       };
 
       /* ==========================================================================
@@ -1924,12 +2176,40 @@
           const sentences = await db.getAll('sentences');
           if (words && words.length > 0) {
             state.library.words = words;
+          } else {
+            // 预设默认推荐词库
+            state.library.words = DEFAULT_WORDS_RAW.map(w => ({
+              id: generateId('w'),
+              en: w.en,
+              zh: w.zh,
+              updatedAt: Date.now()
+            }));
+            await db.bulkPut('words', state.library.words);
           }
+
           if (sentences && sentences.length > 0) {
             state.library.sentences = sentences;
+          } else {
+            // 预设默认推荐句库
+            state.library.sentences = DEFAULT_CLOZE_WORDS_RAW.map(s => {
+              const segments = parseSentenceToSegments(s.en);
+              return {
+                id: generateId('s'),
+                type: 'sentence',
+                en: s.en,
+                zh: s.zh,
+                translation: s.zh,
+                segments: segments,
+                updatedAt: Date.now()
+              };
+            });
+            await db.bulkPut('sentences', state.library.sentences);
           }
         } catch (e) {
           console.warn('加载词库句库失败:', e);
+        } finally {
+          renderWordLibUI();
+          renderVisualSentenceLibUI();
         }
       }
 
@@ -2279,6 +2559,333 @@
         renderWordListUI();
         renderSheetPages();
         debouncedSaveState();
+      }
+
+      /* ==========================================================================
+         H2. 本地离线词库 UI 渲染与批量操作
+         ========================================================================== */
+      const selectedLibWordIds = new Set();
+
+      function renderWordLibUI() {
+        if (!el.libWordsContainer) return;
+        const query = (el.inputSearchLib ? el.inputSearchLib.value : '').trim().toLowerCase();
+        const allWords = state.library.words || [];
+
+        const filtered = allWords.filter(w => {
+          if (!query) return true;
+          const enMatch = (w.en || '').toLowerCase().includes(query);
+          const zhMatch = (w.zh || '').toLowerCase().includes(query);
+          return enMatch || zhMatch;
+        });
+
+        if (el.libStatBadge) {
+          el.libStatBadge.textContent = `共 ${allWords.length} 词`;
+        }
+        if (el.libSelectedCount) {
+          el.libSelectedCount.textContent = selectedLibWordIds.size;
+        }
+
+        el.libWordsContainer.innerHTML = '';
+
+        if (filtered.length === 0) {
+          el.libWordsContainer.innerHTML = `
+            <div style="text-align:center; padding:24px; color:#94a3b8; font-size:12px;">
+              ${query ? '未检索到符合条件的词汇' : '本地词库为空，可从左侧试卷保存或点击导入'}
+            </div>
+          `;
+          return;
+        }
+
+        filtered.forEach(w => {
+          const row = document.createElement('div');
+          row.className = 'lib-item-row';
+          row.dataset.id = w.id;
+
+          const isChecked = selectedLibWordIds.has(w.id);
+
+          row.innerHTML = `
+            <input type="checkbox" class="lib-item-check" data-id="${w.id}" ${isChecked ? 'checked' : ''} style="cursor:pointer;">
+            <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-left:6px;">
+              <strong style="color:#0f172a; font-size:12.5px;">${escapeHtml(w.en)}</strong>
+              ${w.phonetic ? `<span style="color:#0284c7; font-size:11px; margin-left:4px;">[${escapeHtml(w.phonetic)}]</span>` : ''}
+              <span style="color:#64748b; font-size:11.5px; margin-left:6px;">${escapeHtml(w.zh || '')}</span>
+            </div>
+            <div style="display:flex; gap:4px; flex-shrink:0;">
+              <button type="button" class="btn btn-secondary btn-sm btn-lib-add" data-id="${w.id}" title="添加到当前试卷" style="padding:2px 7px; font-size:11px;">➕ 试卷</button>
+              <button type="button" class="btn btn-danger-ghost btn-sm btn-lib-del" data-id="${w.id}" title="从词库中删除" style="padding:2px 6px; font-size:11px;">✕</button>
+            </div>
+          `;
+
+          const chk = row.querySelector('.lib-item-check');
+          chk.addEventListener('change', () => {
+            if (chk.checked) {
+              selectedLibWordIds.add(w.id);
+            } else {
+              selectedLibWordIds.delete(w.id);
+            }
+            if (el.libSelectedCount) el.libSelectedCount.textContent = selectedLibWordIds.size;
+          });
+
+          row.querySelector('.btn-lib-add').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const draftItem = createDraftItem({
+              en: w.en,
+              zh: w.zh,
+              phonetic: w.phonetic,
+              sourceId: w.id
+            });
+            state.draft.items.push(draftItem);
+            notifyWordsChanged();
+            showToast(`已将「${w.en}」加入当前试卷！`);
+          });
+
+          row.querySelector('.btn-lib-del').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const idx = state.library.words.findIndex(x => x.id === w.id);
+            if (idx !== -1) {
+              state.library.words.splice(idx, 1);
+              selectedLibWordIds.delete(w.id);
+              await db.delete('words', w.id);
+              renderWordLibUI();
+              showToast(`已从词库移除「${w.en}」`);
+            }
+          });
+
+          el.libWordsContainer.appendChild(row);
+        });
+      }
+
+      /* ==========================================================================
+         H3. 句子录入与交互式可视化挖空
+         ========================================================================== */
+      let visualTokens = [];
+
+      function parseSentenceIntoVisualTokens(rawText) {
+        const text = (rawText || '').trim();
+        if (!text) return [];
+
+        const tokenRegex = /([a-zA-Z0-9'’-]+|[^\s\w]+|\s+)/g;
+        const matches = text.match(tokenRegex) || [];
+
+        let inBracket = false;
+        const tokens = [];
+
+        matches.forEach((tok, idx) => {
+          if (tok === '[' || tok === '{') {
+            inBracket = true;
+            return;
+          }
+          if (tok === ']' || tok === '}') {
+            inBracket = false;
+            return;
+          }
+          const isWord = /^[a-zA-Z0-9'’-]+$/.test(tok);
+          tokens.push({
+            id: idx,
+            text: tok,
+            isWord: isWord,
+            isBlank: isWord && inBracket
+          });
+        });
+
+        return tokens;
+      }
+
+      function getVisualSegments(tokens) {
+        // 将两处挖空单词之间的纯空格也视为挖空的一部分，保证连贯下划线
+        for (let i = 1; i < tokens.length - 1; i++) {
+          if (!tokens[i].isWord && /^\s+$/.test(tokens[i].text)) {
+            if (tokens[i - 1] && tokens[i - 1].isBlank && tokens[i + 1] && tokens[i + 1].isBlank) {
+              tokens[i].isBlank = true;
+            } else {
+              tokens[i].isBlank = false;
+            }
+          }
+        }
+
+        const segments = [];
+        let curText = '';
+        let curBlank = null;
+
+        tokens.forEach(t => {
+          const b = !!t.isBlank;
+          if (curBlank === null) {
+            curBlank = b;
+            curText = t.text;
+          } else if (curBlank === b) {
+            curText += t.text;
+          } else {
+            segments.push({ text: curText, blank: curBlank });
+            curBlank = b;
+            curText = t.text;
+          }
+        });
+
+        if (curText) {
+          segments.push({ text: curText, blank: curBlank });
+        }
+
+        return segments;
+      }
+
+      function updateVisualClozeEditor() {
+        if (!el.visualTokenWrap || !el.visualClozePreview) return;
+
+        const sentenceText = (el.inputVisualSentence ? el.inputVisualSentence.value : '').trim();
+        const translationText = (el.inputVisualTranslation ? el.inputVisualTranslation.value : '').trim();
+
+        if (visualTokens.length === 0 && sentenceText) {
+          visualTokens = parseSentenceIntoVisualTokens(sentenceText);
+        }
+
+        // 渲染单词切词胶囊
+        el.visualTokenWrap.innerHTML = '';
+        const wordTokens = visualTokens.filter(t => t.isWord);
+
+        if (wordTokens.length === 0) {
+          el.visualTokenWrap.innerHTML = '<span style="color:#94a3b8; font-size:12px;">请输入完整英文句子以生成可点击单词</span>';
+        } else {
+          wordTokens.forEach(t => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `visual-token-btn ${t.isBlank ? 'is-blank' : ''}`;
+            btn.textContent = t.text;
+            btn.title = t.isBlank ? '已设为挖空，点击取消' : '点击设为挖空目标';
+            btn.addEventListener('click', () => {
+              t.isBlank = !t.isBlank;
+              updateVisualClozeEditor();
+            });
+            el.visualTokenWrap.appendChild(btn);
+          });
+        }
+
+        // 渲染实时挖空预览
+        const segments = getVisualSegments(visualTokens);
+        const hasBlank = segments.some(s => s.blank);
+
+        let previewHtml = '';
+        if (segments.length === 0) {
+          previewHtml = '<span style="color:#94a3b8; font-size:12px;">暂无预览内容</span>';
+        } else {
+          let sentenceHtml = '';
+          segments.forEach(s => {
+            if (s.blank) {
+              sentenceHtml += `<span style="border-bottom:2px solid #0284c7; color:#0284c7; font-weight:700; padding:0 4px; margin:0 2px;">( ${escapeHtml(s.text.trim())} )</span>`;
+            } else {
+              sentenceHtml += `<span>${escapeHtml(s.text)}</span>`;
+            }
+          });
+
+          previewHtml = `
+            <div style="width:100%;">
+              <div style="font-size:13.5px; color:#1e293b; line-height:1.5;">${sentenceHtml}</div>
+              ${translationText ? `<div style="font-size:11.5px; color:#64748b; margin-top:4px;">释义：${escapeHtml(translationText)}</div>` : ''}
+              ${!hasBlank ? `<div style="font-size:11px; color:#e11d48; margin-top:3px;">⚠️ 提示：尚未选择挖空单词，请点击上方词汇胶囊</div>` : ''}
+            </div>
+          `;
+        }
+
+        el.visualClozePreview.innerHTML = previewHtml;
+      }
+
+      function renderVisualSentenceLibUI() {
+        if (!el.libSentencesContainer) return;
+        const sentences = state.library.sentences || [];
+
+        if (el.libSentenceBadge) {
+          el.libSentenceBadge.textContent = `共 ${sentences.length} 句`;
+        }
+
+        el.libSentencesContainer.innerHTML = '';
+
+        if (sentences.length === 0) {
+          el.libSentencesContainer.innerHTML = `
+            <div style="text-align:center; padding:20px; color:#94a3b8; font-size:12px;">
+              本地句库为空，可将上方编辑的挖空句子「保存至句库」
+            </div>
+          `;
+          return;
+        }
+
+        sentences.forEach((s) => {
+          const row = document.createElement('div');
+          row.className = 'lib-item-row';
+          row.dataset.id = s.id;
+
+          const markedEn = escapeHtml(s.en).replace(/\[([^\]]+)\]|\{([^}]+)\}/g, (m, p1, p2) => {
+            return `<strong style="color:#0284c7; text-decoration:underline;">[${p1 || p2}]</strong>`;
+          });
+
+          row.innerHTML = `
+            <div style="flex:1; overflow:hidden; padding-right:6px;">
+              <div style="font-size:12px; color:#0f172a; line-height:1.4; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                ${markedEn}
+              </div>
+              <div style="font-size:11px; color:#64748b; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                ${escapeHtml(s.zh || s.translation || '')}
+              </div>
+            </div>
+            <div style="display:flex; gap:4px; flex-shrink:0;">
+              <button type="button" class="btn btn-secondary btn-sm btn-sentence-add" data-id="${s.id}" title="加入当前试卷" style="padding:2px 7px; font-size:11px;">➕ 试卷</button>
+              <button type="button" class="btn btn-danger-ghost btn-sm btn-sentence-del" data-id="${s.id}" title="从句库中删除" style="padding:2px 6px; font-size:11px;">✕</button>
+            </div>
+          `;
+
+          row.querySelector('.btn-sentence-add').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const draftItem = createDraftItem({
+              type: 'sentence',
+              en: s.en,
+              zh: s.zh || s.translation || '',
+              translation: s.zh || s.translation || '',
+              segments: s.segments,
+              sourceId: s.id
+            });
+            state.draft.items.push(draftItem);
+            if (state.draft.settings.dictMode !== 'cloze') {
+              state.draft.settings.dictMode = 'cloze';
+              syncControlsFromSettings();
+            }
+            notifyWordsChanged();
+            showToast('已加入当前试卷并同步为挖空模式！');
+          });
+
+          row.querySelector('.btn-sentence-del').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const idx = state.library.sentences.findIndex(x => x.id === s.id);
+            if (idx !== -1) {
+              state.library.sentences.splice(idx, 1);
+              await db.delete('sentences', s.id);
+              renderVisualSentenceLibUI();
+              showToast('已从本地句库删除该句');
+            }
+          });
+
+          el.libSentencesContainer.appendChild(row);
+        });
+      }
+
+      /* ==========================================================================
+         H4. 侧边栏工作区 Tab 视图切换
+         ========================================================================== */
+      function switchSidebarTab(targetTabId) {
+        if (!el.sidebarTabBtns || !el.sidebarTabPanes) return;
+        el.sidebarTabBtns.forEach(btn => {
+          const isActive = btn.getAttribute('data-tab') === targetTabId;
+          btn.classList.toggle('active', isActive);
+        });
+        el.sidebarTabPanes.forEach(pane => {
+          const isActive = pane.id === targetTabId;
+          pane.classList.toggle('active', isActive);
+        });
+        state.ui.activeView = targetTabId;
+
+        if (targetTabId === 'paneWordLib') {
+          renderWordLibUI();
+        } else if (targetTabId === 'paneClozeVisual') {
+          updateVisualClozeEditor();
+          renderVisualSentenceLibUI();
+        }
       }
 
       /* ==========================================================================
@@ -3142,6 +3749,212 @@
           if (state.ui.isZoomFit) updateZoom();
         });
 
+        // ----------------------------------------------------------------------
+        // Phase 3 事件绑定：Tab 切换、词库交互、句子可视化挖空
+        // ----------------------------------------------------------------------
+        if (el.sidebarTabBtns) {
+          el.sidebarTabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+              const tab = btn.getAttribute('data-tab');
+              if (tab) switchSidebarTab(tab);
+            });
+          });
+        }
+
+        // 保存当前试卷至本地词库
+        if (el.btnSaveDraftToLib) {
+          el.btnSaveDraftToLib.addEventListener('click', async () => {
+            if (state.draft.items.length === 0) {
+              showToast('当前试卷暂无词汇可保存');
+              return;
+            }
+            const dupCheck = detectDuplicates(state.library.words, state.draft.items);
+            if (dupCheck.unique.length === 0) {
+              showToast(`试卷中的 ${state.draft.items.length} 个单词均已存在于词库中`);
+              return;
+            }
+            const newWords = dupCheck.unique.map(it => ({
+              id: it.id || generateId('w'),
+              en: it.en,
+              zh: it.zh,
+              phonetic: it.phonetic || '',
+              updatedAt: Date.now()
+            }));
+            state.library.words = state.library.words.concat(newWords);
+            await db.bulkPut('words', newWords);
+            renderWordLibUI();
+            const dupInfo = dupCheck.duplicates.length > 0 ? ` (${dupCheck.duplicates.length} 条已存在跳过)` : '';
+            showToast(`已成功将 ${newWords.length} 个新词保存到本地词库${dupInfo}！`);
+          });
+        }
+
+        // 词库实时搜索
+        if (el.inputSearchLib) {
+          el.inputSearchLib.addEventListener('input', () => {
+            renderWordLibUI();
+          });
+        }
+
+        // 词库全选/反选
+        if (el.btnLibSelectAll) {
+          el.btnLibSelectAll.addEventListener('click', () => {
+            const query = (el.inputSearchLib ? el.inputSearchLib.value : '').trim().toLowerCase();
+            const filtered = state.library.words.filter(w => {
+              if (!query) return true;
+              return (w.en || '').toLowerCase().includes(query) || (w.zh || '').toLowerCase().includes(query);
+            });
+            const allSelected = filtered.length > 0 && filtered.every(w => selectedLibWordIds.has(w.id));
+            if (allSelected) {
+              filtered.forEach(w => selectedLibWordIds.delete(w.id));
+            } else {
+              filtered.forEach(w => selectedLibWordIds.add(w.id));
+            }
+            renderWordLibUI();
+          });
+        }
+
+        // 词库批量加入试卷
+        if (el.btnLibBatchAddToDraft) {
+          el.btnLibBatchAddToDraft.addEventListener('click', () => {
+            if (selectedLibWordIds.size === 0) {
+              showToast('请先勾选需要加入试卷的单词');
+              return;
+            }
+            const selectedItems = state.library.words.filter(w => selectedLibWordIds.has(w.id));
+            const draftItems = selectedItems.map(w => createDraftItem({
+              en: w.en,
+              zh: w.zh,
+              phonetic: w.phonetic,
+              sourceId: w.id
+            }));
+            state.draft.items = state.draft.items.concat(draftItems);
+            selectedLibWordIds.clear();
+            notifyWordsChanged();
+            renderWordLibUI();
+            showToast(`已成功将 ${draftItems.length} 个词汇批量加入试卷！`);
+          });
+        }
+
+        // 词库单独导出 JSON
+        if (el.btnLibExport) {
+          el.btnLibExport.addEventListener('click', () => {
+            const data = {
+              app: 'DictationSheetGen',
+              type: 'wordLibrary',
+              version: '4.0',
+              exportedAt: new Date().toISOString(),
+              wordsCount: state.library.words.length,
+              words: state.library.words
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dictation_words_${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('本地词库已成功导出为 JSON 文件！');
+          });
+        }
+
+        // 清空本地词库
+        if (el.btnLibClear) {
+          el.btnLibClear.addEventListener('click', async () => {
+            if (confirm('确定要清空本地词库中的全部词汇吗？当前试卷中的内容不受影响。')) {
+              state.library.words = [];
+              selectedLibWordIds.clear();
+              const dbInst = await db.open();
+              if (dbInst) {
+                const tx = dbInst.transaction('words', 'readwrite');
+                tx.objectStore('words').clear();
+              }
+              renderWordLibUI();
+              showToast('本地词库已清空');
+            }
+          });
+        }
+
+        // 句子可视化挖空输入变化
+        if (el.inputVisualSentence) {
+          el.inputVisualSentence.addEventListener('input', () => {
+            visualTokens = parseSentenceIntoVisualTokens(el.inputVisualSentence.value);
+            updateVisualClozeEditor();
+          });
+        }
+        if (el.inputVisualTranslation) {
+          el.inputVisualTranslation.addEventListener('input', () => {
+            updateVisualClozeEditor();
+          });
+        }
+
+        // 可视化挖空：加入当前试卷
+        if (el.btnAddVisualToDraft) {
+          el.btnAddVisualToDraft.addEventListener('click', () => {
+            const segments = getVisualSegments(visualTokens);
+            const hasBlank = segments.some(s => s.blank);
+            if (!hasBlank) {
+              showToast('请先点击上方蓝色胶囊单词设置至少一个挖空目标！');
+              return;
+            }
+            const enMarked = segmentsToMarkedText(segments);
+            const zhText = (el.inputVisualTranslation ? el.inputVisualTranslation.value : '').trim();
+            const draftItem = createDraftItem({
+              type: 'sentence',
+              en: enMarked,
+              zh: zhText,
+              translation: zhText,
+              segments: segments
+            });
+            state.draft.items.push(draftItem);
+            if (state.draft.settings.dictMode !== 'cloze') {
+              state.draft.settings.dictMode = 'cloze';
+              syncControlsFromSettings();
+            }
+            notifyWordsChanged();
+            showToast('已加入当前试卷并同步为句子挖空模式！');
+          });
+        }
+
+        // 可视化挖空：保存至句库
+        if (el.btnSaveVisualToLib) {
+          el.btnSaveVisualToLib.addEventListener('click', async () => {
+            const segments = getVisualSegments(visualTokens);
+            const hasBlank = segments.some(s => s.blank);
+            if (!hasBlank) {
+              showToast('请先点击上方单词设置至少一个挖空目标！');
+              return;
+            }
+            const enMarked = segmentsToMarkedText(segments);
+            const zhText = (el.inputVisualTranslation ? el.inputVisualTranslation.value : '').trim();
+            const sItem = {
+              id: generateId('s'),
+              type: 'sentence',
+              en: enMarked,
+              zh: zhText,
+              translation: zhText,
+              segments: segments,
+              updatedAt: Date.now()
+            };
+            state.library.sentences.unshift(sItem);
+            await db.bulkPut('sentences', [sItem]);
+            renderVisualSentenceLibUI();
+            showToast('已成功保存至本地句库！');
+          });
+        }
+
+        // 重置可视化挖空
+        if (el.btnClearVisualCloze) {
+          el.btnClearVisualCloze.addEventListener('click', () => {
+            if (el.inputVisualSentence) el.inputVisualSentence.value = '';
+            if (el.inputVisualTranslation) el.inputVisualTranslation.value = '';
+            visualTokens = [];
+            updateVisualClozeEditor();
+            showToast('已重置可视化输入区');
+          });
+        }
+
         // 兼容测试脚本专用按钮
         window._setG4Sample = function() {
           state.draft.items = [
@@ -3190,6 +4003,7 @@
         bindEvents();
         renderSheetPages();
         updateZoom();
+        updateVisualClozeEditor();
         loadLibraryFromDB(); // 异步载入 IndexedDB 词库与句库
       }
 
