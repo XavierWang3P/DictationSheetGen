@@ -71,8 +71,8 @@ function onTabClick(key) {
 <style scoped>
 .sidebar {
   width: 440px;
-  background: #f8fafc;
-  border-right: 1px solid #e2e8f0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -88,8 +88,8 @@ function onTabClick(key) {
 
 .sidebar-tab-bar {
   display: flex;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-color);
   padding: 6px 12px 0 12px;
   gap: 4px;
   flex-shrink: 0;
@@ -102,7 +102,7 @@ function onTabClick(key) {
   padding: 7px 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-muted);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -115,14 +115,14 @@ function onTabClick(key) {
 }
 
 .sidebar-tab-btn:hover {
-  color: #0284c7;
-  background: #ffffff;
+  color: var(--primary);
+  background: var(--bg-card);
 }
 
 .sidebar-tab-btn.active {
-  color: #0284c7;
-  background: #ffffff;
-  border-bottom: 2px solid #0284c7;
+  color: var(--primary);
+  background: var(--bg-card);
+  border-bottom: 2px solid var(--primary);
   font-weight: 700;
   box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.04);
 }

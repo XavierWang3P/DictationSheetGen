@@ -183,8 +183,8 @@ function handleResetDefaults() {
 <style scoped>
 .app-header {
   height: 56px;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -201,7 +201,7 @@ function handleResetDefaults() {
 
 .btn-toggle-sidebar {
   background: transparent;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   width: 32px;
   height: 32px;
@@ -209,14 +209,14 @@ function handleResetDefaults() {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #475569;
+  color: var(--text-muted);
   transition: all 0.15s ease;
 }
 
 .btn-toggle-sidebar:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #0f172a;
+  background: var(--primary-light);
+  border-color: var(--primary-border);
+  color: var(--primary);
 }
 
 .brand-text {
@@ -227,14 +227,14 @@ function handleResetDefaults() {
 .brand-title {
   font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-main);
   margin: 0;
   line-height: 1.2;
 }
 
 .brand-subtitle {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1.2;
 }
 
@@ -249,8 +249,8 @@ function handleResetDefaults() {
   border-radius: 20px;
   font-size: 11.5px;
   font-weight: 600;
-  background: #eff6ff;
-  color: #0284c7;
-  border: 1px solid #bae6fd;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
 }
 </style>

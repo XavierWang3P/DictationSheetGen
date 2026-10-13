@@ -53,11 +53,55 @@ const layout = computed(() => computePageLayout(state.draft.items, state.draft.s
 
 const themeOverrides = {
   common: {
-    primaryColor: '#0284c7',
-    primaryColorHover: '#0369a1',
-    primaryColorPressed: '#0c4a6e',
-    primaryColorSuppl: '#38bdf8',
+    primaryColor: '#2f6659',
+    primaryColorHover: '#255247',
+    primaryColorPressed: '#1d3e36',
+    primaryColorSuppl: '#e8f0ed',
+
+    infoColor: '#2f6659',
+    infoColorHover: '#255247',
+    infoColorPressed: '#1d3e36',
+    infoColorSuppl: '#e8f0ed',
+
+    successColor: '#43866f',
+    successColorHover: '#38705d',
+    successColorPressed: '#2c594a',
+    successColorSuppl: '#eaf3f0',
+
+    warningColor: '#b7792b',
+    warningColorHover: '#9c6623',
+    warningColorPressed: '#7d521a',
+    warningColorSuppl: '#faefe0',
+
+    errorColor: '#c5524a',
+    errorColorHover: '#a9443e',
+    errorColorPressed: '#8c352f',
+    errorColorSuppl: '#faeceb',
+
+    textColorBase: '#26332f',
+    textColor1: '#26332f',
+    textColor2: '#68756f',
+    textColor3: '#909b96',
+
+    bodyColor: '#f3f5f2',
+    cardColor: '#ffffff',
+    borderColor: '#c9d3ce',
+    dividerColor: '#e2e7e4',
     borderRadius: '6px'
+  },
+  Button: {
+    textColorPrimary: '#ffffff',
+    colorGhostPrimary: 'transparent',
+    textColorGhostPrimary: '#2f6659',
+    borderGhostPrimary: '1px solid #2f6659',
+    textColorGhostHoverPrimary: '#255247',
+    borderGhostHoverPrimary: '1px solid #255247'
+  },
+  Badge: {
+    colorInfo: '#e8f0ed',
+    textColorInfo: '#2f6659',
+    colorSuccess: '#eaf3f0',
+    textColorSuccess: '#43866f'
   }
 };
 
@@ -93,6 +137,29 @@ onMounted(async () => {
 </script>
 
 <style>
+:root {
+  --primary: #2f6659;
+  --primary-hover: #255247;
+  --primary-light: #e8f0ed;
+  --primary-border: #b9cec7;
+
+  --text-main: #26332f;
+  --text-muted: #68756f;
+  --text-light: #909b96;
+
+  --bg-app: #f3f5f2;
+  --bg-sidebar: #fafbf9;
+  --bg-card: #ffffff;
+
+  --border-color: #c9d3ce;
+  --border-light: #e2e7e4;
+
+  --accent: #b7792b;
+  --success: #43866f;
+  --danger: #c5524a;
+  --danger-hover: #a9443e;
+}
+
 /* 全局基础重置与排版规范 */
 * {
   box-sizing: border-box;
@@ -103,8 +170,8 @@ html, body {
   padding: 0;
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #1e293b;
-  background: #f1f5f9;
+  color: var(--text-main);
+  background: var(--bg-app);
   -webkit-font-smoothing: antialiased;
 }
 

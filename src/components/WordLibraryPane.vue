@@ -3,7 +3,7 @@
     <n-card size="small" :bordered="false" class="pane-card">
       <template #header>
         <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <span style="font-size:14px; font-weight:700; color:#0f172a;">📚 本地离线词汇库</span>
+          <span style="font-size:14px; font-weight:700; color:var(--text-main);">📚 本地离线词汇库</span>
           <n-badge :value="`共 ${state.library.words.length} 词`" type="success" id="libStatBadge" />
         </div>
       </template>
@@ -49,7 +49,7 @@
       </div>
 
       <div id="libSelectedInfo" class="selected-info-text">
-        已选中 <strong id="libSelectedCount" style="color:#0284c7;">{{ selectedIds.size }}</strong> 个单词
+        已选中 <strong id="libSelectedCount" style="color:var(--primary);">{{ selectedIds.size }}</strong> 个单词
       </div>
 
       <!-- 词库条目列表 -->
@@ -82,9 +82,9 @@
             />
 
             <div class="lib-item-text">
-              <strong style="color:#0f172a; font-size:12.5px;">{{ w.en }}</strong>
-              <span v-if="w.phonetic" style="color:#0284c7; font-size:11px; margin-left:4px;">[{{ w.phonetic }}]</span>
-              <span style="color:#64748b; font-size:11.5px; margin-left:6px;">{{ w.zh || '' }}</span>
+              <strong style="color:var(--text-main); font-size:12.5px;">{{ w.en }}</strong>
+              <span v-if="w.phonetic" style="color:var(--accent); font-size:11px; margin-left:4px;">[{{ w.phonetic }}]</span>
+              <span style="color:var(--text-muted); font-size:11.5px; margin-left:6px;">{{ w.zh || '' }}</span>
             </div>
 
             <div class="lib-item-actions">
@@ -336,21 +336,27 @@ async function handleClearLib() {
 
 .form-desc {
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1.45;
   margin: 0 0 10px 0;
 }
 
 .native-search-input {
   width: 100%;
-  box-sizing: border-box;
-  padding: 6px 10px;
+  padding: 7px 10px;
   font-size: 13px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
   border-radius: 6px;
   outline: none;
   font-family: inherit;
-  transition: border-color 0.2s;
+  transition: all 0.15s ease;
+}
+
+.native-search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
 }
 
 .native-search-input:focus {
@@ -368,7 +374,7 @@ async function handleClearLib() {
 
 .selected-info-text {
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
@@ -383,7 +389,7 @@ async function handleClearLib() {
 .empty-list-tip {
   text-align: center;
   padding: 30px;
-  color: #94a3b8;
+  color: var(--text-light);
   font-size: 12px;
 }
 
@@ -392,16 +398,16 @@ async function handleClearLib() {
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 6px;
   font-size: 12px;
   gap: 8px;
 }
 
 .lib-item-row:hover {
-  border-color: #cbd5e1;
-  background: #f8fafc;
+  border-color: var(--border-color);
+  background: var(--bg-sidebar);
 }
 
 .lib-item-text {
@@ -420,24 +426,24 @@ async function handleClearLib() {
 
 .btn-act {
   background: transparent;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 2px 7px;
   font-size: 11px;
   cursor: pointer;
-  color: #475569;
+  color: var(--text-muted);
   transition: all 0.15s ease;
 }
 
 .btn-act:hover {
-  background: #eff6ff;
-  color: #0284c7;
-  border-color: #0284c7;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .btn-act.del:hover {
-  background: #fff1f2;
-  color: #e11d48;
-  border-color: #e11d48;
+  background: #faeceb;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 </style>

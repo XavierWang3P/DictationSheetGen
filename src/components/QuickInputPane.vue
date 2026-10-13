@@ -3,7 +3,7 @@
     <n-card size="small" :bordered="false" class="pane-card">
       <template #header>
         <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <span style="font-size:14px; font-weight:700; color:#0f172a;">📝 单词输入与当前试卷</span>
+          <span style="font-size:14px; font-weight:700; color:var(--text-main);">📝 单词输入与当前试卷</span>
           <n-badge :value="`${state.draft.items.length} 词`" type="info" id="badgeWordCount" />
         </div>
       </template>
@@ -70,7 +70,7 @@
         v-model="rawText"
         rows="4"
         placeholder="美丽的；优美的&#10;工作努力的；辛勤的&#10;绳；粗绳&#10;聪明的；聪颖的&#10;机器人&#10;钢琴&#10;幼小的；年轻的&#10;跳；跃&#10;国际象棋"
-        style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; font-size: 13px; font-family: inherit; margin-bottom: 10px; resize: vertical;"
+        style="width: 100%; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 8px; font-size: 13px; font-family: inherit; margin-bottom: 10px; resize: vertical;"
       ></textarea>
 
       <div class="action-btn-row">
@@ -335,22 +335,23 @@ function removeItem(index) {
 .row-label {
   font-size: 13px;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-main);
 }
 
 .form-desc {
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1.45;
   margin: 0 0 8px 0;
 }
 
 .segmented-control {
   display: flex;
-  background: #f1f5f9;
+  background: var(--bg-app);
   border-radius: 6px;
   padding: 2px;
   gap: 2px;
+  border: 1px solid var(--border-light);
 }
 
 .segmented-control input[type="radio"] {
@@ -361,7 +362,7 @@ function removeItem(index) {
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.15s ease;
@@ -370,8 +371,8 @@ function removeItem(index) {
 }
 
 .segmented-control input[type="radio"]:checked + label {
-  background: #ffffff;
-  color: #0284c7;
+  background: var(--bg-card);
+  color: var(--primary);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -394,7 +395,7 @@ function removeItem(index) {
 .empty-list-tip {
   text-align: center;
   padding: 24px;
-  color: #94a3b8;
+  color: var(--text-light);
   font-size: 12px;
 }
 
@@ -403,8 +404,8 @@ function removeItem(index) {
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
   border-radius: 6px;
   font-size: 12.5px;
 }
@@ -420,25 +421,25 @@ function removeItem(index) {
 }
 
 .word-item-index {
-  color: #94a3b8;
+  color: var(--text-light);
   font-size: 11.5px;
   min-width: 18px;
 }
 
 .word-item-en {
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-main);
 }
 
 .chip-blank-mark {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--primary-light);
+  color: var(--primary);
   border-radius: 3px;
   padding: 0 4px;
 }
 
 .word-item-zh {
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -450,23 +451,24 @@ function removeItem(index) {
 
 .word-item-btn {
   background: transparent;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 1px 5px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .word-item-btn:hover {
-  background: #ffffff;
-  color: #0284c7;
-  border-color: #0284c7;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .word-item-btn.del:hover {
-  color: #e11d48;
-  border-color: #e11d48;
+  background: #faeceb;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 </style>

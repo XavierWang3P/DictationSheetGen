@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
 /* 试卷真实比例排版样式 */
 .sheet-page {
   background: #ffffff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(38, 51, 47, 0.08);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -288,7 +288,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .preview-viewport {
   flex: 1;
-  background: #f1f5f9;
+  background: var(--bg-app);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -297,9 +297,9 @@ onBeforeUnmount(() => {
 
 .preview-toolbar {
   height: 48px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
 .preview-mode-tag {
   font-size: 13px;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   gap: 6px;

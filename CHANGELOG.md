@@ -2,6 +2,22 @@
 
 本项目遵循 [Semantic Versioning 2.0.0](https://semver.org/lang/zh-CN/) 语义化版本规范。
 
+## [2.1.0] - 2026-10-14
+
+### 视觉与主题体验升级 (UI / Theme Refinement)
+- **接入森系墨绿典雅调色板 (`:root` CSS 变量体系)**：
+  - 主色系采用深沉典雅的深松墨绿：`--primary: #2f6659`、`--primary-hover: #255247`、`--primary-light: #e8f0ed`、`--primary-border: #b9cec7`；
+  - 文字系统升级为护眼森林深青色调：`--text-main: #26332f`、`--text-muted: #68756f`、`--text-light: #909b96`；
+  - 背景与边框系统切换为温暖柔和的大地背景：`--bg-app: #f3f5f2`、`--bg-sidebar: #fafbf9`、`--bg-card: #ffffff`、`--border-color: #c9d3ce`、`--border-light: #e2e7e4`；
+  - 辅助色采用复古金棕强调 `--accent: #b7792b`、森林绿 `--success: #43866f` 与陶土红 `--danger: #c5524a`；
+- **Naive UI 全局 Theme Overrides 深度适配**：
+  - 将 Naive UI 的全局 `common`、`Button`、`Badge`、`Popconfirm` 等组件主题深度与森系配色对齐；
+- **全站组件样式重塑**：
+  - `AppHeader` 顶部栏、`SidebarTabs` 侧栏导航、`QuickInputPane` 快捷录入、`WordLibraryPane` 本地词库、`VisualClozePane` 挖空编辑器、`SettingsPane` 版式设置及 `PreviewViewport` 预览舞台全面迁移至 CSS 自定义变量，视觉整体性与质感显著提升；
+- **测试兼容性与单文件构建**：
+  - 重新构建单文件生产产物 `dist/index.html` (415.54 kB)；
+  - 严格保持底层排版与默认测试断言兼容，自动化测试套件 `test:all` 保持 100% 通过。
+
 ## [2.0.0] - 2026-10-13
 
 ### 重大变更 (Major Changes)

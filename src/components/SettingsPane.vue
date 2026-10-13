@@ -589,11 +589,11 @@ function onPromptFontSizeInput(e) {
 }
 
 .settings-group {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(38, 51, 47, 0.04);
 }
 
 .group-header {
@@ -616,12 +616,12 @@ function onPromptFontSizeInput(e) {
 .group-title {
   font-size: 13.5px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-main);
 }
 
 .collapse-arrow {
   font-size: 14px;
-  color: #94a3b8;
+  color: var(--text-light);
   transition: transform 0.2s ease;
   transform: rotate(90deg);
 }
@@ -649,17 +649,18 @@ function onPromptFontSizeInput(e) {
 }
 
 .form-row label {
-  color: #475569;
+  color: var(--text-muted);
   font-weight: 500;
   white-space: nowrap;
 }
 
 .segmented-control {
   display: flex;
-  background: #f1f5f9;
+  background: var(--bg-app);
   border-radius: 6px;
   padding: 2px;
   gap: 2px;
+  border: 1px solid var(--border-light);
 }
 
 .segmented-control input[type="radio"] {
@@ -670,7 +671,7 @@ function onPromptFontSizeInput(e) {
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.15s ease;
@@ -679,8 +680,8 @@ function onPromptFontSizeInput(e) {
 }
 
 .segmented-control input[type="radio"]:checked + label {
-  background: #ffffff;
-  color: #0284c7;
+  background: var(--bg-card);
+  color: var(--primary);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -696,14 +697,14 @@ function onPromptFontSizeInput(e) {
 .form-range {
   flex: 1;
   height: 5px;
-  accent-color: #0284c7;
+  accent-color: var(--primary);
   cursor: pointer;
 }
 
 .form-range-val {
   font-size: 12px;
   font-weight: 600;
-  color: #0284c7;
+  color: var(--primary);
   min-width: 42px;
   text-align: right;
   font-family: monospace;
@@ -721,22 +722,22 @@ function onPromptFontSizeInput(e) {
   align-items: center;
   gap: 4px;
   font-size: 12.5px;
-  color: #334155;
+  color: var(--text-main);
   cursor: pointer;
 }
 
 .checkbox-label input[type="checkbox"] {
-  accent-color: #0284c7;
+  accent-color: var(--primary);
   cursor: pointer;
 }
 
 .form-select {
   padding: 5px 10px;
   font-size: 12.5px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: #ffffff;
-  color: #1e293b;
+  background: var(--bg-card);
+  color: var(--text-main);
   cursor: pointer;
   outline: none;
 }

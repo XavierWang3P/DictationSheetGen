@@ -3,7 +3,7 @@
     <!-- 句子录入与可视化挖空工作区 -->
     <n-card size="small" :bordered="false" class="pane-card">
       <template #header>
-        <span style="font-size:14px; font-weight:700; color:#0f172a;">✏️ 句子录入与可视化挖空</span>
+        <span style="font-size:14px; font-weight:700; color:var(--text-main);">✏️ 句子录入与可视化挖空</span>
       </template>
 
       <p class="form-desc">
@@ -72,7 +72,7 @@
                 <template v-for="(seg, sIdx) in segments" :key="sIdx">
                   <span
                     v-if="seg.blank"
-                    style="border-bottom:2px solid #0284c7; color:#0284c7; font-weight:700; padding:0 4px; margin:0 2px;"
+                    style="border-bottom:2px solid var(--primary); color:var(--primary); font-weight:700; padding:0 4px; margin:0 2px;"
                   >
                     ( {{ seg.text.trim() }} )
                   </span>
@@ -82,7 +82,7 @@
               <div v-if="translationText" style="font-size:11.5px; color:#64748b; margin-top:4px;">
                 释义：{{ translationText }}
               </div>
-              <div v-if="!hasBlank" style="font-size:11px; color:#e11d48; margin-top:3px;">
+              <div v-if="!hasBlank" style="font-size:11px; color:var(--danger); margin-top:3px;">
                 ⚠️ 提示：尚未选择挖空单词，请点击上方单词胶囊
               </div>
             </div>
@@ -107,7 +107,7 @@
     <n-card size="small" :bordered="false" class="pane-card" style="margin-top: 12px;">
       <template #header>
         <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <span style="font-size:14px; font-weight:700; color:#0f172a;">📚 本地句库列表</span>
+          <span style="font-size:14px; font-weight:700; color:var(--text-main);">📚 本地句库列表</span>
           <n-badge :value="`共 ${state.library.sentences.length} 句`" type="info" id="libSentenceBadge" />
         </div>
       </template>
@@ -128,7 +128,7 @@
             <div style="flex:1; overflow:hidden; padding-right:6px;">
               <div class="sentence-en-display">
                 <template v-for="(seg, idx) in s.segments" :key="idx">
-                  <strong v-if="seg.blank" style="color:#0284c7; text-decoration:underline;">[{{ seg.text.trim() }}]</strong>
+                  <strong v-if="seg.blank" style="color:var(--primary); text-decoration:underline;">[{{ seg.text.trim() }}]</strong>
                   <span v-else>{{ seg.text }}</span>
                 </template>
               </div>
@@ -210,7 +210,7 @@ function renderPreviewHtml(tokList, translation) {
   }
   const segHtml = segs.map(seg => {
     if (seg.blank) {
-      return `<span style="border-bottom:2px solid #0284c7; color:#0284c7; font-weight:700; padding:0 4px; margin:0 2px;">( ${escapeHtml(seg.text.trim())} )</span>`;
+      return `<span style="border-bottom:2px solid var(--primary); color:var(--primary); font-weight:700; padding:0 4px; margin:0 2px;">( ${escapeHtml(seg.text.trim())} )</span>`;
     }
     return `<span>${escapeHtml(seg.text)}</span>`;
   }).join('');
@@ -356,14 +356,20 @@ async function handleDeleteSentence(id) {
 
 .native-search-input {
   width: 100%;
-  box-sizing: border-box;
-  padding: 6px 10px;
+  padding: 7px 10px;
   font-size: 13px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
   border-radius: 6px;
   outline: none;
   font-family: inherit;
-  transition: border-color 0.2s;
+  transition: all 0.15s ease;
+}
+
+.native-search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
 }
 
 .native-search-input:focus {
@@ -377,15 +383,15 @@ async function handleDeleteSentence(id) {
 
 .form-desc {
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1.45;
   margin: 0 0 10px 0;
 }
 
 .item-label {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-main);
   display: block;
   margin-bottom: 4px;
 }
@@ -395,8 +401,8 @@ async function handleDeleteSentence(id) {
   flex-wrap: wrap;
   gap: 6px;
   padding: 10px;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  background: var(--bg-sidebar);
+  border: 1px dashed var(--border-color);
   border-radius: 6px;
   min-height: 48px;
   align-items: center;
@@ -410,31 +416,31 @@ async function handleDeleteSentence(id) {
   font-size: 13px;
   font-family: Arial, sans-serif;
   cursor: pointer;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #1e293b;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
   user-select: none;
   transition: all 0.15s ease;
 }
 
 .visual-token-btn:hover {
-  background: #eff6ff;
-  border-color: #0284c7;
-  color: #0284c7;
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .visual-token-btn.is-blank {
-  background: #0284c7;
+  background: var(--primary);
   color: #ffffff;
-  border-color: #0284c7;
+  border-color: var(--primary);
   font-weight: 700;
-  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.35);
+  box-shadow: 0 1px 4px rgba(47, 102, 89, 0.35);
 }
 
 .visual-cloze-preview {
   padding: 8px 10px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   min-height: 42px;
   display: flex;
@@ -457,7 +463,7 @@ async function handleDeleteSentence(id) {
 .empty-list-tip {
   text-align: center;
   padding: 24px;
-  color: #94a3b8;
+  color: var(--text-light);
   font-size: 12px;
 }
 
@@ -466,20 +472,20 @@ async function handleDeleteSentence(id) {
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 6px;
   gap: 8px;
 }
 
 .lib-item-row:hover {
-  border-color: #cbd5e1;
-  background: #f8fafc;
+  border-color: var(--border-color);
+  background: var(--bg-sidebar);
 }
 
 .sentence-en-display {
   font-size: 12px;
-  color: #0f172a;
+  color: var(--text-main);
   line-height: 1.4;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -488,7 +494,7 @@ async function handleDeleteSentence(id) {
 
 .sentence-zh-display {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
@@ -502,24 +508,24 @@ async function handleDeleteSentence(id) {
 
 .btn-act {
   background: transparent;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 2px 7px;
   font-size: 11px;
   cursor: pointer;
-  color: #475569;
+  color: var(--text-muted);
   transition: all 0.15s ease;
 }
 
 .btn-act:hover {
-  background: #eff6ff;
-  color: #0284c7;
-  border-color: #0284c7;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .btn-act.del:hover {
-  background: #fff1f2;
-  color: #e11d48;
-  border-color: #e11d48;
+  background: #faeceb;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 </style>
