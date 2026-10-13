@@ -1,6 +1,6 @@
 {
   "name": "dictationsheetgen",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "中小学英语默写纸生成器。采用 Vue 3 + Naive UI 现代架构，支持离线单文件运行、四线三格排版、句子挖空、三年级字母专项默写与本地离线词库。",
   "main": "test_acceptance.js",
   "directories": {

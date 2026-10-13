@@ -229,13 +229,6 @@
 
       <!-- 普通单词/句子模式下的录入区域 (字母模式下隐藏，界面更精简) -->
       <template v-if="state.draft.settings.dictMode !== 'alphabet'">
-        <div class="alpha-quick-entry-row" style="margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-          <span style="font-size:11px; color:var(--primary); font-weight:600;">🔤 三年级字母专项:</span>
-          <button type="button" class="preset-chip-btn" id="btnQuickAlpha26" @click="handleLoadAlphabetPreset('alpha_26_pair')">26字母全默写</button>
-          <button type="button" class="preset-chip-btn" id="btnQuickNeighbors" @click="handleLoadAlphabetPreset('alpha_neighbors_9')">左右邻居(9题)</button>
-          <button type="button" class="preset-chip-btn" id="btnQuickCase" @click="handleLoadAlphabetPreset('alpha_case_convert_9')">大小写转换(9题)</button>
-        </div>
-
         <p class="form-desc" id="formDescWords">
           支持每行一词；支持纯中文；支持“word | 中文”、“word - 中文”或空格分隔；中文为空时仍生成默写格。
         </p>
