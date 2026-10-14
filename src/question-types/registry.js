@@ -11,12 +11,12 @@ export const DEFAULT_LAYOUT_DEFAULTS = Object.freeze({
 });
 
 const COLUMN_RULES = {
-  wordDictationColumns: [2, 3, 4],
-  sentenceDictationColumns: [1, 2],
-  sentenceClozeColumns: ['auto', 1, 2],
-  choiceColumns: ['auto', 1, 2],
-  inlineFillColumns: ['auto', 1, 2],
-  englishCompositionColumns: [1]
+  wordDictationColumns: [1, 2, 3, 4, 5],
+  sentenceDictationColumns: [1, 2, 3, 4, 5],
+  sentenceClozeColumns: ['auto', 1, 2, 3, 4, 5],
+  choiceColumns: ['auto', 1, 2, 3, 4, 5],
+  inlineFillColumns: ['auto', 1, 2, 3, 4, 5],
+  englishCompositionColumns: [1, 2, 3, 4, 5]
 };
 
 function cloneDefault(value) {
@@ -347,13 +347,13 @@ export function validateQuestion(item) {
 
 export function resolveQuestionColumns(item, settings = {}) {
   const override = Number(item?.layout?.columns);
-  if ([1, 2, 3, 4].includes(override)) return override;
+  if ([1, 2, 3, 4, 5].includes(override)) return override;
   const defaults = normalizeLayoutDefaults(settings.layoutDefaults, settings);
   const type = item?.questionType || 'word-dictation';
   if (type === 'word-dictation') return defaults.wordDictationColumns;
   if (type === 'sentence-dictation') return defaults.sentenceDictationColumns;
-  if (type === 'english-composition') return 1;
-  if (type === 'alphabet') return Math.min(4, Math.max(1, Number(settings.columns) || 3));
+  if (type === 'english-composition') return defaults.englishCompositionColumns || 1;
+  if (type === 'alphabet') return Math.min(5, Math.max(1, Number(settings.columns) || 3));
 
   let value = 'auto';
   if (type === 'sentence-cloze') value = defaults.sentenceClozeColumns;

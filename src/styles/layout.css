@@ -21,8 +21,8 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px;
   padding: 5px 16px;
   border-top: 1px solid var(--color-border, #d9e1dd);
   background: var(--color-bg-card, #ffffff);
@@ -30,6 +30,31 @@
   font-size: 11px;
   line-height: 1.2;
   letter-spacing: 0.01em;
+  flex-wrap: wrap;
+}
+
+.app-footer-left,
+.app-footer-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-footer-link {
+  color: var(--color-text-muted, #68756f);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s ease;
+}
+
+.app-footer-link:hover {
+  color: var(--color-primary, #2f6659);
+}
+
+.app-footer-social {
+  cursor: pointer;
 }
 
 .app-footer-version {

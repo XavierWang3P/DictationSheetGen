@@ -11,17 +11,18 @@
         data-debug-name="侧边栏折叠按钮"
         @click="state.ui.isSidebarCollapsed = !state.ui.isSidebarCollapsed"
       />
+      <img
+        src="../assets/branding/dictation-sheet-logo.png"
+        alt="DictationSheet Logo"
+        class="header-logo"
+      />
       <div class="brand-text">
-        <h1 class="brand-title">小学/初中英语默写纸生成器</h1>
-        <span class="brand-subtitle">中小学英语单词 / 句子标准四线三格多联打印排版工具</span>
+        <h1 class="brand-title">英语默写练习生成工具</h1>
+        <span class="brand-subtitle">DictationSheet</span>
       </div>
     </div>
 
     <div class="header-actions">
-      <div class="quick-stat-badge" id="quickStatBadge" data-debug-id="H-003" data-debug-name="试卷概览状态标签">
-        已添加 {{ layout.totalItems }} 题 · 每页 {{ layout.copiesPerPage }} 份 · 共 {{ layout.totalPages }} 页
-      </div>
-
       <!-- 兼容旧测试脚本隐藏桩，实际界面自动响应更新，无需手动生成预览 -->
       <button id="btnGeneratePreview" style="display:none;" aria-hidden="true" @click="handleRefreshPreview"></button>
 
@@ -285,13 +286,12 @@ function handleResetDefaults() {
   gap: 8px;
 }
 
-.badge-status {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 600;
-  background: var(--primary-light);
-  color: var(--primary);
-  border: 1px solid var(--primary-border);
+.header-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 </style>

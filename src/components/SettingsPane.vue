@@ -209,44 +209,69 @@
         <div class="form-row layout-default-row">
           <label for="wordDictationColumns">单词默写默认</label>
           <select id="wordDictationColumns" class="form-select" v-model.number="state.draft.settings.layoutDefaults.wordDictationColumns">
+            <option :value="1">每行1题</option>
             <option :value="2">每行2题</option>
-            <option :value="3">每行3题（默认）</option>
+            <option :value="3">每行3题（推荐）</option>
             <option :value="4">每行4题</option>
+            <option :value="5">每行5题</option>
           </select>
         </div>
 
         <div class="form-row layout-default-row">
           <label for="sentenceDictationColumns">句子默写默认</label>
           <select id="sentenceDictationColumns" class="form-select" v-model.number="state.draft.settings.layoutDefaults.sentenceDictationColumns">
-            <option :value="1">每行1题（默认）</option>
+            <option :value="1">每行1题（推荐）</option>
             <option :value="2">每行2题</option>
+            <option :value="3">每行3题</option>
+            <option :value="4">每行4题</option>
+            <option :value="5">每行5题</option>
           </select>
         </div>
 
         <div class="form-row layout-default-row">
           <label for="sentenceClozeColumns">句子挖空默认</label>
           <select id="sentenceClozeColumns" class="form-select" v-model="state.draft.settings.layoutDefaults.sentenceClozeColumns">
-            <option value="auto">自动选择每行1题或2题</option>
+            <option value="auto">自动选择每行1题至2题</option>
             <option :value="1">每行1题</option>
             <option :value="2">每行2题</option>
+            <option :value="3">每行3题</option>
+            <option :value="4">每行4题</option>
+            <option :value="5">每行5题</option>
           </select>
         </div>
 
         <div class="form-row layout-default-row">
           <label for="choiceColumns">选择题默认</label>
           <select id="choiceColumns" class="form-select" v-model="state.draft.settings.layoutDefaults.choiceColumns">
-            <option value="auto">自动选择每行1题或2题</option>
+            <option value="auto">自动选择每行1题至2题</option>
             <option :value="1">每行1题</option>
             <option :value="2">每行2题</option>
+            <option :value="3">每行3题</option>
+            <option :value="4">每行4题</option>
+            <option :value="5">每行5题</option>
           </select>
         </div>
 
         <div class="form-row layout-default-row">
           <label for="inlineFillColumns">填空题默认</label>
           <select id="inlineFillColumns" class="form-select" v-model="state.draft.settings.layoutDefaults.inlineFillColumns">
-            <option value="auto">自动选择每行1题或2题</option>
+            <option value="auto">自动选择每行1题至2题</option>
             <option :value="1">每行1题</option>
             <option :value="2">每行2题</option>
+            <option :value="3">每行3题</option>
+            <option :value="4">每行4题</option>
+            <option :value="5">每行5题</option>
+          </select>
+        </div>
+
+        <div class="form-row layout-default-row">
+          <label for="englishCompositionColumns">英语作文默认</label>
+          <select id="englishCompositionColumns" class="form-select" v-model.number="state.draft.settings.layoutDefaults.englishCompositionColumns">
+            <option :value="1">每行1题（推荐，保持完整书写行宽）</option>
+            <option :value="2">每行2题（不建议）</option>
+            <option :value="3">每行3题（不建议）</option>
+            <option :value="4">每行4题（不建议）</option>
+            <option :value="5">每行5题（不建议）</option>
           </select>
         </div>
 

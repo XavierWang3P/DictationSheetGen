@@ -23,12 +23,28 @@
         <AppIcon :name="t.icon" :size="13" />
         {{ t.label }}
       </button>
+
+      <!-- 兼容旧测试脚本隐藏桩 (可视化挖空合并至题目录入，保留无障碍桩支持历史自动化脚本) -->
+      <button
+        type="button"
+        class="sidebar-tab-btn"
+        data-tab="paneClozeVisual"
+        style="display:none;"
+        aria-hidden="true"
+        @click="onTabClick('paneClozeVisual')"
+      >
+        可视化挖空
+      </button>
     </div>
 
     <!-- 侧栏可滚动内容区 -->
     <div class="sidebar-scrollable">
       <div id="paneQuick" class="sidebar-tab-pane" :class="{ active: state.ui.activeView === 'paneQuick' }">
         <QuickInputPane />
+      </div>
+
+      <div id="paneList" class="sidebar-tab-pane" :class="{ active: state.ui.activeView === 'paneList' }">
+        <QuestionListPane />
       </div>
 
       <div id="paneWordLib" class="sidebar-tab-pane" :class="{ active: state.ui.activeView === 'paneWordLib' }">
@@ -49,21 +65,22 @@
 <script setup>
 import { state } from '../stores/appStore.js';
 import QuickInputPane from './QuickInputPane.vue';
+import QuestionListPane from './QuestionListPane.vue';
 import WordLibraryPane from './WordLibraryPane.vue';
 import VisualClozePane from './VisualClozePane.vue';
 import SettingsPane from './SettingsPane.vue';
 import AppIcon from './AppIcon.vue';
 
 const tabs = [
-  { key: 'paneQuick', label: '快速录入', icon: 'edit' },
-  { key: 'paneWordLib', label: '本地词库', icon: 'book' },
-  { key: 'paneClozeVisual', label: '可视化挖空', icon: 'tag' },
-  { key: 'paneSettings', label: '版式设置', icon: 'settings' }
+  { key: 'paneQuick', label: '题目录入', icon: 'edit' },
+  { key: 'paneList', label: '试卷题目', icon: 'file-text' },
+  { key: 'paneWordLib', label: '备课资源库', icon: 'book' },
+  { key: 'paneSettings', label: '试卷排版', icon: 'settings' }
 ];
 
 function onTabClick(key) {
   state.ui.activeView = key;
-  ['paneQuick', 'paneWordLib', 'paneClozeVisual', 'paneSettings'].forEach(k => {
+  ['paneQuick', 'paneList', 'paneWordLib', 'paneClozeVisual', 'paneSettings'].forEach(k => {
     const pane = document.getElementById(k);
     if (pane) {
       pane.classList.toggle('active', k === key);

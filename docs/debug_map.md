@@ -15,19 +15,18 @@
 | :--- | :--- | :--- | :--- |
 | **H-001** | 顶部主导航与工具栏 | `AppHeader.vue` | `src/components/AppHeader.vue` |
 | **H-002** | 侧边栏展开/折叠按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
-| **H-003** | 试卷已添加题目状态标签 | `AppHeader.vue` | `src/components/AppHeader.vue` |
 | **H-004** | 导出配置 JSON 按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
 | **H-005** | 导入数据/配置按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
 | **H-006** | 恢复默认出厂设置按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
 | **H-007** | 打印 / 导出 PDF 按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
-| **T-001** | 侧边栏工作区导航 Tab 栏 | `SidebarTabs.vue` | `src/components/SidebarTabs.vue` |
-| **Q-001** | 快速组卷与录入面板 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
-| **Q-002** | 添加题型选择器（四题型） | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
+| **T-001** | 侧边栏工作区导航 Tab 栏（题目录入/试卷题目/备课资源库/试卷排版） | `SidebarTabs.vue` | `src/components/SidebarTabs.vue` |
+| **Q-001** | 统一题目录入面板 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
+| **Q-002** | 题型选择器（全题型） | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
 | **Q-003** | 题目快速录入文本框 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
 | **Q-004** | ➕ 添加到试卷按钮 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
 | **Q-005** | 存入本地词库按钮 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
 | **Q-006** | 清空试卷按钮 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
-| **Q-007** | 当前试卷题目列表容器 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
+| **Q-007** | 试卷题目清单与紧凑列表面板 | `QuestionListPane.vue` | `src/components/QuestionListPane.vue` |
 | **Q-008** | 选择题、填空题与英语作文结构化编辑器 | `GeneralQuestionEditor.vue` | `src/components/GeneralQuestionEditor.vue` |
 | **L-001** | 本地离线词库面板 | `WordLibraryPane.vue` | `src/components/WordLibraryPane.vue` |
 | **L-002** | 年级/单元分组胶囊栏 | `WordLibraryPane.vue` | `src/components/WordLibraryPane.vue` |

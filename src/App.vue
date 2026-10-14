@@ -35,9 +35,54 @@
             data-debug-component="App"
             data-debug-file="src/App.vue"
           >
-            <span class="app-footer-version">DictationSheetGen v{{ appVersion }}</span>
-            <span class="app-footer-divider" aria-hidden="true"></span>
-            <span>Copyright © 2026 XavierWang3P</span>
+            <div class="app-footer-left">
+              <a
+                href="https://github.com/XavierWang3P/DictationSheetGen"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="app-footer-link"
+                title="查看 GitHub 项目"
+              >
+                <AppIcon name="github" :size="13" />
+                <span class="app-footer-version">DictationSheet v{{ appVersion }}</span>
+              </a>
+              <span class="app-footer-divider" aria-hidden="true"></span>
+              <span class="app-footer-copy">
+                Copyright © 2026
+                <a
+                  href="https://xavier.wang"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="app-footer-link"
+                  title="访问 XavierWang 博客"
+                >
+                  <AppIcon name="globe" :size="12" />
+                  XavierWang
+                </a>
+              </span>
+            </div>
+            <div class="app-footer-right">
+              <n-tooltip trigger="hover">
+                <template #trigger>
+                  <span class="app-footer-link app-footer-social">
+                    <AppIcon name="wechat" :size="13" />
+                    微信公众号：鸟之言语
+                  </span>
+                </template>
+                关注微信公众号：鸟之言语
+              </n-tooltip>
+              <span class="app-footer-divider" aria-hidden="true"></span>
+              <a
+                href="https://space.bilibili.com/6526939"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="app-footer-link app-footer-social"
+                title="访问 XavierWang Bilibili 空间"
+              >
+                <AppIcon name="bilibili" :size="13" />
+                Bilibili：XavierWang
+              </a>
+            </div>
           </footer>
 
           <!-- 全网页 Debug 覆盖层 (快捷键: Ctrl+Alt+D / Cmd+Opt+D) -->
@@ -60,7 +105,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue';
-import { NConfigProvider, NMessageProvider, zhCN, dateZhCN } from 'naive-ui';
+import { NConfigProvider, NMessageProvider, NTooltip, zhCN, dateZhCN } from 'naive-ui';
 import packageInfo from '../package.json';
 import { state, loadSavedState, loadLibraryFromDB } from './stores/appStore.js';
 import { useDebugMode } from './composables/useDebugMode.js';
@@ -71,6 +116,7 @@ import {
   DEFAULT_CLOZE_WORDS_RAW
 } from './core/layout.js';
 import AppHeader from './components/AppHeader.vue';
+import AppIcon from './components/AppIcon.vue';
 import SidebarTabs from './components/SidebarTabs.vue';
 import PreviewViewport from './components/PreviewViewport.vue';
 import DebugOverlay from './components/DebugOverlay.vue';

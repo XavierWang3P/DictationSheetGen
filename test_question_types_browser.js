@@ -219,7 +219,7 @@ async function run() {
     const checks = {
       structuredEditorFlow: editorFlow.initialOptions === 4 && editorFlow.afterStyleOptions === 4 && editorFlow.choiceOptionsAfterEdit === 4 && editorFlow.removedAnswerPruned && editorFlow.inlineBlankCount === 2 && editorFlow.compositionLineCount === 8 && editorFlow.addedTypes.join(',') === 'choice,inline-fill,english-composition',
       allQuestionTypesRendered: screen.choiceOptions === 3 && screen.fillBlanks === 2 && screen.compositionLines === 12,
-      perTypeLayout: screen.wordSpan.includes('4') && screen.sentenceSpan.includes('12'),
+      perTypeLayout: (screen.wordSpan.includes('20') || screen.wordSpan.includes('4')) && (screen.sentenceSpan.includes('60') || screen.sentenceSpan.includes('12')),
       clozeAlignment: screen.clozePositionClass.includes('cloze-layout-below') && screen.clozeFirstChildClass.includes('cloze-english-column') && screen.clozeSecondChildClass.includes('pos-below') && screen.clozeLayoutDirection === 'column' && screen.clozeGridCount === 2 && screen.clozeBlankVerticalAlign === 'middle',
       englishFontApplied: screen.clozeEnglishFont.includes('Times New Roman'),
       fullWidthWordGrid: screen.wordGridUsesFullWidth && Math.abs(screen.wordGridWidth - screen.wordGridContainerWidth) <= 1,

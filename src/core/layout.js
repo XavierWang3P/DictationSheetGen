@@ -669,7 +669,7 @@ export function computePageLayout(items, settings) {
   // 留出 3mm 边距防溢出安全裕量
   const maxAvailableHeightMm = Math.max(30, copyHeightMm - headerHeightMm - 3);
 
-  const gridUnits = 12;
+  const gridUnits = 60;
   const contentWidthMm = Math.max(60, pageWidthMm - 24);
   const expandedItems = [];
   migratedItems.forEach((item, originalIndex) => {
@@ -1161,7 +1161,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
     </div>
   ` : `
     <div class="sheet-body-grid" style="
-      grid-template-columns: repeat(12, minmax(0, 1fr));
+      grid-template-columns: repeat(60, minmax(0, 1fr));
       column-gap: ${effectiveColGap}mm;
       row-gap: ${effectiveRowGap}mm;
     ">

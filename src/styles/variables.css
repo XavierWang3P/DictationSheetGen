@@ -68,4 +68,12 @@
   --success: var(--color-success);
   --danger: var(--color-danger);
   --danger-hover: var(--color-danger-hover);
+
+  /* 统一题型编辑器外壳变量 */
+  --editor-padding: 12px 14px;
+  --editor-field-gap: 10px;
+  --editor-section-gap: 12px;
+  --editor-action-gap: 8px;
+  --editor-border-color: var(--color-border);
+  --editor-radius: 8px;
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="quick-input-pane" data-debug-id="Q-001" data-debug-name="快速输入区">
+  <div class="quick-input-pane" data-debug-id="Q-001" data-debug-name="题目录入区">
     <n-card size="small" :bordered="false" class="pane-card">
       <template #header>
         <div class="pane-header-title">
@@ -7,13 +7,13 @@
             <AppIcon name="edit" :size="16" />
             题目录入与试卷结构
           </span>
-          <span class="quick-stat-badge" id="badgeWordCount">
-            已添加 {{ state.draft.items.length }} 题
+          <span class="quick-stat-badge" id="badgeWordCount" @click="switchToTab('paneList')" title="点击切换到试卷题目清单" style="cursor:pointer;">
+            已添加 {{ state.draft.items.length }} 题 <AppIcon name="arrow-right" :size="12" />
           </span>
         </div>
       </template>
 
-      <!-- 录入题型切换 (单词默写 / 句子挖空 / 句子默写 / 字母专项) -->
+      <!-- 录入题型切换 (单词默写 / 句子挖空 / 句子默写 / 字母专项 / 选择题 / 填空题 / 英语作文) -->
       <div class="form-row" style="margin-bottom: 12px;">
         <label class="row-label">录入题型</label>
         <div class="segmented-control" data-debug-id="Q-002" data-debug-name="题型切换器">
@@ -68,295 +68,296 @@
         </div>
       </div>
 
-      <!-- 字母专项快捷生成面板 (仅在选择字母专项时展开) -->
-      <div v-if="currentInputType === 'alphabet'" class="alphabet-control-card" id="alphabetControlCard">
-        <div class="alphabet-type-tabs" id="alphabetTypeTabs">
-          <button
-            type="button"
-            class="alpha-type-btn"
-            :class="{ active: alphabetActiveType === 'sequence' }"
-            id="tabAlphaSeq"
-            @click="alphabetActiveType = 'sequence'"
-          >
-            <AppIcon name="alphabet" :size="13" />
-            26个字母默写
-          </button>
-          <button
-            type="button"
-            class="alpha-type-btn"
-            :class="{ active: alphabetActiveType === 'neighbors' }"
-            id="tabAlphaNeighbors"
-            @click="alphabetActiveType = 'neighbors'"
-          >
-            <AppIcon name="refresh" :size="13" />
-            字母左右邻居
-          </button>
-          <button
-            type="button"
-            class="alpha-type-btn"
-            :class="{ active: alphabetActiveType === 'case' }"
-            id="tabAlphaCase"
-            @click="alphabetActiveType = 'case'"
-          >
-            <AppIcon name="tag" :size="13" />
-            大小写转换
-          </button>
-        </div>
+      <!-- 题型 1: 句子挖空 (可视化切词胶囊 + 批量文本混合双模) -->
+      <div v-if="currentInputType === 'sentence-cloze'" class="cloze-unified-editor">
+        <QuestionEditorShell title="句子挖空题目设置" tip="输入句子后点击下方单词胶囊设空，或在文本中使用 [apple] 标记">
+          <div class="form-item-block">
+            <label class="item-label">英文句子</label>
+            <input
+              type="text"
+              v-model="visualSentenceText"
+              id="inputVisualSentence"
+              placeholder="例: Ask your teacher for help."
+              class="native-search-input"
+              @input="onVisualSentenceInput"
+            />
+          </div>
 
-        <!-- 子面板 1: 26个字母默写 -->
-        <div v-if="alphabetActiveType === 'sequence'" class="alpha-sub-config" id="paneAlphaSeq">
-          <div class="form-row-compact">
-            <span class="sub-label">大小写样式:</span>
-            <div class="segmented-control mini">
-              <input type="radio" id="alphaCasePair" value="pair" v-model="alphaSeqConfig.caseStyle" />
-              <label for="alphaCasePair">大小写 (Aa)</label>
-              <input type="radio" id="alphaCaseUpper" value="upper" v-model="alphaSeqConfig.caseStyle" />
-              <label for="alphaCaseUpper">大写 (A-Z)</label>
-              <input type="radio" id="alphaCaseLower" value="lower" v-model="alphaSeqConfig.caseStyle" />
-              <label for="alphaCaseLower">小写 (a-z)</label>
+          <div class="form-item-block">
+            <label class="item-label">中文翻译</label>
+            <input
+              type="text"
+              v-model="visualTranslationText"
+              id="inputVisualTranslation"
+              placeholder="例: 向你的老师求助。"
+              class="native-search-input"
+            />
+          </div>
+
+          <!-- 可视化单词胶囊 -->
+          <div style="margin-top: 4px;">
+            <label class="item-label" style="display:block; margin-bottom: 6px;">
+              点击单词设为挖空 (高亮绿色为挖空目标)：
+            </label>
+            <div class="visual-token-wrap" id="visualTokenWrap" data-debug-id="C-003" data-debug-name="可视化切词胶囊区">
+              <template v-if="visualWordTokens.length === 0">
+                <span class="token-placeholder">请输入上方英文句子以生成可点击单词</span>
+              </template>
+              <template v-else>
+                <button
+                  v-for="tok in visualWordTokens"
+                  :key="tok.id"
+                  type="button"
+                  class="visual-token-btn"
+                  :class="{ 'is-blank': tok.isBlank }"
+                  :data-id="tok.id"
+                  @click.stop="toggleVisualTokenBlank(tok)"
+                >
+                  {{ tok.text }}
+                </button>
+              </template>
             </div>
           </div>
 
-          <div class="form-row-compact">
-            <span class="sub-label">默写形式:</span>
-            <div class="segmented-control mini">
-              <input type="radio" id="alphaSubFull" value="full" v-model="alphaSeqConfig.subMode" />
-              <label for="alphaSubFull">3行完整四线格 (全默写)</label>
-              <input type="radio" id="alphaSubGap" value="gap" v-model="alphaSeqConfig.subMode" />
-              <label for="alphaSubGap">字母表接龙填空</label>
-              <input type="radio" id="alphaSubShuffle" value="shuffle" v-model="alphaSeqConfig.subMode" />
-              <label for="alphaSubShuffle">乱序听写</label>
+          <!-- 实时效果预览 -->
+          <div style="margin-top: 6px;">
+            <label class="item-label" style="display:block; margin-bottom: 6px;">
+              默写纸挖空效果预览：
+            </label>
+            <div class="visual-cloze-preview" id="visualClozePreview">
+              <template v-if="visualSegments.length === 0">
+                <span class="token-placeholder">暂无预览内容</span>
+              </template>
+              <template v-else>
+                <div style="font-size:13px; color:var(--text-main); line-height:1.6;">
+                  <template v-for="(seg, sIdx) in visualSegments" :key="sIdx">
+                    <span
+                      v-if="seg.blank"
+                      style="border-bottom:2px solid var(--primary); color:var(--primary); font-weight:700; padding:0 4px; margin:0 2px;"
+                    >
+                      ( {{ seg.text.trim() }} )
+                    </span>
+                    <span v-else>{{ seg.text }}</span>
+                  </template>
+                </div>
+                <div v-if="visualTranslationText" style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                  释义：{{ visualTranslationText }}
+                </div>
+              </template>
             </div>
           </div>
 
-          <div class="info-tip-row">
-            试卷将生成 3 行完整四线三格，每行 9 个独立书写格（按字母表规范排版）。
+          <!-- 批量多句粘贴 (可选) -->
+          <div style="margin-top: 8px;">
+            <label class="item-label" style="display:block; margin-bottom: 4px;">
+              批量多句标记粘贴 (可选)：
+            </label>
+            <textarea
+              class="word-textarea"
+              id="customWordTextarea"
+              v-model="rawText"
+              rows="3"
+              placeholder="在此批量粘贴多条挖空句子（每行一条，用 [apple] 标记挖空词，用 | 分隔中文翻译）"
+              style="width: 100%; border: 1px solid var(--border-color); border-radius: 5px; padding: 6px; font-size: 12px;"
+            ></textarea>
           </div>
-        </div>
 
-        <!-- 子面板 2: 字母左右邻居 -->
-        <div v-if="alphabetActiveType === 'neighbors'" class="alpha-sub-config" id="paneAlphaNeighbors">
-          <div class="form-row-compact">
-            <span class="sub-label">题目数量:</span>
-            <div class="segmented-control mini">
-              <input type="radio" id="neighCount6" :value="6" v-model="alphaNeighConfig.count" />
-              <label for="neighCount6">6 题</label>
-              <input type="radio" id="neighCount9" :value="9" v-model="alphaNeighConfig.count" />
-              <label for="neighCount9">9 题 (推荐)</label>
-              <input type="radio" id="neighCount12" :value="12" v-model="alphaNeighConfig.count" />
-              <label for="neighCount12">12 题</label>
+          <!-- 高级版式选项 (折叠收纳) -->
+          <template #advanced>
+            <div class="form-row-compact">
+              <span class="sub-label">挖空形式:</span>
+              <div class="segmented-control mini">
+                <input type="radio" name="clozeStyle" id="clozeInline" value="inline" :checked="state.draft.settings.clozeStyle === 'inline'" @change="state.draft.settings.clozeStyle = 'inline'" />
+                <label for="clozeInline">句中内嵌填空 (推荐)</label>
+                <input type="radio" name="clozeStyle" id="clozeBelow" value="below" :checked="state.draft.settings.clozeStyle === 'below'" @change="state.draft.settings.clozeStyle = 'below'" />
+                <label for="clozeBelow">句下独立书写格</label>
+              </div>
             </div>
-          </div>
 
-          <div class="form-row-compact">
-            <span class="sub-label">字母大小写:</span>
-            <div class="segmented-control mini">
-              <input type="radio" id="neighCaseUpper" value="upper" v-model="alphaNeighConfig.caseStyle" />
-              <label for="neighCaseUpper">大写 (B)</label>
-              <input type="radio" id="neighCaseLower" value="lower" v-model="alphaNeighConfig.caseStyle" />
-              <label for="neighCaseLower">小写 (b)</label>
-              <input type="radio" id="neighCaseMix" value="mix" v-model="alphaNeighConfig.caseStyle" />
-              <label for="neighCaseMix">混合</label>
+            <div class="form-row-compact">
+              <span class="sub-label">中文位置:</span>
+              <div class="segmented-control mini">
+                <input type="radio" name="clozeZhPos" id="clozeZhBelow" value="below" :checked="state.draft.settings.clozeZhPosition === 'below'" @change="state.draft.settings.clozeZhPosition = 'below'" />
+                <label for="clozeZhBelow">句下独立行</label>
+                <input type="radio" name="clozeZhPos" id="clozeZhRight" value="right" :checked="state.draft.settings.clozeZhPosition === 'right'" @change="state.draft.settings.clozeZhPosition = 'right'" />
+                <label for="clozeZhRight">紧随句末</label>
+                <input type="radio" name="clozeZhPos" id="clozeZhAbove" value="above" :checked="state.draft.settings.clozeZhPosition === 'above'" @change="state.draft.settings.clozeZhPosition = 'above'" />
+                <label for="clozeZhAbove">句子上方</label>
+                <input type="radio" name="clozeZhPos" id="clozeZhHide" value="hide" :checked="state.draft.settings.clozeZhPosition === 'hide'" @change="state.draft.settings.clozeZhPosition = 'hide'" />
+                <label for="clozeZhHide">隐藏中文</label>
+              </div>
             </div>
-          </div>
 
-          <div class="form-row-compact">
-            <span class="sub-label">邻居形式:</span>
-            <div class="segmented-control mini">
-              <input type="radio" id="neighTypeBoth" value="both" v-model="alphaNeighConfig.neighborType" />
-              <label for="neighTypeBoth">左右两邻 (___ B ___)</label>
-              <input type="radio" id="neighTypeMiddle" value="middle" v-model="alphaNeighConfig.neighborType" />
-              <label for="neighTypeMiddle">中间填空 (A ___ C)</label>
-              <input type="radio" id="neighTypeRandom" value="random" v-model="alphaNeighConfig.neighborType" />
-              <label for="neighTypeRandom">随机题型</label>
+            <div class="form-row-compact">
+              <span class="sub-label">四线格长:</span>
+              <div class="segmented-control mini">
+                <input type="radio" name="clozeBlankWidth" id="blankWidthAuto" value="auto" :checked="state.draft.settings.clozeBlankWidth === 'auto'" @change="state.draft.settings.clozeBlankWidth = 'auto'" />
+                <label for="blankWidthAuto">按词自适应</label>
+                <input type="radio" name="clozeBlankWidth" id="blankWidth1Word" value="1word" :checked="state.draft.settings.clozeBlankWidth === '1word'" @change="state.draft.settings.clozeBlankWidth = '1word'" />
+                <label for="blankWidth1Word">1格</label>
+                <input type="radio" name="clozeBlankWidth" id="blankWidth1Point5Words" value="1.5words" :checked="state.draft.settings.clozeBlankWidth === '1.5words'" @change="state.draft.settings.clozeBlankWidth = '1.5words'" />
+                <label for="blankWidth1Point5Words">1.5格</label>
+                <input type="radio" name="clozeBlankWidth" id="blankWidth2Words" value="2words" :checked="state.draft.settings.clozeBlankWidth === '2words'" @change="state.draft.settings.clozeBlankWidth = '2words'" />
+                <label for="blankWidth2Words">2格</label>
+                <input type="radio" name="clozeBlankWidth" id="blankWidth2Point5Words" value="2.5words" :checked="state.draft.settings.clozeBlankWidth === '2.5words'" @change="state.draft.settings.clozeBlankWidth = '2.5words'" />
+                <label for="blankWidth2Point5Words">2.5格</label>
+                <input type="radio" name="clozeBlankWidth" id="blankWidth3Words" value="3words" :checked="state.draft.settings.clozeBlankWidth === '3words'" @change="state.draft.settings.clozeBlankWidth = '3words'" />
+                <label for="blankWidth3Words">3格</label>
+              </div>
             </div>
-          </div>
-        </div>
+          </template>
 
-        <!-- 子面板 3: 大小写形式转换 -->
-        <div v-if="alphabetActiveType === 'case'" class="alpha-sub-config" id="paneAlphaCase">
-          <div class="form-row-compact">
-            <span class="sub-label">题目数量:</span>
-            <div class="segmented-control mini">
-              <input type="radio" id="caseCount6" :value="6" v-model="alphaCaseConfig.count" />
-              <label for="caseCount6">6 题</label>
-              <input type="radio" id="caseCount9" :value="9" v-model="alphaCaseConfig.count" />
-              <label for="caseCount9">9 题 (推荐)</label>
-              <input type="radio" id="caseCount12" :value="12" v-model="alphaCaseConfig.count" />
-              <label for="caseCount12">12 题</label>
-            </div>
-          </div>
-
-          <div class="form-row-compact">
-            <span class="sub-label">转换方向:</span>
-            <div class="segmented-control mini">
-              <input type="radio" id="caseDirUpperToLower" value="upper_to_lower" v-model="alphaCaseConfig.direction" />
-              <label for="caseDirUpperToLower">大写 ➔ 小写</label>
-              <input type="radio" id="caseDirLowerToUpper" value="lower_to_upper" v-model="alphaCaseConfig.direction" />
-              <label for="caseDirLowerToUpper">小写 ➔ 大写</label>
-              <input type="radio" id="caseDirRandom" value="random_switch" v-model="alphaCaseConfig.direction" />
-              <label for="caseDirRandom">随机互换</label>
-            </div>
-          </div>
-        </div>
-
-        <!-- 经典推荐模板 -->
-        <div style="margin-top: 4px;">
-          <span style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">经典推荐模板：</span>
-          <div class="alpha-presets-wrap">
-            <button
-              v-for="p in ALPHABET_PRESETS"
-              :key="p.key"
-              type="button"
-              class="preset-chip-btn"
-              :id="'btnPreset_' + p.key"
-              @click="handleLoadAlphabetPreset(p.key)"
+          <!-- 操作按钮栏 -->
+          <template #actions>
+            <n-button
+              type="primary"
+              size="small"
+              id="btnParseText"
+              data-debug-id="Q-004"
+              data-debug-name="添加到试卷按钮"
+              @click="handleAppendVisualCloze"
             >
-              {{ p.title.replace('三年级英语 ', '') }}
+              <template #icon><AppIcon name="plus" :size="14" /></template>
+              添加到试卷
+            </n-button>
+            <button id="btnAddVisualToDraft" style="display:none;" aria-hidden="true" @click="handleAppendVisualCloze"></button>
+            <button id="btnAppendText" style="display:none;" aria-hidden="true" @click="handleAppendVisualCloze"></button>
+
+            <n-button
+              size="small"
+              id="btnSaveVisualToLib"
+              @click="handleSaveVisualClozeToLib"
+              title="将该句保存到备课句库"
+            >
+              <template #icon><AppIcon name="download" :size="14" /></template>
+              存入句库
+            </n-button>
+
+            <n-button size="small" id="btnClearVisualCloze" @click="handleResetVisualCloze">
+              <template #icon><AppIcon name="refresh" :size="14" /></template>
+              重置
+            </n-button>
+          </template>
+        </QuestionEditorShell>
+      </div>
+
+      <!-- 题型 2: 字母专项快捷生成面板 (仅在选择字母专项时展开) -->
+      <div v-else-if="currentInputType === 'alphabet'" class="alphabet-control-card" id="alphabetControlCard">
+        <QuestionEditorShell title="三年级英文字母专项设置" tip="支持 26 字母规范书写、前后左右邻居填空与大小写互换练习">
+          <div class="alphabet-type-tabs" id="alphabetTypeTabs">
+            <button
+              type="button"
+              class="alpha-type-btn"
+              :class="{ active: alphabetActiveType === 'sequence' }"
+              id="tabAlphaSeq"
+              @click="alphabetActiveType = 'sequence'"
+            >
+              <AppIcon name="alphabet" :size="13" />
+              26个字母默写
+            </button>
+            <button
+              type="button"
+              class="alpha-type-btn"
+              :class="{ active: alphabetActiveType === 'neighbors' }"
+              id="tabAlphaNeighbors"
+              @click="alphabetActiveType = 'neighbors'"
+            >
+              <AppIcon name="refresh" :size="13" />
+              字母左右邻居
+            </button>
+            <button
+              type="button"
+              class="alpha-type-btn"
+              :class="{ active: alphabetActiveType === 'case' }"
+              id="tabAlphaCase"
+              @click="alphabetActiveType = 'case'"
+            >
+              <AppIcon name="tag" :size="13" />
+              大小写转换
             </button>
           </div>
-        </div>
 
-        <!-- 操作按钮栏 -->
-        <div class="alpha-action-row" style="margin-top: 6px;">
-          <n-button type="primary" size="small" id="btnGenerateAlphabetSheet" style="flex:1;" @click="handleGenerateAlphabet(true)">
-            <template #icon><AppIcon name="plus" :size="14" /></template>
-            添加到试卷
-          </n-button>
-        </div>
+          <!-- 子面板 1: 26个字母默写 -->
+          <div v-if="alphabetActiveType === 'sequence'" class="alpha-sub-config" id="paneAlphaSeq">
+            <div class="form-row-compact">
+              <span class="sub-label">大小写样式:</span>
+              <div class="segmented-control mini">
+                <input type="radio" id="alphaCasePair" value="pair" v-model="alphaSeqConfig.caseStyle" />
+                <label for="alphaCasePair">大小写 (Aa)</label>
+                <input type="radio" id="alphaCaseUpper" value="upper" v-model="alphaSeqConfig.caseStyle" />
+                <label for="alphaCaseUpper">大写 (A-Z)</label>
+                <input type="radio" id="alphaCaseLower" value="lower" v-model="alphaSeqConfig.caseStyle" />
+                <label for="alphaCaseLower">小写 (a-z)</label>
+              </div>
+            </div>
+
+            <div class="form-row-compact">
+              <span class="sub-label">默写形式:</span>
+              <div class="segmented-control mini">
+                <input type="radio" id="alphaSubFull" value="full" v-model="alphaSeqConfig.subMode" />
+                <label for="alphaSubFull">3行完整四线格 (全默写)</label>
+                <input type="radio" id="alphaSubGap" value="gap" v-model="alphaSeqConfig.subMode" />
+                <label for="alphaSubGap">字母表接龙填空</label>
+                <input type="radio" id="alphaSubShuffle" value="shuffle" v-model="alphaSeqConfig.subMode" />
+                <label for="alphaSubShuffle">乱序听写</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 子面板 2: 字母左右邻居 -->
+          <div v-if="alphabetActiveType === 'neighbors'" class="alpha-sub-config" id="paneAlphaNeighbors">
+            <div class="form-row-compact">
+              <span class="sub-label">题目数量:</span>
+              <div class="segmented-control mini">
+                <input type="radio" id="neighCount6" :value="6" v-model="alphaNeighConfig.count" />
+                <label for="neighCount6">6 题</label>
+                <input type="radio" id="neighCount9" :value="9" v-model="alphaNeighConfig.count" />
+                <label for="neighCount9">9 题 (推荐)</label>
+                <input type="radio" id="neighCount12" :value="12" v-model="alphaNeighConfig.count" />
+                <label for="neighCount12">12 题</label>
+              </div>
+            </div>
+
+            <div class="form-row-compact">
+              <span class="sub-label">字母大小写:</span>
+              <div class="segmented-control mini">
+                <input type="radio" id="neighCaseUpper" value="upper" v-model="alphaNeighConfig.caseStyle" />
+                <label for="neighCaseUpper">大写 (B)</label>
+                <input type="radio" id="neighCaseLower" value="lower" v-model="alphaNeighConfig.caseStyle" />
+                <label for="neighCaseLower">小写 (b)</label>
+                <input type="radio" id="neighCaseMix" value="mix" v-model="alphaNeighConfig.caseStyle" />
+                <label for="neighCaseMix">混合</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 子面板 3: 大小写转换 -->
+          <div v-if="alphabetActiveType === 'case'" class="alpha-sub-config" id="paneAlphaCase">
+            <div class="form-row-compact">
+              <span class="sub-label">转换形式:</span>
+              <div class="segmented-control mini">
+                <input type="radio" id="caseToU" value="lower_to_upper" v-model="alphaCaseConfig.direction" />
+                <label for="caseToU">看小写写大写</label>
+                <input type="radio" id="caseToL" value="upper_to_lower" v-model="alphaCaseConfig.direction" />
+                <label for="caseToL">看大写写小写</label>
+                <input type="radio" id="caseRand" value="random_switch" v-model="alphaCaseConfig.direction" />
+                <label for="caseRand">随机互换</label>
+              </div>
+            </div>
+          </div>
+
+          <template #actions>
+            <n-button type="primary" size="small" id="btnGenerateAlphabet" @click="handleGenerateAlphabet">
+              <template #icon><AppIcon name="plus" :size="14" /></template>
+              生成并添加到试卷
+            </n-button>
+          </template>
+        </QuestionEditorShell>
       </div>
 
-      <!-- 句子挖空专属排版微调参数 (仅句子挖空时显示) -->
-      <div v-if="currentInputType === 'sentence-cloze'" class="cloze-settings-card">
-        <div class="form-row" id="rowClozeStyle" style="margin-bottom: 8px;">
-          <label class="row-label">挖空形式</label>
-          <div class="segmented-control mini">
-            <input
-              type="radio"
-              name="clozeStyle"
-              id="clozeInline"
-              value="inline"
-              :checked="state.draft.settings.clozeStyle === 'inline'"
-              @change="state.draft.settings.clozeStyle = 'inline'"
-            />
-            <label for="clozeInline">句中内嵌填空 (推荐)</label>
-            <input
-              type="radio"
-              name="clozeStyle"
-              id="clozeBelow"
-              value="below"
-              :checked="state.draft.settings.clozeStyle === 'below'"
-              @change="state.draft.settings.clozeStyle = 'below'"
-            />
-            <label for="clozeBelow">句下独立书写格</label>
-          </div>
-        </div>
-
-        <div class="form-row" id="rowClozeZhPos" style="margin-bottom: 8px;">
-          <label class="row-label">中文位置</label>
-          <div class="segmented-control mini">
-            <input
-              type="radio"
-              name="clozeZhPos"
-              id="clozeZhBelow"
-              value="below"
-              :checked="state.draft.settings.clozeZhPosition === 'below'"
-              @change="state.draft.settings.clozeZhPosition = 'below'"
-            />
-            <label for="clozeZhBelow">句下独立行</label>
-            <input
-              type="radio"
-              name="clozeZhPos"
-              id="clozeZhRight"
-              value="right"
-              :checked="state.draft.settings.clozeZhPosition === 'right'"
-              @change="state.draft.settings.clozeZhPosition = 'right'"
-            />
-            <label for="clozeZhRight">紧随句末</label>
-            <input
-              type="radio"
-              name="clozeZhPos"
-              id="clozeZhAbove"
-              value="above"
-              :checked="state.draft.settings.clozeZhPosition === 'above'"
-              @change="state.draft.settings.clozeZhPosition = 'above'"
-            />
-            <label for="clozeZhAbove">句子上方</label>
-            <input
-              type="radio"
-              name="clozeZhPos"
-              id="clozeZhHide"
-              value="hide"
-              :checked="state.draft.settings.clozeZhPosition === 'hide'"
-              @change="state.draft.settings.clozeZhPosition = 'hide'"
-            />
-            <label for="clozeZhHide">隐藏中文</label>
-          </div>
-        </div>
-
-        <div class="form-row" id="rowClozeBlankWidth" style="margin-bottom: 8px;">
-          <label class="row-label">四线格长</label>
-          <div class="segmented-control mini cloze-width-control">
-            <input
-              type="radio"
-              name="clozeBlankWidth"
-              id="blankWidthAuto"
-              value="auto"
-              :checked="state.draft.settings.clozeBlankWidth === 'auto'"
-              @change="state.draft.settings.clozeBlankWidth = 'auto'"
-            />
-            <label for="blankWidthAuto">按词自适应</label>
-            <input
-              type="radio"
-              name="clozeBlankWidth"
-              id="blankWidth1Word"
-              value="1word"
-              :checked="state.draft.settings.clozeBlankWidth === '1word'"
-              @change="state.draft.settings.clozeBlankWidth = '1word'"
-            />
-            <label for="blankWidth1Word">1格</label>
-            <input
-              type="radio"
-              name="clozeBlankWidth"
-              id="blankWidth1Point5Words"
-              value="1.5words"
-              :checked="state.draft.settings.clozeBlankWidth === '1.5words'"
-              @change="state.draft.settings.clozeBlankWidth = '1.5words'"
-            />
-            <label for="blankWidth1Point5Words">1.5格</label>
-            <input
-              type="radio"
-              name="clozeBlankWidth"
-              id="blankWidth2Words"
-              value="2words"
-              :checked="state.draft.settings.clozeBlankWidth === '2words'"
-              @change="state.draft.settings.clozeBlankWidth = '2words'"
-            />
-            <label for="blankWidth2Words">2格</label>
-            <input
-              type="radio"
-              name="clozeBlankWidth"
-              id="blankWidth2Point5Words"
-              value="2.5words"
-              :checked="state.draft.settings.clozeBlankWidth === '2.5words'"
-              @change="state.draft.settings.clozeBlankWidth = '2.5words'"
-            />
-            <label for="blankWidth2Point5Words">2.5格</label>
-            <input
-              type="radio"
-              name="clozeBlankWidth"
-              id="blankWidth3Words"
-              value="3words"
-              :checked="state.draft.settings.clozeBlankWidth === '3words'"
-              @change="state.draft.settings.clozeBlankWidth = '3words'"
-            />
-            <label for="blankWidth3Words">3格</label>
-          </div>
-        </div>
-      </div>
-
+      <!-- 题型 3: 通用结构化编辑器 (选择题 / 填空题 / 英语作文) -->
       <GeneralQuestionEditor
-        v-if="structuredTypes.includes(currentInputType)"
+        v-else-if="structuredTypes.includes(currentInputType)"
         :type="currentInputType"
         :editing-item="editingItem"
         @submit="handleStructuredSubmit"
@@ -364,145 +365,101 @@
         @error="message.error"
       />
 
-      <!-- 快速文本录入框 (单词/句子挖空/句子默写模式) -->
-      <template v-if="currentInputType !== 'alphabet' && !structuredTypes.includes(currentInputType)">
-        <p class="form-desc" id="formDescWords">
-          {{ inputHelperTip }}
-        </p>
+      <!-- 题型 4: 单词默写与整句默写快速文本录入框 -->
+      <div v-else class="text-unified-editor">
+        <QuestionEditorShell
+          :title="currentInputType === 'word-dictation' ? '单词默写录入' : '句子默写录入'"
+          :tip="inputHelperTip"
+        >
+          <textarea
+            class="word-textarea"
+            id="customWordTextarea"
+            v-model="rawText"
+            rows="7"
+            :placeholder="inputPlaceholder"
+            data-debug-id="Q-003"
+            data-debug-name="快速输入文本框"
+            style="width: 100%; min-height: 150px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 10px; font-size: 13px; line-height: 1.55; font-family: inherit; resize: vertical;"
+          ></textarea>
 
-        <textarea
-          class="word-textarea"
-          id="customWordTextarea"
-          v-model="rawText"
-          rows="7"
-          :placeholder="inputPlaceholder"
-          data-debug-id="Q-003"
-          data-debug-name="快速输入文本框"
-          style="width: 100%; min-height: 160px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 10px; font-size: 13px; line-height: 1.55; font-family: inherit; margin-bottom: 10px; resize: vertical;"
-        ></textarea>
+          <template #actions>
+            <n-button
+              type="primary"
+              size="small"
+              id="btnParseText"
+              data-debug-id="Q-004"
+              data-debug-name="添加到试卷按钮"
+              @click="handleAppendText"
+            >
+              <template #icon><AppIcon name="plus" :size="14" /></template>
+              添加到试卷
+            </n-button>
 
-        <div class="action-btn-row">
-          <n-button
-            type="primary"
-            size="small"
-            id="btnParseText"
-            data-debug-id="Q-004"
-            data-debug-name="添加到试卷按钮"
-            @click="handleAppendText"
-          >
-            <template #icon><AppIcon name="plus" :size="14" /></template>
-            添加到试卷
-          </n-button>
+            <!-- 兼容隐藏桩 -->
+            <button id="btnAppendText" style="display:none;" aria-hidden="true" @click="handleAppendText"></button>
+            <button id="btnLoadDefaultSample" style="display:none;" aria-hidden="true" @click="handleLoadDefaultCompat"></button>
 
-          <!-- 兼容旧测试脚本隐藏桩 (保持 append 语义，不干扰用户) -->
-          <button id="btnAppendText" style="display:none;" aria-hidden="true" @click="handleAppendText"></button>
-          <button id="btnLoadDefaultSample" style="display:none;" aria-hidden="true" @click="handleLoadDefaultCompat"></button>
+            <n-button
+              size="small"
+              id="btnSaveDraftToLib"
+              data-debug-id="Q-005"
+              data-debug-name="存入词库按钮"
+              @click="handleSaveDraftToLib"
+              title="将当前试卷词汇保存到本地词库"
+            >
+              <template #icon><AppIcon name="download" :size="14" /></template>
+              存入词库
+            </n-button>
 
-          <n-button
-            size="small"
-            id="btnSaveDraftToLib"
-            data-debug-id="Q-005"
-            data-debug-name="存入词库按钮"
-            @click="handleSaveDraftToLib"
-            title="将当前试卷词汇保存到本地词库"
-          >
-            <template #icon><AppIcon name="download" :size="14" /></template>
-            存入词库
-          </n-button>
+            <n-popconfirm
+              @positive-click="handleClear"
+              positive-text="确定"
+              negative-text="取消"
+            >
+              <template #trigger>
+                <n-button
+                  size="small"
+                  type="error"
+                  ghost
+                  id="btnClearWords"
+                  data-debug-id="Q-006"
+                  data-debug-name="清空试卷按钮"
+                >
+                  <template #icon><AppIcon name="trash" :size="14" /></template>
+                  清空试卷
+                </n-button>
+              </template>
+              确定要清空试卷上的全部题目吗？
+            </n-popconfirm>
+          </template>
+        </QuestionEditorShell>
+      </div>
 
-          <n-popconfirm
-            @positive-click="handleClear"
-            positive-text="确定"
-            negative-text="取消"
-          >
-            <template #trigger>
-              <n-button
-                size="small"
-                type="error"
-                ghost
-                id="btnClearWords"
-                data-debug-id="Q-006"
-                data-debug-name="清空试卷按钮"
-              >
-                <template #icon><AppIcon name="trash" :size="14" /></template>
-                清空试卷
-              </n-button>
-            </template>
-            确定要清空试卷上的全部题目吗？
-          </n-popconfirm>
+      <!-- 底部工作流引导横幅：前往题目列表检查与排版 -->
+      <div class="flow-guide-banner" @click="switchToTab('paneList')">
+        <div class="banner-info">
+          <AppIcon name="file-text" :size="15" />
+          <span>试卷已有 <strong>{{ state.draft.items.length }}</strong> 道题目</span>
         </div>
-      </template>
-
-      <!-- 试卷题目列表 (Vue 响应式 v-for 驱动，带题型标识与稳定 debug-id) -->
-      <div
-        class="words-list-container"
-        id="wordsListContainer"
-        data-debug-id="Q-007"
-        data-debug-name="试卷题目列表"
-      >
-        <template v-if="state.draft.items.length === 0">
-          <div class="empty-list-tip">
-            暂无题目，请在上方输入框添加题目或从词库中选题
-          </div>
-        </template>
-
-        <template v-else>
-          <div
-            v-for="(item, index) in state.draft.items"
-            :key="item.id || index"
-            class="word-item-row word-chip question-card"
-            :data-id="item.id"
-            :data-debug-id="'ITEM-' + item.id"
-            data-debug-name="试卷题目项"
-          >
-            <div class="word-item-main">
-              <span class="word-item-index">{{ index + 1 }}.</span>
-              <span class="question-type-tag" :class="item.questionType || 'word-dictation'">
-                {{ getQuestionTypeLabel(item.questionType) }}
-              </span>
-
-              <span v-if="item.en" class="word-item-en word-chip-en">
-                <template v-if="item.questionType === 'sentence-cloze' && (item.en.includes('[') || item.en.includes('{'))">
-                  <mark class="chip-blank-mark">{{ item.en }}</mark>
-                </template>
-                <template v-else>
-                  {{ item.en }}
-                </template>
-              </span>
-              <span v-else-if="item.alphabetType" class="word-item-en word-chip-en">
-                {{ item.prompt }}
-              </span>
-              <span v-else-if="item.stem" class="word-item-en word-chip-en">{{ item.stem }}</span>
-              <span v-else-if="item.title || item.instructions" class="word-item-en word-chip-en">{{ item.title || item.instructions }}</span>
-              <span v-else class="word-chip-en" style="display:none;"></span>
-
-              <span v-if="item.zh" class="word-item-zh word-chip-zh">{{ item.zh }}</span>
-              <span v-else class="word-chip-zh" style="display:none;"></span>
-            </div>
-
-            <div class="word-item-actions">
-              <select class="item-layout-select" :value="item.layout?.columns || ''" @change="setItemColumns(item, $event.target.value)" title="单题布局覆盖">
-                <option value="">继承题型默认</option>
-                <option v-for="option in layoutOptionsFor(item)" :key="option" :value="option">每行{{ option }}题</option>
-              </select>
-              <button v-if="structuredTypes.includes(item.questionType)" type="button" class="word-item-btn" title="编辑" @click.stop="editItem(index)">编辑</button>
-              <button type="button" class="word-item-btn" title="复制" @click.stop="duplicateItem(index)">复制</button>
-              <IconActionButton class="word-item-btn" label="上移题目" icon="arrow-up" :icon-size="12" @click.stop="moveUp(index)" />
-              <IconActionButton class="word-item-btn" label="下移题目" icon="arrow-down" :icon-size="12" @click.stop="moveDown(index)" />
-              <IconActionButton class="word-item-btn del" label="删除题目" icon="trash" :icon-size="12" @click.stop="removeItem(index)" />
-            </div>
-          </div>
-        </template>
+        <button type="button" class="banner-btn">
+          查看与调整题目清单 <AppIcon name="arrow-right" :size="14" />
+        </button>
       </div>
     </n-card>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { NCard, NButton, NPopconfirm, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
-import { parseCustomText, generateId } from '../core/tokenizer.js';
+import {
+  parseCustomText,
+  parseSentenceIntoVisualTokens,
+  getVisualSegments,
+  segmentsToMarkedText,
+  generateId
+} from '../core/tokenizer.js';
 import {
   DEFAULT_WORDS_RAW,
   DEFAULT_CLOZE_WORDS_RAW,
@@ -513,13 +470,12 @@ import { detectDuplicates } from '../core/storage.js';
 import {
   generateAlphabetSequenceItems,
   generateLetterNeighborsItems,
-  generateCaseConversionItems,
-  ALPHABET_PRESETS
+  generateCaseConversionItems
 } from '../core/alphabet.js';
+import { getQuestionTypesByEditor } from '../question-types/registry.js';
 import AppIcon from './AppIcon.vue';
-import IconActionButton from './IconActionButton.vue';
+import QuestionEditorShell from './QuestionEditorShell.vue';
 import GeneralQuestionEditor from './GeneralQuestionEditor.vue';
-import { getQuestionTypesByEditor, normalizeQuestion } from '../question-types/registry.js';
 
 const message = useMessage();
 const rawText = ref('');
@@ -528,10 +484,83 @@ const structuredTypes = getQuestionTypesByEditor('GeneralQuestionEditor');
 const editingIndex = ref(-1);
 const editingItem = computed(() => editingIndex.value >= 0 ? state.draft.items[editingIndex.value] : null);
 
-const inputPlaceholder = computed(() => {
-  if (currentInputType.value === 'sentence-cloze') {
-    return '在此输入或粘贴挖空句子（支持每行一条）。\n示例：\nI have an [apple]. 我有一个苹果。\nShe likes to [read] books. 她喜欢看书。';
+// 可视化挖空交互状态
+const visualSentenceText = ref('Ask your teacher for help.');
+const visualTranslationText = ref('向你的老师求助。');
+const visualTokens = ref(parseSentenceIntoVisualTokens(visualSentenceText.value));
+
+const visualWordTokens = computed(() => visualTokens.value.filter(t => t.isWord));
+const visualSegments = computed(() => getVisualSegments(visualTokens.value));
+const hasVisualBlank = computed(() => visualSegments.value.some(s => s.blank));
+
+function onVisualSentenceInput(e) {
+  if (e?.target) {
+    visualSentenceText.value = e.target.value;
   }
+  visualTokens.value = parseSentenceIntoVisualTokens(visualSentenceText.value);
+}
+
+function toggleVisualTokenBlank(tok) {
+  tok.isBlank = !tok.isBlank;
+}
+
+function handleAppendVisualCloze() {
+  const domTextarea = document.getElementById('customWordTextarea');
+  const batchVal = (domTextarea?.value || rawText.value || '').trim();
+  if (batchVal) {
+    handleAppendText();
+    return;
+  }
+  if (!hasVisualBlank.value) {
+    message.warning('请先点击上方胶囊单词设置至少一个挖空目标！');
+    return;
+  }
+  const enMarked = segmentsToMarkedText(visualSegments.value);
+  const draftItem = createDraftItem({
+    id: generateId('s'),
+    type: 'sentence',
+    questionType: 'sentence-cloze',
+    en: enMarked,
+    zh: visualTranslationText.value.trim(),
+    translation: visualTranslationText.value.trim(),
+    segments: visualSegments.value
+  });
+  state.draft.items.push(draftItem);
+  state.draft.settings.dictMode = 'cloze';
+  const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
+  state.draft.settings.copiesPerPage = adapted.copiesPerPage;
+  state.draft.settings.wordsPerPage = adapted.wordsPerPage;
+  message.success('已将挖空句子添加到试卷！');
+}
+
+async function handleSaveVisualClozeToLib() {
+  if (!hasVisualBlank.value) {
+    message.warning('请先点击上方单词设置至少一个挖空目标！');
+    return;
+  }
+  const enMarked = segmentsToMarkedText(visualSegments.value);
+  const sentenceItem = {
+    id: generateId('s'),
+    type: 'sentence',
+    questionType: 'sentence-cloze',
+    en: enMarked,
+    zh: visualTranslationText.value.trim(),
+    translation: visualTranslationText.value.trim(),
+    segments: visualSegments.value,
+    updatedAt: Date.now()
+  };
+  state.library.sentences.unshift(sentenceItem);
+  await db.bulkPut('sentences', [sentenceItem]);
+  message.success('已成功保存至本地句库！');
+}
+
+function handleResetVisualCloze() {
+  visualSentenceText.value = '';
+  visualTranslationText.value = '';
+  visualTokens.value = [];
+}
+
+const inputPlaceholder = computed(() => {
   if (currentInputType.value === 'sentence-dictation') {
     return '在此输入或粘贴完整句子（支持每行一条，学生在四线三格中默写整句）。\n示例：\nHow are you? 你好吗？\nThis is my new classroom. 这是我的新教室。';
   }
@@ -539,34 +568,11 @@ const inputPlaceholder = computed(() => {
 });
 
 const inputHelperTip = computed(() => {
-  if (currentInputType.value === 'sentence-cloze') {
-    return '提示：用 [ ] 标出挖空词，学生在四线三格中填写该词；支持中英对照或纯英文。';
-  }
   if (currentInputType.value === 'sentence-dictation') {
     return '提示：整句默写模式，中文作为题干，根据句子长度智能分配 1~3 行四线三格供学生书写。';
   }
   return '提示：支持每行一词；支持纯中文、纯英文或“英文 中文”对照；中文为空时仍生成四线格。';
 });
-
-function getQuestionTypeLabel(type) {
-  switch (type) {
-    case 'sentence-cloze':
-      return '挖空';
-    case 'sentence-dictation':
-      return '句默';
-    case 'alphabet':
-      return '字母';
-    case 'choice':
-      return '选择';
-    case 'inline-fill':
-      return '填空';
-    case 'english-composition':
-      return '作文';
-    case 'word-dictation':
-    default:
-      return '单词';
-  }
-}
 
 function onInputTypeChange(type) {
   currentInputType.value = type;
@@ -584,9 +590,40 @@ function onInputTypeChange(type) {
   }
 }
 
+function handleAppendText() {
+  const domTextarea = document.getElementById('customWordTextarea');
+  const text = (domTextarea?.value || rawText.value || '').trim();
+  if (!text) {
+    message.warning('请先输入或粘贴内容');
+    return;
+  }
+  const mode = (currentInputType.value === 'sentence-cloze' || state.draft.settings.dictMode === 'cloze') ? 'cloze' : (currentInputType.value === 'sentence-dictation' ? 'sentence' : currentInputType.value);
+  const items = parseCustomText(text, mode);
+  if (items.length === 0) {
+    message.warning('未能识别有效题目');
+    return;
+  }
+  const newItems = items.map(it => {
+    if (currentInputType.value === 'sentence-dictation') {
+      return createDraftItem({ ...it, type: 'sentence', questionType: 'sentence-dictation' });
+    }
+    if (currentInputType.value === 'sentence-cloze' || state.draft.settings.dictMode === 'cloze') {
+      return createDraftItem({ ...it, type: 'sentence', questionType: 'sentence-cloze' });
+    }
+    return createDraftItem(it, currentInputType.value);
+  });
+  newItems.forEach(it => state.draft.items.push(it));
+  rawText.value = '';
+  if (domTextarea) domTextarea.value = '';
+  const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
+  state.draft.settings.copiesPerPage = adapted.copiesPerPage;
+  state.draft.settings.wordsPerPage = adapted.wordsPerPage;
+  message.success(`已追加 ${newItems.length} 道题目到当前试卷！`);
+}
+
 function handleStructuredSubmit(item) {
   if (editingIndex.value >= 0) {
-    state.draft.items.splice(editingIndex.value, 1, item);
+    state.draft.items[editingIndex.value] = item;
     editingIndex.value = -1;
     message.success('题目修改已保存');
   } else {
@@ -595,164 +632,62 @@ function handleStructuredSubmit(item) {
   }
 }
 
-function editItem(index) {
-  editingIndex.value = index;
-  currentInputType.value = state.draft.items[index].questionType;
-}
-
 function cancelEditing() {
   editingIndex.value = -1;
 }
 
-function duplicateItem(index) {
-  const source = JSON.parse(JSON.stringify(state.draft.items[index]));
-  source.id = generateId('item');
-  if (Array.isArray(source.options)) {
-    const idMap = new Map();
-    source.options = source.options.map((option) => {
-      const id = generateId('option');
-      idMap.set(option.id, id);
-      return { ...option, id };
-    });
-    source.answers = (source.answers || []).map((id) => idMap.get(id)).filter(Boolean);
-  }
-  if (Array.isArray(source.blanks)) {
-    const idMap = new Map();
-    source.blanks = source.blanks.map((blank) => {
-      const id = generateId('blank');
-      idMap.set(blank.id, id);
-      return { ...blank, id };
-    });
-    source.stemSegments = (source.stemSegments || []).map((segment) => segment.type === 'blank'
-      ? { ...segment, blankId: idMap.get(segment.blankId) }
-      : segment);
-  }
-  state.draft.items.splice(index + 1, 0, normalizeQuestion(source));
-  message.success('已复制题目');
-}
-
-function layoutOptionsFor(item) {
-  if (item.questionType === 'word-dictation') return [2, 3, 4];
-  if (item.questionType === 'english-composition') return [1];
-  if (item.questionType === 'alphabet') return [1, 2, 3, 4];
-  return [1, 2];
-}
-
-function setItemColumns(item, value) {
-  if (!item.layout) item.layout = {};
-  if (!value) delete item.layout.columns;
-  else item.layout.columns = Number(value);
-}
-
 // 字母专项配置
 const alphabetActiveType = ref('sequence');
-const alphaSeqConfig = ref({
-  caseStyle: 'pair',
-  subMode: 'full',
-  gapCount: 13
-});
-const alphaNeighConfig = ref({
-  count: 9,
-  caseStyle: 'upper',
-  neighborType: 'both'
-});
-const alphaCaseConfig = ref({
-  count: 9,
-  direction: 'upper_to_lower'
-});
+const alphaSeqConfig = ref({ caseStyle: 'pair', subMode: 'full' });
+const alphaNeighConfig = ref({ count: 9, caseStyle: 'upper' });
+const alphaCaseConfig = ref({ direction: 'random_switch' });
 
-function handleGenerateAlphabet(isAppend = true) {
+function handleGenerateAlphabet() {
   let newItems = [];
-  let defaultTitle = '';
-  let defaultCols = 3;
-  let defaultCopies = 3;
-  let defaultWordsPerPage = 9;
-
   if (alphabetActiveType.value === 'sequence') {
     newItems = generateAlphabetSequenceItems(alphaSeqConfig.value);
-    const subLabel = alphaSeqConfig.value.subMode === 'gap' ? '接龙填空' : (alphaSeqConfig.value.subMode === 'shuffle' ? '随机听写' : '规范书写');
-    defaultTitle = `三年级英语 26个英文字母${subLabel}卷`;
-    defaultCols = 3;
-    defaultCopies = 1;
-    defaultWordsPerPage = 26;
   } else if (alphabetActiveType.value === 'neighbors') {
-    newItems = generateLetterNeighborsItems(alphaNeighConfig.value);
-    defaultTitle = '三年级英语 字母左右邻居专项练习卷';
-    defaultCols = 3;
-    defaultCopies = 3;
-    defaultWordsPerPage = alphaNeighConfig.value.count || 9;
+    newItems = generateLetterNeighborsItems({
+      count: alphaNeighConfig.value.count,
+      caseStyle: alphaNeighConfig.value.caseStyle,
+      neighborType: 'both'
+    });
   } else if (alphabetActiveType.value === 'case') {
-    newItems = generateCaseConversionItems(alphaCaseConfig.value);
-    defaultTitle = '三年级英语 字母大小写转换专项练习卷';
-    defaultCols = 3;
-    defaultCopies = 3;
-    defaultWordsPerPage = alphaCaseConfig.value.count || 9;
+    newItems = generateCaseConversionItems({
+      count: 9,
+      direction: alphaCaseConfig.value.direction
+    });
   }
 
-  if (isAppend) {
-    state.draft.items.push(...newItems);
-    message.success(`已添加 ${newItems.length} 道字母题至当前试卷！`);
-  } else {
-    state.draft.items = newItems;
-    state.draft.settings.dictMode = 'alphabet';
-    state.draft.settings.title = defaultTitle;
-    state.draft.settings.columns = defaultCols;
-    state.draft.settings.copiesPerPage = defaultCopies;
-    state.draft.settings.wordsPerPage = defaultWordsPerPage;
-    message.success(`已生成 ${newItems.length} 道字母练习题并应用版式！`);
+  if (newItems.length > 0) {
+    newItems.forEach(it => state.draft.items.push(it));
+    message.success(`已成功添加 ${newItems.length} 道字母专项题目！`);
   }
 }
 
-function handleLoadAlphabetPreset(presetKey) {
-  const preset = ALPHABET_PRESETS.find(p => p.key === presetKey);
-  if (!preset) return;
-  state.draft.settings.dictMode = 'alphabet';
-  state.draft.settings.title = preset.settings.title;
-  state.draft.settings.columns = preset.settings.columns;
-  state.draft.settings.copiesPerPage = preset.settings.copiesPerPage;
-  state.draft.settings.wordsPerPage = preset.settings.wordsPerPage || 9;
-  state.draft.items = preset.getItems();
-  message.success(`已载入「${preset.title}」！`);
-}
-
-// 添加到试卷 (追加语义)
-function handleAppendText() {
-  const textarea = document.getElementById('customWordTextarea');
-  const text = (textarea ? textarea.value : '') || rawText.value;
-  if (!text || !text.trim()) {
-    message.warning('请输入题目内容后再点击添加');
+async function handleSaveDraftToLib() {
+  if (state.draft.items.length === 0) {
+    message.warning('当前试卷为空，无法存入词库');
     return;
   }
-
-  const parsed = parseCustomText(text, currentInputType.value === 'sentence-cloze' ? 'cloze' : 'writing');
-  if (parsed.length === 0) {
-    message.warning('未识别到有效内容，请检查输入格式');
+  const res = detectDuplicates(state.library.words, state.draft.items);
+  if (res.unique.length === 0) {
+    message.info('当前试卷所有题目在本地词库中均已存在，无需重复保存');
     return;
   }
-
-  const newItems = parsed.map(it => {
-    if (currentInputType.value === 'sentence-dictation') {
-      return createDraftItem({ ...it, type: 'sentence', questionType: 'sentence-dictation' });
-    }
-    if (currentInputType.value === 'sentence-cloze') {
-      return createDraftItem({ ...it, type: 'sentence', questionType: 'sentence-cloze' });
-    }
-    return createDraftItem(it, currentInputType.value);
-  });
-
-  state.draft.items.push(...newItems);
-  rawText.value = '';
-  if (textarea) textarea.value = '';
-
-  const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
-  state.draft.settings.copiesPerPage = adapted.copiesPerPage;
-  state.draft.settings.wordsPerPage = adapted.wordsPerPage;
-  message.success(`已成功添加 ${newItems.length} 道题目到试卷！`);
+  res.unique.forEach(w => state.library.words.push(w));
+  await db.bulkPut('words', res.unique);
+  const dupTip = res.duplicates.length > 0 ? `（自动跳过 ${res.duplicates.length} 条重复词条）` : '';
+  message.success(`已将 ${res.unique.length} 条题目存入本地词库${dupTip}！`);
 }
 
-// 兼容旧测试脚本
+function handleClear() {
+  state.draft.items = [];
+  message.success('已清空当前试卷上的全部题目！');
+}
+
 function handleLoadDefaultCompat() {
-  if (state.draft.settings.dictMode === 'cloze') {
+  if (state.draft.settings.dictMode === 'cloze' || currentInputType.value === 'sentence-cloze') {
     state.draft.items = DEFAULT_CLOZE_WORDS_RAW.map(s => createDraftItem(s));
     state.draft.settings.columns = 2;
     const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
@@ -769,60 +704,19 @@ function handleLoadDefaultCompat() {
   }
 }
 
-async function handleSaveDraftToLib() {
-  if (state.draft.items.length === 0) {
-    message.warning('当前试卷暂无题目可保存');
-    return;
-  }
-  const dupCheck = detectDuplicates(state.library.words, state.draft.items);
-  if (dupCheck.unique.length === 0) {
-    message.info(`试卷中的 ${state.draft.items.length} 个单词均已存在于词库中`);
-    return;
-  }
-  let targetGroup = '通用词汇';
-  if (state.draft.settings.title && state.draft.settings.title.trim()) {
-    targetGroup = state.draft.settings.title.replace(/单词默写|默写纸|练习卷|专项卷/g, '').trim() || '通用词汇';
-  }
-
-  const newWords = dupCheck.unique.map(it => ({
-    id: it.id || generateId('w'),
-    en: it.en,
-    zh: it.zh,
-    phonetic: it.phonetic || '',
-    group: it.group || targetGroup,
-    updatedAt: Date.now()
-  }));
-  state.library.words = state.library.words.concat(newWords);
-  await db.bulkPut('words', newWords);
-  const dupTip = dupCheck.duplicates.length > 0 ? ` (${dupCheck.duplicates.length} 条已存在跳过)` : '';
-  message.success(`已成功将 ${newWords.length} 个新词保存到本地词库「${targetGroup}」${dupTip}！`);
+function switchToTab(tabKey) {
+  state.ui.activeView = tabKey;
 }
 
-function handleClear() {
-  state.draft.items = [];
-  rawText.value = '';
-  message.info('已清空试卷题目');
-}
-
-function moveUp(index) {
-  if (index > 0) {
-    const temp = state.draft.items[index];
-    state.draft.items[index] = state.draft.items[index - 1];
-    state.draft.items[index - 1] = temp;
-  }
-}
-
-function moveDown(index) {
-  if (index < state.draft.items.length - 1) {
-    const temp = state.draft.items[index];
-    state.draft.items[index] = state.draft.items[index + 1];
-    state.draft.items[index + 1] = temp;
-  }
-}
-
-function removeItem(index) {
-  state.draft.items.splice(index, 1);
-}
+onMounted(() => {
+  window.addEventListener('edit-question', (e) => {
+    const idx = e.detail;
+    if (idx >= 0 && idx < state.draft.items.length) {
+      editingIndex.value = idx;
+      currentInputType.value = state.draft.items[idx].questionType;
+    }
+  });
+});
 </script>
 
 <style scoped>
@@ -833,8 +727,8 @@ function removeItem(index) {
 }
 
 .pane-card {
+  background: var(--bg-card);
   border-radius: 8px;
-  background: #ffffff;
 }
 
 .pane-header-title {
@@ -845,40 +739,50 @@ function removeItem(index) {
 }
 
 .title-with-icon {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-main);
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.quick-stat-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--primary-border);
+  transition: all 0.15s ease;
+}
+
+.quick-stat-badge:hover {
+  background: var(--primary);
+  color: white;
 }
 
 .form-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .row-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-main);
-}
-
-.form-desc {
-  font-size: 11.5px;
   color: var(--text-muted);
-  line-height: 1.45;
-  margin: 0 0 8px 0;
 }
 
 .segmented-control {
   display: flex;
+  flex-wrap: wrap;
   background: var(--bg-app);
+  padding: 3px;
   border-radius: 6px;
-  padding: 2px;
+  border: 1px solid var(--border-color);
   gap: 2px;
-  border: 1px solid var(--border-light);
 }
 
 .segmented-control input[type="radio"] {
@@ -886,201 +790,27 @@ function removeItem(index) {
 }
 
 .segmented-control label {
-  padding: 4px 9px;
-  font-size: 12px;
-  font-weight: 500;
+  flex: 1 0 auto;
+  text-align: center;
+  padding: 5px 8px;
+  font-size: 11.5px;
+  border-radius: 4px;
   color: var(--text-muted);
   cursor: pointer;
-  border-radius: 4px;
   transition: all 0.15s ease;
   user-select: none;
-  white-space: nowrap;
 }
 
 .segmented-control input[type="radio"]:checked + label {
   background: var(--bg-card);
   color: var(--primary);
-  font-weight: 600;
+  font-weight: 700;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.cloze-settings-card {
-  background: var(--bg-sidebar);
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
-  padding: 8px 10px;
-  margin-bottom: 10px;
-}
-
-.action-btn-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.words-list-container {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 420px;
-  overflow-y: auto;
-}
-
-.empty-list-tip {
-  text-align: center;
-  padding: 24px;
-  color: var(--text-light);
-  font-size: 12px;
-}
-
-.word-item-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  background: var(--bg-sidebar);
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
-  font-size: 12.5px;
-  transition: all 0.15s ease;
-}
-
-.word-item-row:hover {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-
-.word-item-main {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.word-item-index {
-  color: var(--text-light);
-  font-size: 11.5px;
-  min-width: 18px;
-}
-
-.word-item-en {
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.chip-blank-mark {
-  background: var(--primary-light);
-  color: var(--primary);
-  border-radius: 3px;
-  padding: 0 4px;
-}
-
-.word-item-zh {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.word-item-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.item-layout-select {
-  max-width: 112px;
-  height: 25px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: white;
-  color: var(--text-muted);
-  font-size: 10.5px;
-}
-
-.form-row > .segmented-control {
-  flex-wrap: wrap;
-}
-
-.word-item-btn {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 2px 5px;
+.segmented-control.mini label {
+  padding: 3px 6px;
   font-size: 11px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.word-item-btn:hover {
-  background: var(--primary-light);
-  color: var(--primary);
-  border-color: var(--primary);
-}
-
-.word-item-btn.del:hover {
-  background: #faeceb;
-  color: var(--danger);
-  border-color: var(--danger);
-}
-
-.alphabet-control-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.alphabet-type-tabs {
-  display: flex;
-  gap: 4px;
-  background: var(--bg-app);
-  padding: 3px;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
-}
-
-.alpha-type-btn {
-  flex: 1;
-  padding: 5px 6px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.alpha-type-btn:hover {
-  color: var(--primary);
-  background: var(--bg-card);
-}
-
-.alpha-type-btn.active {
-  color: var(--primary);
-  background: var(--bg-card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.alpha-sub-config {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 4px 0;
 }
 
 .form-row-compact {
@@ -1088,6 +818,8 @@ function removeItem(index) {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  font-size: 11.5px;
+  margin-bottom: 6px;
 }
 
 .sub-label {
@@ -1097,48 +829,146 @@ function removeItem(index) {
   white-space: nowrap;
 }
 
-.segmented-control.mini label {
-  padding: 2px 7px;
-  font-size: 11px;
+.native-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 12.5px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  box-sizing: border-box;
 }
 
-.cloze-width-control {
-  flex-wrap: wrap;
+.form-item-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
-.alpha-presets-wrap {
+.item-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.visual-token-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
+  padding: 8px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  min-height: 40px;
+  align-items: center;
 }
 
-.preset-chip-btn {
-  background: var(--bg-card);
+.visual-token-btn {
+  padding: 3px 8px;
+  font-size: 12px;
   border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
   color: var(--text-main);
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 11px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.preset-chip-btn:hover {
-  background: var(--primary-light);
+.visual-token-btn:hover {
   border-color: var(--primary);
   color: var(--primary);
 }
 
-.alpha-action-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 2px;
+.visual-token-btn.is-blank {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(47, 102, 89, 0.3);
 }
 
-.info-tip-row {
+.token-placeholder {
+  color: var(--text-light);
+  font-size: 11.5px;
+}
+
+.visual-cloze-preview {
+  padding: 8px 10px;
+  background: var(--bg-app);
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  min-height: 38px;
+}
+
+.alphabet-type-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.alpha-type-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 4px;
   font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.alpha-type-btn.active {
+  background: var(--primary-light);
+  border-color: var(--primary-border);
   color: var(--primary);
-  margin-top: 2px;
-  font-weight: 500;
+  font-weight: 700;
+}
+
+.alpha-sub-config {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 底部引导横幅 */
+.flow-guide-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-top: 10px;
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.flow-guide-banner:hover {
+  background: #d8e8e2;
+}
+
+.banner-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--primary);
+}
+
+.banner-btn {
+  background: transparent;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
 }
 </style>
