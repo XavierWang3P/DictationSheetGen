@@ -785,9 +785,10 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
 export function renderPracticeSheetHtml(layout, settings) {
   if (layout.totalItems === 0) {
     return `
-      <div style="background:#ffffff;padding:50px 30px;border-radius:12px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);max-width:420px;margin:40px auto;">
-        <h3 style="color:#0f172a;margin-bottom:8px;">暂无练习单词</h3>
-        <p style="color:#64748b;font-size:13px;line-height:1.6;">请在左侧文本框中输入或粘贴单词，右侧将自动即时排版。</p>
+      <div class="empty-sheet-placeholder no-print" style="background:#ffffff;padding:48px 32px;border-radius:12px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);max-width:440px;margin:60px auto;border:1px solid #e2e8f0;">
+        <div style="font-size:36px;margin-bottom:12px;">📝</div>
+        <h3 style="color:#2f6659;margin:0 0 8px 0;font-size:16px;font-weight:700;">试卷等待输入中</h3>
+        <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0;">请在左侧文本框输入或粘贴单词/句子，右侧将即时排版生成规范默写纸；也可随时点击左侧「默认9词」载入示例。</p>
       </div>
     `;
   }

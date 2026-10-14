@@ -30,7 +30,7 @@ export const state = reactive({
     }))
   },
   draft: {
-    items: DEFAULT_WORDS_RAW.map(w => createDraftItem(w)),
+    items: [],
     settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
   },
   ui: {
@@ -94,13 +94,13 @@ export function loadSavedState() {
     if (raw) {
       const data = JSON.parse(raw);
       if (data.draft) {
-        if (Array.isArray(data.draft.items) && data.draft.items.length > 0) {
+        if (Array.isArray(data.draft.items)) {
           state.draft.items = data.draft.items.map(it => createDraftItem(it));
         }
         if (data.draft.settings) {
           state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.draft.settings);
         }
-      } else if (Array.isArray(data.words) && data.words.length > 0) {
+      } else if (Array.isArray(data.words)) {
         state.draft.items = data.words.map(it => createDraftItem(it));
         if (data.settings) {
           state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);

@@ -47,6 +47,10 @@ async function runTests() {
 
     console.log('=== 开始执行自动化测试套件 ===\n');
 
+    // 载入默认9词以供排版参数验收
+    await evalExpr(`document.getElementById('btnLoadDefaultSample').click();`);
+    await new Promise(r => setTimeout(r, 150));
+
     // 验收 1: 默认参数与初始状态验证 (用户指定参数对象)
     const r1 = await evalExpr(`(() => {
       const s = state.settings;

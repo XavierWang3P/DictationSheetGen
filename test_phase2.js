@@ -43,6 +43,7 @@ async function testPhase2() {
     }
 
     await new Promise(r => ws.onopen = r);
+    await new Promise(r => setTimeout(r, 600));
 
     const result = await evalExpr(`(async () => {
       const storage = window.__appStorage;

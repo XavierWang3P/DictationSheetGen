@@ -324,7 +324,7 @@
           id="customWordTextarea"
           v-model="rawText"
           rows="8"
-          placeholder="美丽的；优美的&#10;工作努力的；辛勤的&#10;绳；粗绳&#10;聪明的；聪颖的&#10;机器人&#10;钢琴&#10;幼小的；年轻的&#10;跳；跃&#10;国际象棋"
+          placeholder="在此输入或粘贴词表（支持纯中文、英文、或中英对照，每行一条）。&#10;示例：&#10;apple 苹果&#10;banana 香蕉&#10;（也可随时点击下方「默认9词」载入示例练习）"
           style="width: 100%; min-height: 180px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 10px; font-size: 13px; line-height: 1.55; font-family: inherit; margin-bottom: 10px; resize: vertical;"
         ></textarea>
 
