@@ -1,0 +1,73 @@
+/**
+ * 打印与导出 PDF 专用排版样式 (.print-*)
+ * 根治导出 PDF 自动附加空白页问题
+ */
+@media print {
+  /* 隐藏所有界面操作区、侧边栏、工具栏及 Debug 标记 */
+  .no-print,
+  .app-header,
+  .app-sidebar,
+  .sidebar,
+  .preview-toolbar,
+  .debug-badge,
+  .debug-overlay,
+  .debug-inspector-card {
+    display: none !important;
+  }
+
+  /* 消除页面宿主容器边距与高度溢出风险 */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  .app-layout,
+  .app-workspace,
+  .preview-viewport,
+  .paper-stage {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    border: none !important;
+    display: block !important;
+  }
+
+  .sheets-stream-container {
+    transform: none !important;
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  /* 打印纸张实体容器规范 */
+  .sheet-page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    /* 默认纸张之间执行强制分页 */
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  /* 最后一页绝不设置强制分页，彻底根除尾部空白页 */
+  .sheet-page:last-child,
+  .sheet-page.is-last-page {
+    page-break-after: auto !important;
+    break-after: auto !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+}

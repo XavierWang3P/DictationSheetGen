@@ -1,9 +1,12 @@
 <template>
-  <div class="visual-cloze-pane">
+  <div class="visual-cloze-pane" data-debug-id="C-001" data-debug-name="句子挖空编辑区">
     <!-- 句子录入与可视化挖空工作区 -->
     <n-card size="small" :bordered="false" class="pane-card">
       <template #header>
-        <span style="font-size:14px; font-weight:700; color:var(--text-main);">✏️ 句子录入与可视化挖空</span>
+        <span style="font-size:14px; font-weight:700; color:var(--text-main); display:inline-flex; align-items:center; gap:6px;">
+          <AppIcon name="tag" :size="16" />
+          句子录入与可视化挖空
+        </span>
       </template>
 
       <p class="form-desc">
@@ -16,6 +19,8 @@
           type="text"
           v-model="sentenceText"
           id="inputVisualSentence"
+          data-debug-id="C-002"
+          data-debug-name="挖空英文输入框"
           placeholder="例: Ask your teacher for help."
           class="native-search-input"
           @input="onSentenceChange"
@@ -35,10 +40,10 @@
 
       <div style="margin-top: 12px;">
         <label class="item-label" style="display:block; margin-bottom: 6px;">
-          💡 点击单词设为挖空 (墨绿色高亮为挖空目标)：
+          点击单词设为挖空 (墨绿色高亮为挖空目标)：
         </label>
         <!-- 单词胶囊列表 (纯 Vue 响应式驱动，单次点击精确切换) -->
-        <div class="visual-token-wrap" id="visualTokenWrap">
+        <div class="visual-token-wrap" id="visualTokenWrap" data-debug-id="C-003" data-debug-name="可视化切词胶囊区">
           <template v-if="wordTokens.length === 0">
             <span style="color:#94a3b8; font-size:12px;">请输入完整英文句子以生成可点击单词</span>
           </template>
@@ -60,7 +65,7 @@
 
       <div style="margin-top: 14px;">
         <label class="item-label" style="display:block; margin-bottom: 6px;">
-          👀 默写纸挖空预览效果：
+          默写纸挖空预览效果：
         </label>
         <!-- 实时预览区 (纯 Vue 响应式计算属性驱动) -->
         <div class="visual-cloze-preview" id="visualClozePreview">
@@ -84,7 +89,7 @@
                 释义：{{ translationText }}
               </div>
               <div v-if="!hasBlank" style="font-size:11px; color:var(--danger); margin-top:3px;">
-                ⚠️ 提示：尚未选择挖空单词，请点击上方单词胶囊
+                提示：尚未选择挖空单词，请点击上方单词胶囊
               </div>
             </div>
           </template>
@@ -92,13 +97,24 @@
       </div>
 
       <div class="action-btn-row" style="margin-top: 14px;">
-        <n-button type="primary" size="small" id="btnAddVisualToDraft" style="flex:1;" @click="handleAddToDraft">
-          ➕ 加入当前试卷
+        <n-button
+          type="primary"
+          size="small"
+          id="btnAddVisualToDraft"
+          data-debug-id="C-004"
+          data-debug-name="挖空题加入试卷按钮"
+          style="flex:1;"
+          @click="handleAddToDraft"
+        >
+          <template #icon><AppIcon name="plus" :size="14" /></template>
+          加入当前试卷
         </n-button>
         <n-button size="small" id="btnSaveVisualToLib" @click="handleSaveToLib">
-          💾 保存至句库
+          <template #icon><AppIcon name="download" :size="14" /></template>
+          保存至句库
         </n-button>
         <n-button size="small" id="btnClearVisualCloze" @click="handleReset">
+          <template #icon><AppIcon name="refresh" :size="14" /></template>
           重置
         </n-button>
       </div>
@@ -108,12 +124,21 @@
     <n-card size="small" :bordered="false" class="pane-card" style="margin-top: 12px;">
       <template #header>
         <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <span style="font-size:14px; font-weight:700; color:var(--text-main);">📚 本地句库列表</span>
-          <n-badge :value="`共 ${state.library.sentences.length} 句`" type="info" id="libSentenceBadge" />
+          <span style="font-size:14px; font-weight:700; color:var(--text-main); display:inline-flex; align-items:center; gap:6px;">
+            <AppIcon name="book" :size="16" />
+            本地句库列表
+          </span>
+          <span class="quick-stat-badge" id="libSentenceBadge">共 {{ state.library.sentences.length }} 句</span>
         </div>
       </template>
 
-      <div class="words-list-container" id="libSentencesContainer" style="max-height: 260px;">
+      <div
+        class="words-list-container"
+        id="libSentencesContainer"
+        data-debug-id="C-005"
+        data-debug-name="本地句库列表"
+        style="max-height: 260px;"
+      >
         <template v-if="state.library.sentences.length === 0">
           <div class="empty-list-tip">
             本地句库为空，可将上方编辑的挖空句子「保存至句库」
@@ -146,7 +171,8 @@
                 title="加入当前试卷"
                 @click.stop="handleAddSentenceToDraft(s)"
               >
-                ➕ 试卷
+                <AppIcon name="plus" :size="11" />
+                试卷
               </button>
               <button
                 type="button"
@@ -155,7 +181,7 @@
                 title="从句库中删除"
                 @click.stop="handleDeleteSentence(s.id)"
               >
-                ✕
+                <AppIcon name="trash" :size="11" />
               </button>
             </div>
           </div>
@@ -167,7 +193,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { NCard, NBadge, NButton, useMessage } from 'naive-ui';
+import { NCard, NButton, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
 import {
   parseSentenceIntoVisualTokens,
@@ -176,6 +202,7 @@ import {
   generateId
 } from '../core/tokenizer.js';
 import { createDraftItem, autoAdaptCopiesAndCapacity } from '../core/layout.js';
+import AppIcon from './AppIcon.vue';
 
 const message = useMessage();
 
@@ -200,13 +227,14 @@ function toggleTokenBlank(tok) {
 
 function handleAddToDraft() {
   if (!hasBlank.value) {
-    message.warning('请先点击上方蓝色胶囊单词设置至少一个挖空目标！');
+    message.warning('请先点击上方胶囊单词设置至少一个挖空目标！');
     return;
   }
   const enMarked = segmentsToMarkedText(segments.value);
   const draftItem = createDraftItem({
     id: generateId('s'),
     type: 'sentence',
+    questionType: 'sentence-cloze',
     en: enMarked,
     zh: translationText.value.trim(),
     translation: translationText.value.trim(),
@@ -214,11 +242,10 @@ function handleAddToDraft() {
   });
   state.draft.items.push(draftItem);
   state.draft.settings.dictMode = 'cloze';
-  state.draft.settings.columns = 2; // 默认 2 列
   const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
   state.draft.settings.copiesPerPage = adapted.copiesPerPage;
   state.draft.settings.wordsPerPage = adapted.wordsPerPage;
-  message.success('已加入当前试卷并同步为句子挖空模式！');
+  message.success('已将挖空句子追加到当前试卷！');
 }
 
 async function handleSaveToLib() {
@@ -230,6 +257,7 @@ async function handleSaveToLib() {
   const sentenceItem = {
     id: generateId('s'),
     type: 'sentence',
+    questionType: 'sentence-cloze',
     en: enMarked,
     zh: translationText.value.trim(),
     translation: translationText.value.trim(),
@@ -245,25 +273,23 @@ function handleReset() {
   sentenceText.value = '';
   translationText.value = '';
   tokens.value = [];
-  message.info('已重置可视化输入区');
 }
 
 function handleAddSentenceToDraft(s) {
-  const draftItem = createDraftItem({
+  const item = createDraftItem({
+    id: generateId('s'),
     type: 'sentence',
+    questionType: 'sentence-cloze',
     en: s.en,
-    zh: s.zh || s.translation || '',
-    translation: s.zh || s.translation || '',
-    segments: s.segments,
-    sourceId: s.id
+    zh: s.zh || s.translation,
+    translation: s.zh || s.translation,
+    segments: s.segments
   });
-  state.draft.items.push(draftItem);
-  state.draft.settings.dictMode = 'cloze';
-  state.draft.settings.columns = 2; // 默认 2 列
+  state.draft.items.push(item);
   const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
   state.draft.settings.copiesPerPage = adapted.copiesPerPage;
   state.draft.settings.wordsPerPage = adapted.wordsPerPage;
-  message.success('已将该句加入当前试卷！');
+  message.success('已将句库句子加入当前试卷！');
 }
 
 async function handleDeleteSentence(id) {
@@ -271,7 +297,7 @@ async function handleDeleteSentence(id) {
   if (idx !== -1) {
     state.library.sentences.splice(idx, 1);
     await db.delete('sentences', id);
-    message.info('已从句库移除该句');
+    message.success('已从本地句库中删除！');
   }
 }
 </script>
@@ -280,7 +306,6 @@ async function handleDeleteSentence(id) {
 .visual-cloze-pane {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 .pane-card {
@@ -298,26 +323,25 @@ async function handleDeleteSentence(id) {
 .form-item-block {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .item-label {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-main);
-  display: block;
-  margin-bottom: 4px;
 }
 
 .native-search-input {
   width: 100%;
-  padding: 7px 10px;
-  font-size: 13px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  font-size: 12.5px;
   border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-main);
   border-radius: 6px;
   outline: none;
-  font-family: inherit;
+  background: var(--bg-card);
+  color: var(--text-main);
   transition: all 0.15s ease;
 }
 
@@ -330,27 +354,25 @@ async function handleDeleteSentence(id) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 10px;
+  padding: 8px;
   background: var(--bg-sidebar);
-  border: 1px dashed var(--border-color);
+  border: 1px solid var(--border-light);
   border-radius: 6px;
-  min-height: 48px;
+  min-height: 42px;
   align-items: center;
 }
 
 .visual-token-btn {
-  display: inline-flex;
-  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
   padding: 3px 8px;
   border-radius: 4px;
-  font-size: 13px;
-  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-main);
-  user-select: none;
   transition: all 0.15s ease;
+  user-select: none;
 }
 
 .visual-token-btn:hover {
@@ -363,24 +385,20 @@ async function handleDeleteSentence(id) {
   background: var(--primary);
   color: #ffffff;
   border-color: var(--primary);
-  font-weight: 700;
-  box-shadow: 0 1px 4px rgba(47, 102, 89, 0.35);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(47, 102, 89, 0.25);
 }
 
 .visual-cloze-preview {
-  padding: 8px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  padding: 10px 12px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
   border-radius: 6px;
-  min-height: 42px;
-  display: flex;
-  align-items: center;
 }
 
 .action-btn-row {
   display: flex;
-  gap: 6px;
-  align-items: center;
+  gap: 8px;
 }
 
 .words-list-container {
@@ -392,7 +410,7 @@ async function handleDeleteSentence(id) {
 
 .empty-list-tip {
   text-align: center;
-  padding: 24px;
+  padding: 20px;
   color: var(--text-light);
   font-size: 12px;
 }
@@ -402,32 +420,33 @@ async function handleDeleteSentence(id) {
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  background: var(--bg-card);
+  background: var(--bg-sidebar);
   border: 1px solid var(--border-light);
   border-radius: 6px;
-  gap: 8px;
+  font-size: 12.5px;
 }
 
 .lib-item-row:hover {
+  background: var(--bg-card);
   border-color: var(--border-color);
-  background: var(--bg-sidebar);
 }
 
 .sentence-en-display {
   font-size: 12px;
   color: var(--text-main);
   line-height: 1.4;
-  text-overflow: ellipsis;
-  overflow: hidden;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sentence-zh-display {
   font-size: 11px;
   color: var(--text-muted);
-  text-overflow: ellipsis;
-  overflow: hidden;
+  margin-top: 2px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lib-item-actions {
@@ -440,11 +459,14 @@ async function handleDeleteSentence(id) {
   background: transparent;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  padding: 2px 7px;
+  padding: 2px 6px;
   font-size: 11px;
-  cursor: pointer;
   color: var(--text-muted);
+  cursor: pointer;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .btn-act:hover {

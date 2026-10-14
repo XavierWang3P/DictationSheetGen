@@ -3,7 +3,8 @@ import {
   DEFAULT_WORDS_RAW,
   DEFAULT_CLOZE_WORDS_RAW,
   DEFAULT_SETTINGS,
-  createDraftItem
+  createDraftItem,
+  migrateDraftItem
 } from '../core/layout.js';
 import { StorageDB, detectDuplicates, validateImportData } from '../core/storage.js';
 
@@ -49,7 +50,7 @@ if (typeof window !== 'undefined') {
 Object.defineProperty(state, 'words', {
   get() { return this.draft.items; },
   set(val) {
-    this.draft.items = (val || []).map(it => createDraftItem(it));
+    this.draft.items = (val || []).map(it => migrateDraftItem(it, this.draft.settings?.dictMode));
   }
 });
 
@@ -93,15 +94,16 @@ export function loadSavedState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
+      const fallbackMode = data.draft?.settings?.dictMode || data.settings?.dictMode || 'word-dictation';
       if (data.draft) {
         if (Array.isArray(data.draft.items)) {
-          state.draft.items = data.draft.items.map(it => createDraftItem(it));
+          state.draft.items = data.draft.items.map(it => migrateDraftItem(it, fallbackMode));
         }
         if (data.draft.settings) {
           state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.draft.settings);
         }
       } else if (Array.isArray(data.words)) {
-        state.draft.items = data.words.map(it => createDraftItem(it));
+        state.draft.items = data.words.map(it => migrateDraftItem(it, fallbackMode));
         if (data.settings) {
           state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);
         }

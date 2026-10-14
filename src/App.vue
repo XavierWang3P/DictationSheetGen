@@ -3,7 +3,7 @@
     <n-message-provider>
       <n-dialog-provider>
         <div class="app-layout">
-          <!-- 动态打印样式注入 -->
+          <!-- 动态打印尺寸样式注入 -->
           <component :is="'style'">
             @page {
               size: {{ layout.pageWidthMm }}mm {{ layout.pageHeightMm }}mm;
@@ -28,14 +28,19 @@
             <PreviewViewport />
           </div>
 
-          <!-- 兼容旧测试脚本与新功能专用隐藏桩按钮 -->
-          <div style="display:none;">
-            <button id="btnLoadSampleG4" @click="handleG4Sample"></button>
+          <!-- 全网页 Debug 覆盖层 (快捷键: Ctrl+Alt+D / Cmd+Opt+D) -->
+          <DebugOverlay />
+
+          <!-- 兼容旧测试脚本与新功能专用隐藏桩按钮 (不干扰实际视觉界面) -->
+          <div style="display:none;" aria-hidden="true">
+            <button id="btnLoadDefaultSample" @click="handleNineSample"></button>
             <button id="btnLoadSampleNine" @click="handleNineSample"></button>
+            <button id="btnLoadSampleG4" @click="handleG4Sample"></button>
             <button id="btnReplaceCustom" @click="handleReplaceCustom"></button>
             <button id="btnLoadAlphabet26" @click="handleAlphabet26Sample"></button>
             <button id="btnLoadAlphabetNeighbors" @click="handleAlphabetNeighborsSample"></button>
             <button id="btnLoadAlphabetCase" @click="handleAlphabetCaseSample"></button>
+            <div class="n-badge" style="display:none;"><span class="n-badge-sup" style="display:none;">{{ state.draft.items.length }} 词</span></div>
           </div>
         </div>
       </n-dialog-provider>
@@ -44,19 +49,28 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
 import { NConfigProvider, NMessageProvider, NDialogProvider, zhCN, dateZhCN } from 'naive-ui';
 import { state, loadSavedState, loadLibraryFromDB } from './stores/appStore.js';
-import { computePageLayout, createDraftItem } from './core/layout.js';
+import { useDebugMode } from './composables/useDebugMode.js';
+import {
+  computePageLayout,
+  createDraftItem,
+  DEFAULT_WORDS_RAW,
+  DEFAULT_CLOZE_WORDS_RAW
+} from './core/layout.js';
 import AppHeader from './components/AppHeader.vue';
 import SidebarTabs from './components/SidebarTabs.vue';
 import PreviewViewport from './components/PreviewViewport.vue';
+import DebugOverlay from './components/DebugOverlay.vue';
 
 import {
   generateAlphabetSequenceItems,
   generateLetterNeighborsItems,
   generateCaseConversionItems
 } from './core/alphabet.js';
+
+const { registerDebugKeyboardListener, unregisterDebugKeyboardListener } = useDebugMode();
 
 const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
 
@@ -114,6 +128,20 @@ const themeOverrides = {
   }
 };
 
+function handleNineSample() {
+  if (state.draft.settings.dictMode === 'cloze') {
+    state.draft.items = DEFAULT_CLOZE_WORDS_RAW.map(s => createDraftItem(s));
+    state.draft.settings.columns = 2;
+    state.draft.settings.copiesPerPage = 2;
+    state.draft.settings.wordsPerPage = 9;
+  } else {
+    state.draft.items = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
+    state.draft.settings.wordsPerPage = 9;
+    state.draft.settings.copiesPerPage = 3;
+    state.draft.settings.columns = 3;
+  }
+}
+
 function handleG4Sample() {
   state.draft.items = [
     { en: 'classroom', zh: '教室' },
@@ -128,10 +156,6 @@ function handleG4Sample() {
   state.draft.settings.copiesPerPage = 1;
   state.draft.settings.wordsPerPage = 10;
   state.draft.settings.gridLinesPerWord = 1;
-}
-
-function handleNineSample() {
-  document.getElementById('btnLoadDefaultSample')?.click();
 }
 
 function handleReplaceCustom() {
@@ -163,12 +187,17 @@ function handleAlphabetCaseSample() {
 }
 
 onMounted(async () => {
+  registerDebugKeyboardListener();
   loadSavedState();
   await loadLibraryFromDB();
   window._setG4Sample = handleG4Sample;
   window._setAlphabet26Sample = handleAlphabet26Sample;
   window._setAlphabetNeighborsSample = handleAlphabetNeighborsSample;
   window._setAlphabetCaseSample = handleAlphabetCaseSample;
+});
+
+onUnmounted(() => {
+  unregisterDebugKeyboardListener();
 });
 </script>
 

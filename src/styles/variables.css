@@ -1,0 +1,71 @@
+/**
+ * 统一设计变量体系 (Design Tokens)
+ * 森林绿色自然主题
+ */
+:root {
+  /* 品牌色调 */
+  --color-primary: #2f6659;
+  --color-primary-hover: #255247;
+  --color-primary-active: #1d3e36;
+  --color-primary-light: #e8f0ed;
+  --color-primary-border: #b9cec7;
+
+  /* 文字颜色 */
+  --color-text-main: #26332f;
+  --color-text-muted: #68756f;
+  --color-text-light: #909b96;
+
+  /* 背景颜色 */
+  --color-bg-app: #f3f5f2;
+  --color-bg-sidebar: #fafbf9;
+  --color-bg-card: #ffffff;
+  --color-surface: #ffffff;
+
+  /* 边框分割线 */
+  --color-border: #c9d3ce;
+  --color-border-light: #e2e7e4;
+
+  /* 辅助状态色 */
+  --color-accent: #b7792b;
+  --color-success: #43866f;
+  --color-danger: #c5524a;
+  --color-danger-hover: #a9443e;
+  --color-danger-light: #faeceb;
+
+  /* 间距尺寸阶梯 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* 圆角阶梯 */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 9999px;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(38, 51, 47, 0.05);
+  --shadow-md: 0 4px 12px rgba(38, 51, 47, 0.08);
+  --shadow-sheet: 0 4px 20px rgba(38, 51, 47, 0.08);
+
+  /* 兼容旧 CSS 变量名映射，确保现有组件无缝使用 */
+  --primary: var(--color-primary);
+  --primary-hover: var(--color-primary-hover);
+  --primary-light: var(--color-primary-light);
+  --primary-border: var(--color-primary-border);
+  --text-main: var(--color-text-main);
+  --text-muted: var(--color-text-muted);
+  --text-light: var(--color-text-light);
+  --bg-app: var(--color-bg-app);
+  --bg-sidebar: var(--color-bg-sidebar);
+  --bg-card: var(--color-bg-card);
+  --border-color: var(--color-border);
+  --border-light: var(--color-border-light);
+  --accent: var(--color-accent);
+  --success: var(--color-success);
+  --danger: var(--color-danger);
+  --danger-hover: var(--color-danger-hover);
+}

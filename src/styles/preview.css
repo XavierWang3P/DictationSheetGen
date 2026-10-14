@@ -1,0 +1,340 @@
+/**
+ * 试卷预览区屏幕样式 (.preview-*)
+ */
+.preview-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #505c56;
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-toolbar {
+  height: 44px;
+  background: #39423e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+  color: #e2e8f0;
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.preview-mode-tag {
+  font-size: 12px;
+  color: #cbd5e1;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.paper-stage {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: var(--space-6) var(--space-4);
+  background: #505c56;
+}
+
+.sheets-stream-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transform-origin: top center;
+  transition: transform 0.1s ease;
+}
+
+/* 屏幕模式下的纸张卡片 */
+.sheet-page {
+  background: #ffffff;
+  box-shadow: var(--shadow-sheet);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.sheet-copy-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.sheet-copy-section.single-copy {
+  padding: 4mm 0;
+}
+
+.sheet-copy-section.multi-copy {
+  padding: 1.5mm 0;
+}
+
+.sheet-header {
+  margin-bottom: 1.5mm;
+  flex-shrink: 0;
+}
+
+.sheet-header.sheet-header-compact {
+  margin-bottom: 1mm;
+}
+
+.sheet-title-text {
+  margin: 0 0 1.5mm 0;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.sheet-student-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5pt;
+  color: #334155;
+  margin-bottom: 2mm;
+  padding: 0 2mm;
+}
+
+.sheet-student-info.compact-info {
+  font-size: 9pt;
+  margin-bottom: 1mm;
+}
+
+.info-item {
+  display: inline-flex;
+  align-items: flex-end;
+}
+
+.info-line {
+  display: inline-block;
+  border-bottom: 1px solid #475569;
+  height: 1.1em;
+  margin-left: 2px;
+}
+
+.info-line.info-line-name, .info-line-name { min-width: 105px; width: 105px; }
+.info-line.info-line-class, .info-line-class { min-width: 90px; width: 90px; }
+.info-line.info-line-no, .info-line-no { min-width: 55px; width: 55px; }
+.info-line.info-line-date, .info-line-date { min-width: 75px; width: 75px; }
+.info-line.info-line-score, .info-line-score { min-width: 45px; width: 45px; }
+
+/* 试卷网格排版 */
+.sheet-body-grid {
+  display: grid;
+  flex: 1;
+  width: 100%;
+  align-content: start;
+}
+
+/* 单道题目卡片 */
+.word-card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  break-inside: avoid;
+}
+
+.word-card.is-full-width {
+  grid-column: 1 / -1 !important;
+}
+
+.word-card.meaning-left {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.meaning.word-prompt-row {
+  line-height: 1.35;
+  color: #1e293b;
+  margin-bottom: 1mm;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.word-num.entry-index {
+  font-family: Arial, sans-serif;
+  color: #64748b;
+  font-weight: 400;
+  margin-right: 3px;
+  font-size: 0.9em;
+  flex-shrink: 0;
+}
+
+.meaning-text {
+  font-weight: 500;
+}
+
+.practice-grid.entry-grid-wrap {
+  width: 100%;
+}
+
+.four-line-svg,
+.single-line-svg {
+  display: block;
+  width: 100%;
+}
+
+/* 句子挖空内联样式 */
+.cloze-blank-line {
+  display: inline-block;
+  vertical-align: baseline;
+  border-bottom: 1.5px solid #334155;
+  margin: 0 2px;
+}
+
+.cloze-inline-grid {
+  border-bottom: none;
+  vertical-align: middle;
+  height: 6.8mm;
+  margin: 0 2px;
+}
+
+.cloze-inline-grid svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cloze-content-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.cloze-zh {
+  font-size: 0.85em;
+  color: #64748b;
+  margin-top: 1mm;
+}
+
+/* 裁切虚线 */
+.section-cut-divider {
+  width: 100%;
+  position: relative;
+  margin: 1mm 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.section-cut-divider.dashed {
+  border-top: 1px dashed #94a3b8;
+}
+
+.section-cut-divider.solid {
+  border-top: 1px solid #94a3b8;
+}
+
+.section-cut-divider.none {
+  border-top: none;
+}
+
+.cut-scissors-tag {
+  background: #ffffff;
+  padding: 0 8px;
+  font-size: 9px;
+  color: #94a3b8;
+  position: absolute;
+  top: -6px;
+}
+
+/* 26个英文字母 3 行 9 列完整四线格专属排版 */
+.alphabet-26-sheet-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5mm;
+  width: 100%;
+  margin-top: 3mm;
+}
+
+.alpha-26-grid-row {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.alpha-26-cell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #ffffff;
+  padding: 0;
+  margin: 0;
+}
+
+.alpha-cell-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 2px 2px;
+  font-size: 8pt;
+  line-height: 1.2;
+}
+
+.alpha-cell-top .entry-index {
+  font-weight: normal;
+  color: #94a3b8;
+  font-size: 7.5pt;
+}
+
+.alpha-cell-top .alpha-cell-hint {
+  font-size: 7.5pt;
+  color: var(--primary, #2f6659);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alpha-cell-grid {
+  width: 100%;
+}
+
+.alpha-cell-grid svg {
+  display: block;
+  width: 100%;
+}
+
+/* 字母左右邻居与大小写转换专属排版 */
+.neighbor-svg-grid,
+.case-svg-grid {
+  width: 100%;
+  display: block;
+}
+
+/* 句子挖空中文位置修饰 */
+.cloze-zh.pos-below {
+  display: block !important;
+  margin-top: 2.5px;
+  line-height: 1.35;
+  color: #475569;
+  font-weight: 400;
+}
+
+.cloze-zh.pos-above {
+  display: block !important;
+  margin-bottom: 2.5px;
+  line-height: 1.35;
+  color: #475569;
+  font-weight: 400;
+}
+
+.cloze-zh.pos-right {
+  display: inline !important;
+  margin-left: 6px;
+  font-weight: 400;
+}

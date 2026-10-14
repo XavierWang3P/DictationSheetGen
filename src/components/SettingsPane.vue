@@ -1,9 +1,12 @@
 <template>
-  <div class="settings-pane">
+  <div class="settings-pane" data-debug-id="S-001" data-debug-name="试卷设置区">
     <!-- 模块 2：标题与考生信息 (已上移) -->
-    <section class="settings-group" id="groupTitleInfo">
+    <section class="settings-group" id="groupTitleInfo" data-debug-id="S-002" data-debug-name="试卷标题设置框">
       <div class="group-header">
-        <span class="group-title">✏️ 标题与考生信息</span>
+        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
+          <AppIcon name="edit" :size="14" />
+          标题与考生信息
+        </span>
       </div>
 
       <div class="form-row">
@@ -60,9 +63,14 @@
       class="settings-group collapsible"
       :class="{ collapsed: isPageCollapsed }"
       id="groupPageSettings"
+      data-debug-id="S-003"
+      data-debug-name="页面规格与份数设置"
     >
       <div class="group-header" @click="toggleGroup('page', $event)">
-        <span class="group-title">📄 页面设置</span>
+        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
+          <AppIcon name="file-text" :size="14" />
+          页面设置
+        </span>
         <span class="collapse-arrow">›</span>
       </div>
       <div class="group-body">
@@ -177,14 +185,19 @@
       </div>
     </section>
 
-    <!-- 模块 4：单词区域排版 (默认折叠) -->
+    <!-- 模块 4：题目区域排版 (默认折叠) -->
     <section
       class="settings-group collapsible"
       :class="{ collapsed: isWordCollapsed }"
       id="groupWordArea"
+      data-debug-id="S-004"
+      data-debug-name="题目排列与容量设置"
     >
       <div class="group-header" @click="toggleGroup('word', $event)">
-        <span class="group-title">📐 单词区域排版</span>
+        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
+          <AppIcon name="settings" :size="14" />
+          题目区域排版
+        </span>
         <span class="collapse-arrow">›</span>
       </div>
       <div class="group-body">
@@ -413,9 +426,14 @@
       class="settings-group collapsible"
       :class="{ collapsed: isGridCollapsed }"
       id="groupGrid"
+      data-debug-id="S-005"
+      data-debug-name="四线三格样式设置"
     >
       <div class="group-header" @click="toggleGroup('grid', $event)">
-        <span class="group-title">📏 四线三格设置</span>
+        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
+          <AppIcon name="tag" :size="14" />
+          四线三格设置
+        </span>
         <span class="collapse-arrow">›</span>
       </div>
       <div class="group-body">
@@ -524,9 +542,14 @@
       class="settings-group collapsible"
       :class="{ collapsed: isTypoCollapsed }"
       id="groupTypography"
+      data-debug-id="S-006"
+      data-debug-name="字体与间距设置"
     >
       <div class="group-header" @click="toggleGroup('typo', $event)">
-        <span class="group-title">🔤 字体与模式设置</span>
+        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
+          <AppIcon name="alphabet" :size="14" />
+          字体与间距设置
+        </span>
         <span class="collapse-arrow">›</span>
       </div>
       <div class="group-body">
@@ -592,6 +615,7 @@ import { ref, computed } from 'vue';
 import { NInput } from 'naive-ui';
 import { state } from '../stores/appStore.js';
 import { computePageLayout, renderPracticeSheetHtml } from '../core/layout.js';
+import AppIcon from './AppIcon.vue';
 
 const isPageCollapsed = ref(true);
 const isWordCollapsed = ref(true);

@@ -265,6 +265,8 @@ async function runTests() {
 
     // 验收 5: 智能多格式词汇录入与多页排版
     const r5 = await evalExpr(`(async () => {
+      const state = window.__appStoreState;
+      if (state) state.draft.items = [];
       const textarea = document.getElementById('customWordTextarea');
       textarea.value = "apple 苹果\\nbanana /bəˈnɑːnə/ 香蕉\\nclassroom 教室";
       document.getElementById('btnParseText').click();
@@ -348,6 +350,7 @@ async function runTests() {
       const isMiddleBlank = firstCardText.includes('ask') && firstCardText.includes('for help');
 
       // 4. 测试自定义输入标记 [word] 中间挖空
+      if (state) state.draft.items = [];
       const textarea = document.getElementById('customWordTextarea');
       textarea.value = "ask [your teacher] for help | 向你的老师求助\\nShe [likes] apples.";
       document.getElementById('btnParseText').click();

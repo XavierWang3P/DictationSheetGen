@@ -1,0 +1,11 @@
+/**
+ * 全局统一样式总入口 (app.css)
+ * 模块化组织各功能区域样式
+ */
+@import './variables.css';
+@import './base.css';
+@import './layout.css';
+@import './components.css';
+@import './preview.css';
+@import './debug.css';
+@import './print.css';

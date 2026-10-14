@@ -1,52 +1,70 @@
 <template>
-  <div class="quick-input-pane">
+  <div class="quick-input-pane" data-debug-id="Q-001" data-debug-name="快速输入区">
     <n-card size="small" :bordered="false" class="pane-card">
       <template #header>
-        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <span style="font-size:14px; font-weight:700; color:var(--text-main);">📝 单词输入与当前试卷</span>
-          <n-badge :value="badgeText" type="info" id="badgeWordCount" />
+        <div class="pane-header-title">
+          <span class="title-with-icon">
+            <AppIcon name="edit" :size="16" />
+            题目录入与试卷结构
+          </span>
+          <span class="quick-stat-badge" id="badgeWordCount">
+            已添加 {{ state.draft.items.length }} 题
+          </span>
         </div>
       </template>
 
-      <!-- 出卷模式选择 -->
+      <!-- 录入题型切换 (单词默写 / 句子挖空 / 句子默写 / 字母专项) -->
       <div class="form-row" style="margin-bottom: 12px;">
-        <label class="row-label">出卷模式</label>
-        <div class="segmented-control">
+        <label class="row-label">录入题型</label>
+        <div class="segmented-control" data-debug-id="Q-002" data-debug-name="题型切换器">
           <input
             type="radio"
-            name="dictMode"
+            name="inputType"
             id="modeWriting"
-            value="writing"
-            :checked="state.draft.settings.dictMode === 'writing'"
-            @click="onModeChange('writing')"
-            @change="onModeChange('writing')"
+            value="word-dictation"
+            :checked="currentInputType === 'word-dictation'"
+            @click="onInputTypeChange('word-dictation')"
+            @change="onInputTypeChange('word-dictation')"
           />
-          <label for="modeWriting">看中文默写</label>
+          <label for="modeWriting">单词默写</label>
+
           <input
             type="radio"
-            name="dictMode"
+            name="inputType"
             id="modeCloze"
-            value="cloze"
-            :checked="state.draft.settings.dictMode === 'cloze'"
-            @click="onModeChange('cloze')"
-            @change="onModeChange('cloze')"
+            value="sentence-cloze"
+            :checked="currentInputType === 'sentence-cloze'"
+            @click="onInputTypeChange('sentence-cloze')"
+            @change="onInputTypeChange('sentence-cloze')"
           />
-          <label for="modeCloze">✏️ 句子挖空填写</label>
+          <label for="modeCloze">句子挖空</label>
+
           <input
             type="radio"
-            name="dictMode"
+            name="inputType"
+            id="typeSentence"
+            value="sentence-dictation"
+            :checked="currentInputType === 'sentence-dictation'"
+            @click="onInputTypeChange('sentence-dictation')"
+            @change="onInputTypeChange('sentence-dictation')"
+          />
+          <label for="typeSentence">句子默写</label>
+
+          <input
+            type="radio"
+            name="inputType"
             id="modeAlphabet"
             value="alphabet"
-            :checked="state.draft.settings.dictMode === 'alphabet'"
-            @click="onModeChange('alphabet')"
-            @change="onModeChange('alphabet')"
+            :checked="currentInputType === 'alphabet'"
+            @click="onInputTypeChange('alphabet')"
+            @change="onInputTypeChange('alphabet')"
           />
-          <label for="modeAlphabet">🔤 三年级字母专项</label>
+          <label for="modeAlphabet">字母专项</label>
         </div>
       </div>
 
-      <!-- 三年级字母专项设置块 (仅字母模式显示) -->
-      <div v-if="state.draft.settings.dictMode === 'alphabet'" class="alphabet-control-card" id="alphabetControlCard">
+      <!-- 字母专项快捷生成面板 (仅在选择字母专项时展开) -->
+      <div v-if="currentInputType === 'alphabet'" class="alphabet-control-card" id="alphabetControlCard">
         <div class="alphabet-type-tabs" id="alphabetTypeTabs">
           <button
             type="button"
@@ -55,7 +73,8 @@
             id="tabAlphaSeq"
             @click="alphabetActiveType = 'sequence'"
           >
-            🔤 26个字母默写
+            <AppIcon name="alphabet" :size="13" />
+            26个字母默写
           </button>
           <button
             type="button"
@@ -64,7 +83,8 @@
             id="tabAlphaNeighbors"
             @click="alphabetActiveType = 'neighbors'"
           >
-            ↔️ 字母左右邻居
+            <AppIcon name="refresh" :size="13" />
+            字母左右邻居
           </button>
           <button
             type="button"
@@ -73,7 +93,8 @@
             id="tabAlphaCase"
             @click="alphabetActiveType = 'case'"
           >
-            🔠 大小写形式转换
+            <AppIcon name="tag" :size="13" />
+            大小写转换
           </button>
         </div>
 
@@ -103,8 +124,8 @@
             </div>
           </div>
 
-          <div style="font-size:11px; color:var(--primary); margin-top:2px; font-weight:500;">
-            ℹ️ 试卷将生成 3 行完整四线三格，每行 9 个独立书写格（按字母表规范排版）。
+          <div class="info-tip-row">
+            试卷将生成 3 行完整四线三格，每行 9 个独立书写格（按字母表规范排版）。
           </div>
         </div>
 
@@ -174,9 +195,9 @@
           </div>
         </div>
 
-        <!-- 经典精品推荐模板 -->
+        <!-- 经典推荐模板 -->
         <div style="margin-top: 4px;">
-          <span style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">💡 经典推荐模板：</span>
+          <span style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">经典推荐模板：</span>
           <div class="alpha-presets-wrap">
             <button
               v-for="p in ALPHABET_PRESETS"
@@ -193,174 +214,203 @@
 
         <!-- 操作按钮栏 -->
         <div class="alpha-action-row" style="margin-top: 6px;">
-          <n-button type="primary" size="small" id="btnGenerateAlphabetSheet" style="flex:1;" @click="handleGenerateAlphabet(false)">
-            ⚡ 载入 / 重新随机出卷
-          </n-button>
-          <n-button size="small" id="btnAppendAlphabetSheet" @click="handleGenerateAlphabet(true)">
-            ➕ 追加到试卷
+          <n-button type="primary" size="small" id="btnGenerateAlphabetSheet" style="flex:1;" @click="handleGenerateAlphabet(true)">
+            <template #icon><AppIcon name="plus" :size="14" /></template>
+            添加到试卷
           </n-button>
         </div>
       </div>
 
-      <!-- 挖空形式选择 (仅挖空模式显示) -->
-      <div v-if="state.draft.settings.dictMode === 'cloze'" class="form-row" id="rowClozeStyle" style="margin-bottom: 10px;">
-        <label class="row-label">挖空形式</label>
-        <div class="segmented-control">
-          <input
-            type="radio"
-            name="clozeStyle"
-            id="clozeInline"
-            value="inline"
-            :checked="state.draft.settings.clozeStyle === 'inline'"
-            @change="onClozeStyleChange('inline')"
-          />
-          <label for="clozeInline">句中内嵌填空 (推荐)</label>
-          <input
-            type="radio"
-            name="clozeStyle"
-            id="clozeBelow"
-            value="below"
-            :checked="state.draft.settings.clozeStyle === 'below'"
-            @change="onClozeStyleChange('below')"
-          />
-          <label for="clozeBelow">句下独立书写格</label>
+      <!-- 句子挖空专属排版微调参数 (仅句子挖空时显示) -->
+      <div v-if="currentInputType === 'sentence-cloze'" class="cloze-settings-card">
+        <div class="form-row" id="rowClozeStyle" style="margin-bottom: 8px;">
+          <label class="row-label">挖空形式</label>
+          <div class="segmented-control mini">
+            <input
+              type="radio"
+              name="clozeStyle"
+              id="clozeInline"
+              value="inline"
+              :checked="state.draft.settings.clozeStyle === 'inline'"
+              @change="state.draft.settings.clozeStyle = 'inline'"
+            />
+            <label for="clozeInline">句中内嵌填空 (推荐)</label>
+            <input
+              type="radio"
+              name="clozeStyle"
+              id="clozeBelow"
+              value="below"
+              :checked="state.draft.settings.clozeStyle === 'below'"
+              @change="state.draft.settings.clozeStyle = 'below'"
+            />
+            <label for="clozeBelow">句下独立书写格</label>
+          </div>
+        </div>
+
+        <div class="form-row" id="rowClozeZhPos" style="margin-bottom: 8px;">
+          <label class="row-label">中文位置</label>
+          <div class="segmented-control mini">
+            <input
+              type="radio"
+              name="clozeZhPos"
+              id="clozeZhBelow"
+              value="below"
+              :checked="state.draft.settings.clozeZhPosition === 'below'"
+              @change="state.draft.settings.clozeZhPosition = 'below'"
+            />
+            <label for="clozeZhBelow">句下独立行</label>
+            <input
+              type="radio"
+              name="clozeZhPos"
+              id="clozeZhRight"
+              value="right"
+              :checked="state.draft.settings.clozeZhPosition === 'right'"
+              @change="state.draft.settings.clozeZhPosition = 'right'"
+            />
+            <label for="clozeZhRight">紧随句末</label>
+            <input
+              type="radio"
+              name="clozeZhPos"
+              id="clozeZhAbove"
+              value="above"
+              :checked="state.draft.settings.clozeZhPosition === 'above'"
+              @change="state.draft.settings.clozeZhPosition = 'above'"
+            />
+            <label for="clozeZhAbove">句子上方</label>
+            <input
+              type="radio"
+              name="clozeZhPos"
+              id="clozeZhHide"
+              value="hide"
+              :checked="state.draft.settings.clozeZhPosition === 'hide'"
+              @change="state.draft.settings.clozeZhPosition = 'hide'"
+            />
+            <label for="clozeZhHide">隐藏中文</label>
+          </div>
+        </div>
+
+        <div class="form-row" id="rowClozeBlankWidth" style="margin-bottom: 8px;">
+          <label class="row-label">四线格长</label>
+          <div class="segmented-control mini">
+            <input
+              type="radio"
+              name="clozeBlankWidth"
+              id="blankWidthAuto"
+              value="auto"
+              :checked="state.draft.settings.clozeBlankWidth === 'auto'"
+              @change="state.draft.settings.clozeBlankWidth = 'auto'"
+            />
+            <label for="blankWidthAuto">按词自适应</label>
+            <input
+              type="radio"
+              name="clozeBlankWidth"
+              id="blankWidth1Word"
+              value="1word"
+              :checked="state.draft.settings.clozeBlankWidth === '1word'"
+              @change="state.draft.settings.clozeBlankWidth = '1word'"
+            />
+            <label for="blankWidth1Word">1 词长</label>
+            <input
+              type="radio"
+              name="clozeBlankWidth"
+              id="blankWidth2Words"
+              value="2words"
+              :checked="state.draft.settings.clozeBlankWidth === '2words'"
+              @change="state.draft.settings.clozeBlankWidth = '2words'"
+            />
+            <label for="blankWidth2Words">2 词长</label>
+            <input
+              type="radio"
+              name="clozeBlankWidth"
+              id="blankWidth3Words"
+              value="3words"
+              :checked="state.draft.settings.clozeBlankWidth === '3words'"
+              @change="state.draft.settings.clozeBlankWidth = '3words'"
+            />
+            <label for="blankWidth3Words">3 词长</label>
+          </div>
         </div>
       </div>
 
-      <!-- 中文提示位置 (仅挖空模式显示) -->
-      <div v-if="state.draft.settings.dictMode === 'cloze'" class="form-row" id="rowClozeZhPos" style="margin-bottom: 10px;">
-        <label class="row-label">中文位置</label>
-        <div class="segmented-control mini">
-          <input
-            type="radio"
-            name="clozeZhPos"
-            id="clozeZhBelow"
-            value="below"
-            :checked="state.draft.settings.clozeZhPosition === 'below'"
-            @change="state.draft.settings.clozeZhPosition = 'below'"
-          />
-          <label for="clozeZhBelow">句下独立行 (推荐)</label>
-          <input
-            type="radio"
-            name="clozeZhPos"
-            id="clozeZhRight"
-            value="right"
-            :checked="state.draft.settings.clozeZhPosition === 'right'"
-            @change="state.draft.settings.clozeZhPosition = 'right'"
-          />
-          <label for="clozeZhRight">紧随句末</label>
-          <input
-            type="radio"
-            name="clozeZhPos"
-            id="clozeZhAbove"
-            value="above"
-            :checked="state.draft.settings.clozeZhPosition === 'above'"
-            @change="state.draft.settings.clozeZhPosition = 'above'"
-          />
-          <label for="clozeZhAbove">句子上方</label>
-          <input
-            type="radio"
-            name="clozeZhPos"
-            id="clozeZhHide"
-            value="hide"
-            :checked="state.draft.settings.clozeZhPosition === 'hide'"
-            @change="state.draft.settings.clozeZhPosition = 'hide'"
-          />
-          <label for="clozeZhHide">隐藏中文</label>
-        </div>
-      </div>
-
-      <!-- 四线三格挖空长度 (仅挖空模式显示) -->
-      <div v-if="state.draft.settings.dictMode === 'cloze'" class="form-row" id="rowClozeBlankWidth" style="margin-bottom: 12px;">
-        <label class="row-label">四线格长</label>
-        <div class="segmented-control mini">
-          <input
-            type="radio"
-            name="clozeBlankWidth"
-            id="blankWidthAuto"
-            value="auto"
-            :checked="state.draft.settings.clozeBlankWidth === 'auto'"
-            @change="state.draft.settings.clozeBlankWidth = 'auto'"
-          />
-          <label for="blankWidthAuto">按词自适应</label>
-          <input
-            type="radio"
-            name="clozeBlankWidth"
-            id="blankWidth1Word"
-            value="1word"
-            :checked="state.draft.settings.clozeBlankWidth === '1word'"
-            @change="state.draft.settings.clozeBlankWidth = '1word'"
-          />
-          <label for="blankWidth1Word">1 词长 (60px)</label>
-          <input
-            type="radio"
-            name="clozeBlankWidth"
-            id="blankWidth2Words"
-            value="2words"
-            :checked="state.draft.settings.clozeBlankWidth === '2words'"
-            @change="state.draft.settings.clozeBlankWidth = '2words'"
-          />
-          <label for="blankWidth2Words">2 词长 (105px 推荐)</label>
-          <input
-            type="radio"
-            name="clozeBlankWidth"
-            id="blankWidth3Words"
-            value="3words"
-            :checked="state.draft.settings.clozeBlankWidth === '3words'"
-            @change="state.draft.settings.clozeBlankWidth = '3words'"
-          />
-          <label for="blankWidth3Words">3 词长 (150px)</label>
-        </div>
-      </div>
-
-      <!-- 普通单词/句子模式下的录入区域 (字母模式下隐藏，界面更精简) -->
-      <template v-if="state.draft.settings.dictMode !== 'alphabet'">
+      <!-- 快速文本录入框 (单词/句子挖空/句子默写模式) -->
+      <template v-if="currentInputType !== 'alphabet'">
         <p class="form-desc" id="formDescWords">
-          支持每行一词；支持纯中文；支持“word | 中文”、“word - 中文”或空格分隔；中文为空时仍生成默写格。
+          {{ inputHelperTip }}
         </p>
 
         <textarea
           class="word-textarea"
           id="customWordTextarea"
           v-model="rawText"
-          rows="8"
-          placeholder="在此输入或粘贴词表（支持纯中文、英文、或中英对照，每行一条）。&#10;示例：&#10;apple 苹果&#10;banana 香蕉&#10;（也可随时点击下方「默认9词」载入示例练习）"
-          style="width: 100%; min-height: 180px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 10px; font-size: 13px; line-height: 1.55; font-family: inherit; margin-bottom: 10px; resize: vertical;"
+          rows="7"
+          :placeholder="inputPlaceholder"
+          data-debug-id="Q-003"
+          data-debug-name="快速输入文本框"
+          style="width: 100%; min-height: 160px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 6px; padding: 10px; font-size: 13px; line-height: 1.55; font-family: inherit; margin-bottom: 10px; resize: vertical;"
         ></textarea>
 
         <div class="action-btn-row">
-          <n-button type="primary" size="small" id="btnParseText" @click="handleParseText">
-            载入/替换试卷
+          <n-button
+            type="primary"
+            size="small"
+            id="btnParseText"
+            data-debug-id="Q-004"
+            data-debug-name="添加到试卷按钮"
+            @click="handleAppendText"
+          >
+            <template #icon><AppIcon name="plus" :size="14" /></template>
+            添加到试卷
           </n-button>
-          <n-button size="small" id="btnAppendText" @click="handleAppendText">
-            追加
+
+          <!-- 兼容旧测试脚本隐藏桩 (保持 append 语义，不干扰用户) -->
+          <button id="btnAppendText" style="display:none;" aria-hidden="true" @click="handleAppendText"></button>
+          <button id="btnLoadDefaultSample" style="display:none;" aria-hidden="true" @click="handleLoadDefaultCompat"></button>
+
+          <n-button
+            size="small"
+            id="btnSaveDraftToLib"
+            data-debug-id="Q-005"
+            data-debug-name="存入词库按钮"
+            @click="handleSaveDraftToLib"
+            title="将当前试卷词汇保存到本地词库"
+          >
+            <template #icon><AppIcon name="download" :size="14" /></template>
+            存入词库
           </n-button>
-          <n-button size="small" id="btnSaveDraftToLib" @click="handleSaveDraftToLib" title="将当前试卷词汇保存到本地词库">
-            📥 存入词库
-          </n-button>
-          <n-button size="small" id="btnLoadDefaultSample" @click="handleLoadDefault">
-            默认9词
-          </n-button>
+
           <n-popconfirm
             @positive-click="handleClear"
             positive-text="确定"
             negative-text="取消"
           >
             <template #trigger>
-              <n-button size="small" type="error" ghost id="btnClearWords">
+              <n-button
+                size="small"
+                type="error"
+                ghost
+                id="btnClearWords"
+                data-debug-id="Q-006"
+                data-debug-name="清空试卷按钮"
+              >
+                <template #icon><AppIcon name="trash" :size="14" /></template>
                 清空试卷
               </n-button>
             </template>
-            确定要清空试卷上的全部词汇吗？
+            确定要清空试卷上的全部题目吗？
           </n-popconfirm>
         </div>
       </template>
 
-      <!-- 试卷单词列表 (完全由 Vue 响应式 v-for 驱动，禁止 innerHTML 暴力重写) -->
-      <div class="words-list-container" id="wordsListContainer">
+      <!-- 试卷题目列表 (Vue 响应式 v-for 驱动，带题型标识与稳定 debug-id) -->
+      <div
+        class="words-list-container"
+        id="wordsListContainer"
+        data-debug-id="Q-007"
+        data-debug-name="试卷题目列表"
+      >
         <template v-if="state.draft.items.length === 0">
           <div class="empty-list-tip">
-            暂无单词，请在上方输入框粘贴或载入默认词表
+            暂无题目，请在上方输入框添加题目或从词库中选题
           </div>
         </template>
 
@@ -368,18 +418,27 @@
           <div
             v-for="(item, index) in state.draft.items"
             :key="item.id || index"
-            class="word-item-row word-chip"
+            class="word-item-row word-chip question-card"
             :data-id="item.id"
+            :data-debug-id="'ITEM-' + item.id"
+            data-debug-name="试卷题目项"
           >
             <div class="word-item-main">
               <span class="word-item-index">{{ index + 1 }}.</span>
+              <span class="question-type-tag" :class="item.questionType || 'word-dictation'">
+                {{ getQuestionTypeLabel(item.questionType) }}
+              </span>
+
               <span v-if="item.en" class="word-item-en word-chip-en">
-                <template v-if="state.draft.settings.dictMode === 'cloze' && (item.en.includes('[') || item.en.includes('{'))">
+                <template v-if="item.questionType === 'sentence-cloze' && (item.en.includes('[') || item.en.includes('{'))">
                   <mark class="chip-blank-mark">{{ item.en }}</mark>
                 </template>
                 <template v-else>
                   {{ item.en }}
                 </template>
+              </span>
+              <span v-else-if="item.alphabetType" class="word-item-en word-chip-en">
+                {{ item.prompt }}
               </span>
               <span v-else class="word-chip-en" style="display:none;"></span>
 
@@ -388,9 +447,15 @@
             </div>
 
             <div class="word-item-actions">
-              <button type="button" class="word-item-btn" title="上移" @click.stop="moveUp(index)">▲</button>
-              <button type="button" class="word-item-btn" title="下移" @click.stop="moveDown(index)">▼</button>
-              <button type="button" class="word-item-btn del" title="删除" @click.stop="removeItem(index)">✕</button>
+              <button type="button" class="word-item-btn" title="上移" @click.stop="moveUp(index)">
+                <AppIcon name="arrow-up" :size="12" />
+              </button>
+              <button type="button" class="word-item-btn" title="下移" @click.stop="moveDown(index)">
+                <AppIcon name="arrow-down" :size="12" />
+              </button>
+              <button type="button" class="word-item-btn del" title="删除" @click.stop="removeItem(index)">
+                <AppIcon name="trash" :size="12" />
+              </button>
             </div>
           </div>
         </template>
@@ -401,7 +466,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { NCard, NBadge, NButton, NPopconfirm, useMessage } from 'naive-ui';
+import { NCard, NButton, NPopconfirm, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
 import { parseCustomText, generateId } from '../core/tokenizer.js';
 import {
@@ -417,15 +482,62 @@ import {
   generateCaseConversionItems,
   ALPHABET_PRESETS
 } from '../core/alphabet.js';
+import AppIcon from './AppIcon.vue';
 
 const message = useMessage();
 const rawText = ref('');
+const currentInputType = ref('word-dictation');
 
-const badgeText = computed(() => {
-  const count = state.draft.items.length;
-  return state.draft.settings.dictMode === 'alphabet' ? `${count} 题` : `${count} 词`;
+const inputPlaceholder = computed(() => {
+  if (currentInputType.value === 'sentence-cloze') {
+    return '在此输入或粘贴挖空句子（支持每行一条）。\n示例：\nI have an [apple]. 我有一个苹果。\nShe likes to [read] books. 她喜欢看书。';
+  }
+  if (currentInputType.value === 'sentence-dictation') {
+    return '在此输入或粘贴完整句子（支持每行一条，学生在四线三格中默写整句）。\n示例：\nHow are you? 你好吗？\nThis is my new classroom. 这是我的新教室。';
+  }
+  return '在此输入或粘贴单词（支持纯中文、英文、或中英对照，每行一条）。\n示例：\napple 苹果\nbanana 香蕉\nclassroom 教室';
 });
 
+const inputHelperTip = computed(() => {
+  if (currentInputType.value === 'sentence-cloze') {
+    return '提示：用 [ ] 标出挖空词，学生在四线三格中填写该词；支持中英对照或纯英文。';
+  }
+  if (currentInputType.value === 'sentence-dictation') {
+    return '提示：整句默写模式，中文作为题干，根据句子长度智能分配 1~3 行四线三格供学生书写。';
+  }
+  return '提示：支持每行一词；支持纯中文、纯英文或“英文 中文”对照；中文为空时仍生成四线格。';
+});
+
+function getQuestionTypeLabel(type) {
+  switch (type) {
+    case 'sentence-cloze':
+      return '挖空';
+    case 'sentence-dictation':
+      return '句默';
+    case 'alphabet':
+      return '字母';
+    case 'word-dictation':
+    default:
+      return '单词';
+  }
+}
+
+function onInputTypeChange(type) {
+  currentInputType.value = type;
+  if (type === 'sentence-cloze') {
+    state.draft.settings.dictMode = 'cloze';
+    state.draft.settings.columns = 2;
+  } else if (type === 'alphabet') {
+    state.draft.settings.dictMode = 'alphabet';
+  } else if (type === 'sentence-dictation') {
+    state.draft.settings.dictMode = 'sentence';
+    state.draft.settings.columns = 1;
+  } else {
+    state.draft.settings.dictMode = 'writing';
+  }
+}
+
+// 字母专项配置
 const alphabetActiveType = ref('sequence');
 const alphaSeqConfig = ref({
   caseStyle: 'pair',
@@ -442,7 +554,7 @@ const alphaCaseConfig = ref({
   direction: 'upper_to_lower'
 });
 
-function handleGenerateAlphabet(isAppend = false) {
+function handleGenerateAlphabet(isAppend = true) {
   let newItems = [];
   let defaultTitle = '';
   let defaultCols = 3;
@@ -472,7 +584,7 @@ function handleGenerateAlphabet(isAppend = false) {
 
   if (isAppend) {
     state.draft.items.push(...newItems);
-    message.success(`已追加 ${newItems.length} 道字母题至当前试卷！`);
+    message.success(`已添加 ${newItems.length} 道字母题至当前试卷！`);
   } else {
     state.draft.items = newItems;
     state.draft.settings.dictMode = 'alphabet';
@@ -496,62 +608,63 @@ function handleLoadAlphabetPreset(presetKey) {
   message.success(`已载入「${preset.title}」！`);
 }
 
-function onModeChange(mode) {
-  state.draft.settings.dictMode = mode;
-  if (mode === 'cloze') {
-    state.draft.settings.columns = 2; // 句子挖空模式默认切换为 2 列
-    const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
-    state.draft.settings.copiesPerPage = adapted.copiesPerPage;
-    state.draft.settings.wordsPerPage = adapted.wordsPerPage;
-  }
-  if (mode === 'alphabet' && state.draft.items.length === 0) {
-    handleGenerateAlphabet(false);
-  }
-}
-
-function onClozeStyleChange(style) {
-  state.draft.settings.clozeStyle = style;
-}
-
-function handleParseText() {
-  const textarea = document.getElementById('customWordTextarea');
-  const text = (textarea ? textarea.value : '') || rawText.value;
-  const list = parseCustomText(text, state.draft.settings.dictMode);
-  if (list.length === 0) {
-    message.warning('未识别到有效词汇，请按提示输入');
-    return;
-  }
-  state.draft.items = list;
-  const adapted = autoAdaptCopiesAndCapacity(list, state.draft.settings);
-  const oldCopies = state.draft.settings.copiesPerPage;
-  state.draft.settings.copiesPerPage = adapted.copiesPerPage;
-  state.draft.settings.wordsPerPage = adapted.wordsPerPage;
-  if (state.draft.settings.dictMode === 'cloze') {
-    const tip = adapted.copiesPerPage !== oldCopies ? `（已自动优化为 1 页 ${adapted.copiesPerPage} 份）` : '';
-    message.success(`已成功载入 ${list.length} 个句子${tip}！`);
-  } else {
-    message.success(`已成功载入 ${list.length} 个单词！`);
-  }
-}
-
+// 添加到试卷 (追加语义)
 function handleAppendText() {
   const textarea = document.getElementById('customWordTextarea');
   const text = (textarea ? textarea.value : '') || rawText.value;
-  const list = parseCustomText(text, state.draft.settings.dictMode);
-  if (list.length === 0) {
-    message.warning('未识别到有效词汇，请按提示输入');
+  if (!text || !text.trim()) {
+    message.warning('请输入题目内容后再点击添加');
     return;
   }
-  state.draft.items = state.draft.items.concat(list);
+
+  const parsed = parseCustomText(text, currentInputType.value === 'sentence-cloze' ? 'cloze' : 'writing');
+  if (parsed.length === 0) {
+    message.warning('未识别到有效内容，请检查输入格式');
+    return;
+  }
+
+  const newItems = parsed.map(it => {
+    if (currentInputType.value === 'sentence-dictation') {
+      return createDraftItem({ ...it, type: 'sentence', questionType: 'sentence-dictation' });
+    }
+    if (currentInputType.value === 'sentence-cloze') {
+      return createDraftItem({ ...it, type: 'sentence', questionType: 'sentence-cloze' });
+    }
+    return createDraftItem(it, currentInputType.value);
+  });
+
+  state.draft.items.push(...newItems);
+  rawText.value = '';
+  if (textarea) textarea.value = '';
+
   const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
   state.draft.settings.copiesPerPage = adapted.copiesPerPage;
   state.draft.settings.wordsPerPage = adapted.wordsPerPage;
-  message.success(`已追加 ${list.length} 个条目！`);
+  message.success(`已成功添加 ${newItems.length} 道题目到试卷！`);
+}
+
+// 兼容旧测试脚本
+function handleLoadDefaultCompat() {
+  if (state.draft.settings.dictMode === 'cloze') {
+    state.draft.items = DEFAULT_CLOZE_WORDS_RAW.map(s => createDraftItem(s));
+    state.draft.settings.columns = 2;
+    const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
+    state.draft.settings.copiesPerPage = adapted.copiesPerPage;
+    state.draft.settings.wordsPerPage = adapted.wordsPerPage;
+    message.success('已载入 9 个句子挖空示例！');
+  } else {
+    const items = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
+    state.draft.items = items;
+    state.draft.settings.wordsPerPage = 9;
+    state.draft.settings.copiesPerPage = 3;
+    state.draft.settings.columns = 3;
+    message.success('已载入 9 词示例！');
+  }
 }
 
 async function handleSaveDraftToLib() {
   if (state.draft.items.length === 0) {
-    message.warning('当前试卷暂无词汇可保存');
+    message.warning('当前试卷暂无题目可保存');
     return;
   }
   const dupCheck = detectDuplicates(state.library.words, state.draft.items);
@@ -559,7 +672,6 @@ async function handleSaveDraftToLib() {
     message.info(`试卷中的 ${state.draft.items.length} 个单词均已存在于词库中`);
     return;
   }
-  // 提取当前试卷标题作为分组名，若无则使用“通用词汇”
   let targetGroup = '通用词汇';
   if (state.draft.settings.title && state.draft.settings.title.trim()) {
     targetGroup = state.draft.settings.title.replace(/单词默写|默写纸|练习卷|专项卷/g, '').trim() || '通用词汇';
@@ -579,27 +691,10 @@ async function handleSaveDraftToLib() {
   message.success(`已成功将 ${newWords.length} 个新词保存到本地词库「${targetGroup}」${dupTip}！`);
 }
 
-function handleLoadDefault() {
-  if (state.draft.settings.dictMode === 'cloze') {
-    state.draft.items = DEFAULT_CLOZE_WORDS_RAW.map(s => createDraftItem(s));
-    state.draft.settings.columns = 2; // 默认 2 列
-    const adapted = autoAdaptCopiesAndCapacity(state.draft.items, state.draft.settings);
-    state.draft.settings.copiesPerPage = adapted.copiesPerPage;
-    state.draft.settings.wordsPerPage = adapted.wordsPerPage;
-    message.success('已载入 9 个句子挖空示例（已设为 2 列与 1页2份）！');
-  } else {
-    state.draft.items = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
-    state.draft.settings.wordsPerPage = 9;
-    state.draft.settings.copiesPerPage = 3;
-    state.draft.settings.columns = 3;
-    message.success('已载入默认 9 词与推荐设置！');
-  }
-}
-
 function handleClear() {
   state.draft.items = [];
   rawText.value = '';
-  message.info('已清空试卷词汇表');
+  message.info('已清空试卷题目');
 }
 
 function moveUp(index) {
@@ -635,6 +730,22 @@ function removeItem(index) {
   background: #ffffff;
 }
 
+.pane-header-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.title-with-icon {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .form-row {
   display: flex;
   align-items: center;
@@ -668,7 +779,7 @@ function removeItem(index) {
 }
 
 .segmented-control label {
-  padding: 4px 10px;
+  padding: 4px 9px;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-muted);
@@ -686,6 +797,14 @@ function removeItem(index) {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+.cloze-settings-card {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
 .action-btn-row {
   display: flex;
   gap: 6px;
@@ -697,7 +816,7 @@ function removeItem(index) {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 400px;
+  max-height: 420px;
   overflow-y: auto;
 }
 
@@ -717,6 +836,7 @@ function removeItem(index) {
   border: 1px solid var(--border-light);
   border-radius: 6px;
   font-size: 12.5px;
+  transition: all 0.15s ease;
 }
 
 .word-item-row:hover {
@@ -767,11 +887,14 @@ function removeItem(index) {
   background: transparent;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  padding: 1px 5px;
+  padding: 2px 5px;
   font-size: 11px;
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .word-item-btn:hover {
@@ -804,7 +927,7 @@ function removeItem(index) {
 
 .alpha-type-btn {
   flex: 1;
-  padding: 5px 4px;
+  padding: 5px 6px;
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-muted);
@@ -814,7 +937,10 @@ function removeItem(index) {
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .alpha-type-btn:hover {
@@ -881,5 +1007,12 @@ function removeItem(index) {
   display: flex;
   gap: 8px;
   margin-top: 2px;
+}
+
+.info-tip-row {
+  font-size: 11px;
+  color: var(--primary);
+  margin-top: 2px;
+  font-weight: 500;
 }
 </style>

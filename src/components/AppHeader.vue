@@ -1,17 +1,15 @@
 <template>
-  <header class="app-header no-print">
+  <header class="app-header no-print" data-debug-id="H-001" data-debug-name="顶部标题栏">
     <div class="header-brand">
       <button
         class="btn-toggle-sidebar"
         id="btnToggleSidebar"
         title="展开/收起左侧控制栏"
+        data-debug-id="H-002"
+        data-debug-name="侧边栏折叠按钮"
         @click="state.ui.isSidebarCollapsed = !state.ui.isSidebarCollapsed"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
+        <AppIcon name="menu" :size="16" />
       </button>
       <div class="brand-text">
         <h1 class="brand-title">小学/初中英语默写纸生成器</h1>
@@ -20,18 +18,35 @@
     </div>
 
     <div class="header-actions">
-      <div class="badge-status" id="quickStatBadge">
-        已选 {{ layout.totalItems }} {{ state.draft.settings.dictMode === 'alphabet' ? '题' : '词' }} · 每页 {{ layout.copiesPerPage }} 份 · 共 {{ layout.totalPages }} 页
+      <div class="quick-stat-badge" id="quickStatBadge" data-debug-id="H-003" data-debug-name="试卷概览状态标签">
+        已添加 {{ layout.totalItems }} 题 · 每页 {{ layout.copiesPerPage }} 份 · 共 {{ layout.totalPages }} 页
       </div>
 
-      <n-button size="small" id="btnGeneratePreview" @click="handleRefreshPreview" title="根据当前设置重绘打印预览">
-        🔄 生成预览
+      <!-- 兼容旧测试脚本隐藏桩，实际界面自动响应更新，无需手动生成预览 -->
+      <button id="btnGeneratePreview" style="display:none;" aria-hidden="true" @click="handleRefreshPreview"></button>
+
+      <n-button
+        size="small"
+        id="btnExportConfig"
+        data-debug-id="H-004"
+        data-debug-name="导出配置按钮"
+        @click="handleExportConfig"
+        title="将当前设置与词表导出为 JSON 文件"
+      >
+        <template #icon><AppIcon name="download" :size="14" /></template>
+        导出配置
       </n-button>
-      <n-button size="small" id="btnExportConfig" @click="handleExportConfig" title="将当前设置与词表导出为 JSON 文件">
-        💾 导出配置
-      </n-button>
-      <n-button size="small" id="btnTriggerImport" @click="triggerFileInput" title="导入已保存的配置或词表文件">
-        📂 导入数据
+
+      <n-button
+        size="small"
+        id="btnTriggerImport"
+        data-debug-id="H-005"
+        data-debug-name="导入数据按钮"
+        @click="triggerFileInput"
+        title="导入已保存的配置或词表文件"
+      >
+        <template #icon><AppIcon name="upload" :size="14" /></template>
+        导入数据
       </n-button>
       <input type="file" ref="fileInputRef" id="fileImportInput" accept=".json,.txt" style="display:none;" @change="handleFileChange" />
 
@@ -41,15 +56,32 @@
         negative-text="取消"
       >
         <template #trigger>
-          <n-button size="small" type="error" ghost id="btnResetDefaults" title="恢复为默认测试数据与版式参数">
-            ↺ 恢复默认
+          <n-button
+            size="small"
+            type="error"
+            ghost
+            id="btnResetDefaults"
+            data-debug-id="H-006"
+            data-debug-name="恢复默认按钮"
+            title="恢复为默认测试数据与版式参数"
+          >
+            <template #icon><AppIcon name="refresh" :size="14" /></template>
+            恢复默认
           </n-button>
         </template>
         确定要恢复为默认设置和测试词汇吗？
       </n-popconfirm>
 
-      <n-button type="primary" id="btnPrintSheet" @click="handlePrint" title="呼出打印窗口或直接保存为高清矢量 PDF">
-        🖨️ 打印 / 导出 PDF
+      <n-button
+        type="primary"
+        id="btnPrintSheet"
+        data-debug-id="H-007"
+        data-debug-name="打印导出PDF按钮"
+        @click="handlePrint"
+        title="呼出打印窗口或直接保存为高清矢量 PDF"
+      >
+        <template #icon><AppIcon name="print" :size="15" /></template>
+        打印 / 导出 PDF
       </n-button>
     </div>
   </header>
@@ -62,6 +94,7 @@ import { state, db } from '../stores/appStore.js';
 import { computePageLayout, DEFAULT_SETTINGS, DEFAULT_WORDS_RAW, createDraftItem } from '../core/layout.js';
 import { validateImportData, detectDuplicates } from '../core/storage.js';
 import { parseCustomText } from '../core/tokenizer.js';
+import AppIcon from './AppIcon.vue';
 
 const message = useMessage();
 const fileInputRef = ref(null);

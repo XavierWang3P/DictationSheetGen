@@ -1,9 +1,10 @@
 <template>
-  <main class="preview-viewport" id="previewViewport">
+  <main class="preview-viewport" id="previewViewport" data-debug-id="P-001" data-debug-name="试卷预览视口">
     <!-- 浮动缩放与状态栏 -->
-    <div class="preview-toolbar">
+    <div class="preview-toolbar" data-debug-id="P-003" data-debug-name="预览缩放与控制栏">
       <span class="preview-mode-tag" id="previewModeTag">
-        📄 {{ layout.paperDim.name }} {{ layout.isLandscape ? '横向' : '纵向' }} ·
+        <AppIcon name="file-text" :size="14" />
+        {{ layout.paperDim.name }} {{ layout.isLandscape ? '横向' : '纵向' }} ·
         {{ modeLabel }} · {{ copyLabel }} · 共 {{ layout.totalPages }} 页
       </span>
 
@@ -24,7 +25,7 @@
     </div>
 
     <!-- 纸张展示容器 -->
-    <div class="paper-stage" id="paperStage" ref="stageRef">
+    <div class="paper-stage" id="paperStage" ref="stageRef" data-debug-id="P-002" data-debug-name="试卷纸张渲染舞台">
       <div
         class="sheets-stream-container"
         id="sheetsStreamContainer"
@@ -40,6 +41,7 @@ import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { NButtonGroup, NButton } from 'naive-ui';
 import { state } from '../stores/appStore.js';
 import { computePageLayout, renderPracticeSheetHtml, PAPER_SIZES } from '../core/layout.js';
+import AppIcon from './AppIcon.vue';
 
 const stageRef = ref(null);
 
@@ -47,10 +49,12 @@ const layout = computed(() => computePageLayout(state.draft.items, state.draft.s
 const sheetHtml = computed(() => renderPracticeSheetHtml(layout.value, state.draft.settings));
 
 const modeLabel = computed(() => {
-  if (state.draft.settings.dictMode === 'alphabet') return '三年级字母默写';
+  if (state.draft.settings.dictMode === 'alphabet') return '三年级字母专项';
   if (state.draft.settings.dictMode === 'cloze') return '句子挖空填写';
+  if (state.draft.settings.dictMode === 'sentence') return '句子默写';
   return '看中文默写';
 });
+
 const copyLabel = computed(() => {
   const c = layout.value.copiesPerPage;
   return c === 1 ? '全页 1 份' : (c === 2 ? '一页 2 份' : '一页 3 份');
@@ -105,232 +109,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateZoomFit);
+  clearTimeout(renderTimer);
 });
 </script>
-
-<style>
-/* 试卷真实比例排版样式 */
-.sheet-page {
-  background: #ffffff;
-  box-shadow: 0 4px 20px rgba(38, 51, 47, 0.08);
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-  page-break-after: always;
-}
-
-.sheet-copy-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.sheet-copy-section.single-copy {
-  padding: 6mm 0;
-}
-
-.sheet-copy-section.multi-copy {
-  padding: 2mm 0;
-}
-
-.sheet-header {
-  margin-bottom: 2mm;
-  flex-shrink: 0;
-}
-
-.sheet-title-text {
-  margin: 0 0 2mm 0;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: 0.5px;
-  line-height: 1.25;
-}
-
-.compact-info {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-  font-size: 10.5pt;
-  color: #334155;
-  margin-bottom: 2mm;
-  flex-wrap: wrap;
-}
-
-.info-item {
-  display: inline-flex;
-  align-items: flex-end;
-  font-size: 10.5pt;
-  color: #334155;
-}
-
-.info-line {
-  display: inline-block;
-  border-bottom: 1.2px solid #334155;
-  margin-left: 4px;
-}
-
-.info-line-name {
-  min-width: 105px;
-}
-
-.info-line-class {
-  min-width: 90px;
-}
-
-.info-line-no {
-  min-width: 55px;
-}
-
-.info-line-date {
-  min-width: 75px;
-}
-
-.info-line-score {
-  min-width: 45px;
-}
-
-.section-cut-divider {
-  width: 100%;
-  position: relative;
-  margin: 1.5mm 0;
-  flex-shrink: 0;
-}
-
-.section-cut-divider.dashed {
-  border-top: 1px dashed #94a3b8;
-}
-
-.section-cut-divider.solid {
-  border-top: 1px solid #94a3b8;
-}
-
-.section-cut-divider.none {
-  border-top: none;
-}
-
-.cut-scissors-tag {
-  position: absolute;
-  top: -9px;
-  right: 12mm;
-  background: #ffffff;
-  padding: 0 6px;
-  font-size: 9.5px;
-  color: #64748b;
-  line-height: 16px;
-}
-
-.sheet-body-grid {
-  display: grid;
-  flex: 1;
-  align-content: start;
-}
-
-.word-entry-item {
-  box-sizing: border-box;
-}
-
-.meaning {
-  color: #1e293b;
-  line-height: 1.35;
-  margin-bottom: 1.2mm;
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-}
-
-.word-num {
-  font-weight: 400; /* 题号保持不加粗 */
-  margin-right: 4px;
-  color: #334155;
-}
-
-.entry-zh-hint {
-  font-weight: 500;
-}
-
-.word-card.cloze-card-inline {
-  width: 100%;
-}
-
-.word-card.cloze-card-inline .meaning.word-prompt-row {
-  display: flex;
-  align-items: flex-start;
-  flex-wrap: nowrap;
-}
-
-.cloze-content-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.cloze-sentence {
-  line-height: 1.65;
-  color: #1e293b;
-}
-
-.cloze-blank-line {
-  display: inline-block;
-  border-bottom: 1.5px solid #0f172a;
-  min-width: 50px;
-  margin: 0 3px;
-  vertical-align: baseline;
-}
-
-.cloze-blank-line.cloze-inline-grid {
-  height: 9.5mm;
-  vertical-align: bottom;
-}
-
-.cloze-blank-line.cloze-inline-grid svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.cloze-zh {
-  font-size: 0.84em;
-  color: #475569;
-}
-
-.cloze-zh.pos-below {
-  display: block;
-  margin-top: 2.5px;
-  line-height: 1.35;
-  color: #475569;
-  font-weight: 400;
-}
-
-.cloze-zh.pos-above {
-  display: block;
-  margin-bottom: 2.5px;
-  line-height: 1.35;
-  color: #475569;
-  font-weight: 400;
-}
-
-.cloze-zh.pos-right {
-  display: inline;
-  margin-left: 6px;
-  font-weight: 400;
-}
-
-.four-line-svg {
-  width: 100%;
-  display: block;
-}
-
-.single-line-svg {
-  width: 100%;
-  display: block;
-}
-</style>
 
 <style scoped>
 .preview-viewport {

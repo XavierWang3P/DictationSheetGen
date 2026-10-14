@@ -5,7 +5,12 @@
     :class="{ collapsed: state.ui.isSidebarCollapsed }"
   >
     <!-- 顶部工作区 Tab 切换栏 -->
-    <div class="sidebar-tab-bar" id="sidebarTabBar">
+    <div
+      class="sidebar-tab-bar"
+      id="sidebarTabBar"
+      data-debug-id="T-001"
+      data-debug-name="侧边栏工作区标签页"
+    >
       <button
         v-for="t in tabs"
         :key="t.key"
@@ -15,6 +20,7 @@
         :data-tab="t.key"
         @click="onTabClick(t.key)"
       >
+        <AppIcon :name="t.icon" :size="13" />
         {{ t.label }}
       </button>
     </div>
@@ -46,12 +52,13 @@ import QuickInputPane from './QuickInputPane.vue';
 import WordLibraryPane from './WordLibraryPane.vue';
 import VisualClozePane from './VisualClozePane.vue';
 import SettingsPane from './SettingsPane.vue';
+import AppIcon from './AppIcon.vue';
 
 const tabs = [
-  { key: 'paneQuick', label: '📝 快速录入' },
-  { key: 'paneWordLib', label: '📚 本地词库' },
-  { key: 'paneClozeVisual', label: '✏️ 可视化挖空' },
-  { key: 'paneSettings', label: '⚙️ 版式设置' }
+  { key: 'paneQuick', label: '快速录入', icon: 'edit' },
+  { key: 'paneWordLib', label: '本地词库', icon: 'book' },
+  { key: 'paneClozeVisual', label: '可视化挖空', icon: 'tag' },
+  { key: 'paneSettings', label: '版式设置', icon: 'settings' }
 ];
 
 function onTabClick(key) {
@@ -61,9 +68,6 @@ function onTabClick(key) {
     if (pane) {
       pane.classList.toggle('active', k === key);
     }
-  });
-  document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('data-tab') === key);
   });
 }
 </script>
@@ -112,6 +116,10 @@ function onTabClick(key) {
   text-align: center;
   border-radius: 4px 4px 0 0;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .sidebar-tab-btn:hover {

@@ -126,38 +126,56 @@ export const DEFAULT_SETTINGS = {
   showAnswerPage: false
 };
 
-export function createDraftItem(data) {
+export function migrateDraftItem(data, fallbackMode = 'writing') {
   if (!data) return null;
-  const hasBracket = data.en && (data.en.includes('[') || data.en.includes('{'));
-  const isSentence = data.type === 'sentence' || (Array.isArray(data.segments) && data.segments.length > 0) || hasBracket;
+  const id = data.id || generateId('item');
+  const en = (data.en || '').trim();
+  const zh = (data.zh || data.translation || '').trim();
 
-  if (isSentence) {
-    const segments = (Array.isArray(data.segments) && data.segments.length > 0)
-      ? data.segments
-      : parseSentenceToSegments(data.en || '');
-    const enText = data.en || segmentsToMarkedText(segments);
-    const zhText = data.zh || data.translation || '';
-    return {
-      id: data.id || generateId('s'),
-      sourceId: data.sourceId || null,
-      type: 'sentence',
-      en: enText,
-      zh: zhText,
-      translation: zhText,
-      segments,
-      overrideZh: data.overrideZh || ''
-    };
-  } else {
-    return {
-      id: data.id || generateId('w'),
-      sourceId: data.sourceId || null,
-      type: 'word',
-      en: (data.en || '').trim(),
-      zh: (data.zh || '').trim(),
-      phonetic: data.phonetic || '',
-      overrideZh: data.overrideZh || ''
-    };
+  let questionType = data.questionType;
+  if (!questionType) {
+    if (data.alphaData || data.neighborData || data.caseData || data.type === 'alphabet' || fallbackMode === 'alphabet') {
+      questionType = 'alphabet';
+    } else if (data.type === 'sentence-dictation' || fallbackMode === 'sentence-dictation') {
+      questionType = 'sentence-dictation';
+    } else if (data.type === 'sentence' || (Array.isArray(data.segments) && data.segments.some(s => s.blank)) || en.includes('[') || en.includes('{') || fallbackMode === 'cloze') {
+      questionType = 'sentence-cloze';
+    } else {
+      questionType = 'word-dictation';
+    }
   }
+
+  let segments = Array.isArray(data.segments) ? data.segments : [];
+  if (questionType === 'sentence-cloze' && segments.length === 0 && en) {
+    segments = parseSentenceToSegments(en);
+  }
+
+  const prompt = data.prompt || zh || en;
+  const answer = data.answer || en;
+
+  return {
+    id,
+    sourceId: data.sourceId || null,
+    questionType,
+    type: data.type || (questionType === 'sentence-cloze' || questionType === 'sentence-dictation' ? 'sentence' : 'word'),
+    en,
+    zh,
+    prompt,
+    answer,
+    translation: zh,
+    phonetic: data.phonetic || '',
+    segments,
+    layoutHint: data.layoutHint || (questionType === 'sentence-dictation' || questionType === 'sentence-cloze' ? 'full-width' : 'auto'),
+    alphaData: data.alphaData || null,
+    neighborData: data.neighborData || null,
+    caseData: data.caseData || null,
+    overrideZh: data.overrideZh || ''
+  };
+}
+
+export function createDraftItem(data, defaultType = null) {
+  if (!data) return null;
+  return migrateDraftItem(data, defaultType);
 }
 
 // SVG 练习格绘制 (纯函数)
@@ -514,42 +532,148 @@ export function autoAdaptCopiesAndCapacity(items, settings) {
   };
 }
 
-// 纯函数：计算多页排版切片
+export function estimateQuestionHeightMm(item, s, copies = 3) {
+  const qType = item.questionType || 'word-dictation';
+  const gridH = s.gridHeight || 12;
+
+  if (qType === 'alphabet') {
+    if (item.alphaData && item.alphaData.subMode === 'full') {
+      return (copies > 1) ? 14 : 20;
+    }
+    return (copies > 1) ? 14 : 18;
+  }
+
+  if (qType === 'sentence-dictation') {
+    const ansLen = (item.answer || item.en || '').length;
+    let lines = 1;
+    if (ansLen > 80) lines = 3;
+    else if (ansLen > 40) lines = 2;
+    const effectiveGridH = (copies > 1) ? Math.min(8.5, gridH) : gridH;
+    return 6 + (lines * (effectiveGridH + 1.8));
+  }
+
+  if (qType === 'sentence-cloze') {
+    if (s.clozeStyle === 'below') {
+      const effectiveGridH = (copies > 1) ? Math.min(7.5, gridH) : gridH;
+      return 10 + effectiveGridH;
+    }
+    return (copies > 1) ? 13 : 16;
+  }
+
+  // word-dictation
+  const effectiveGridH = (copies > 1) ? Math.min(7.5, gridH) : gridH;
+  return 6 + effectiveGridH;
+}
+
+// 纯函数：计算多页排版切片 (支持混合题型智能高度与自然分页)
 export function computePageLayout(items, settings) {
-  const words = Array.isArray(items) ? items : [];
+  const rawWords = Array.isArray(items) ? items : [];
   const s = Object.assign({}, DEFAULT_SETTINGS, settings);
   const curPaperKey = s.paperSize || 'A4';
   const pDim = PAPER_SIZES[curPaperKey] || PAPER_SIZES.A4;
   const isLand = (s.orientation === 'landscape');
   const pageWidthMm = isLand ? pDim.height : pDim.width;
   const pageHeightMm = isLand ? pDim.width : pDim.height;
-  let capacity = Math.max(3, parseInt(s.wordsPerPage, 10) || 9);
-  let copiesPerPage = Math.max(1, parseInt(s.copiesPerPage, 10) || 3);
+  const copiesPerPage = Math.max(1, parseInt(s.copiesPerPage, 10) || 3);
+  const columns = Math.max(1, parseInt(s.columns, 10) || 3);
 
-  // 物理版面防溢出保底：在句子挖空模式下，若题目较多导致单联超出版面范围
-  if (s.dictMode === 'cloze' && words.length > 0) {
-    if (words.length > 12 && copiesPerPage > 1) {
-      copiesPerPage = 1;
-      capacity = Math.max(capacity, words.length);
-    } else if (words.length > 6 && copiesPerPage === 3) {
-      copiesPerPage = 2;
-      capacity = Math.max(capacity, words.length);
-    }
+  // 迁移所有题目为规范格式
+  const migratedItems = rawWords.map(w => migrateDraftItem(w, s.dictMode));
+
+  // 检查是否为 26 字母全默写
+  const isAlpha26 = (s.dictMode === 'alphabet' && migratedItems.length === 26 && migratedItems[0]?.alphaData);
+  if (isAlpha26) {
+    return {
+      paperDim: pDim,
+      isLandscape: isLand,
+      pageWidthMm,
+      pageHeightMm,
+      wordsPerPage: 26,
+      capacity: 26,
+      copiesPerPage: 1,
+      totalPages: 1,
+      totalItems: 26,
+      pageChunks: [{ pageIndex: 0, items: migratedItems.map((item, i) => ({ overallIndex: i + 1, item })) }]
+    };
   }
 
+  // 计算每份试卷的最大可用物理高度 (mm)
+  const pageMargin = s.pageMargin || 8;
+  const netPageHeightMm = pageHeightMm - (pageMargin * 2);
+  const dividerHeightMm = (copiesPerPage > 1) ? (copiesPerPage - 1) * 3 : 0;
+  const copyHeightMm = (netPageHeightMm - dividerHeightMm) / copiesPerPage;
+  const headerHeightMm = (copiesPerPage > 1) ? 14 : 22;
+  // 留出 3mm 边距防溢出安全裕量
+  const maxAvailableHeightMm = Math.max(30, copyHeightMm - headerHeightMm - 3);
+
+  // 智能行进流式分页算法
   const pageChunks = [];
-  for (let i = 0; i < words.length; i += capacity) {
-    pageChunks.push({
-      pageIndex: Math.floor(i / capacity),
-      items: words.slice(i, i + capacity).map((item, offset) => ({
-        overallIndex: i + offset + 1,
-        item
-      }))
-    });
-  }
+  let currentPageItems = [];
+  let currentUsedHeightMm = 0;
+  let currentColumnOccupied = 0;
+  let currentRowMaxHeightMm = 0;
 
-  if (pageChunks.length === 0) {
-    pageChunks.push({ pageIndex: 0, items: [] });
+  // 用户设置的单页题量上限作为硬约束之一 (兼容单选题量参数)
+  const userCapacity = Math.max(3, parseInt(s.wordsPerPage, 10) || 9);
+
+  migratedItems.forEach((item, index) => {
+    const isFullWidth = (item.questionType === 'sentence-dictation' || (item.questionType === 'sentence-cloze' && (item.en?.length > 35 || columns <= 2)) || item.layoutHint === 'full-width');
+    const colsRequired = isFullWidth ? columns : 1;
+    const itemHeightMm = estimateQuestionHeightMm(item, s, copiesPerPage);
+
+    let nextUsedHeightMm = currentUsedHeightMm;
+    let nextColumnOccupied = currentColumnOccupied;
+    let nextRowMaxHeightMm = Math.max(currentRowMaxHeightMm, itemHeightMm);
+
+    if (currentColumnOccupied + colsRequired > columns) {
+      nextUsedHeightMm += currentRowMaxHeightMm + (s.rowGap || 3.5);
+      nextRowMaxHeightMm = itemHeightMm;
+      nextColumnOccupied = colsRequired;
+    } else {
+      nextColumnOccupied += colsRequired;
+      if (nextColumnOccupied >= columns) {
+        nextUsedHeightMm += nextRowMaxHeightMm + (s.rowGap || 3.5);
+        nextColumnOccupied = 0;
+        nextRowMaxHeightMm = 0;
+      }
+    }
+
+    const projectedTotalHeightMm = nextUsedHeightMm + nextRowMaxHeightMm;
+
+    // 分页判定：超过高度容量或达到用户指定题量
+    const exceedsHeight = (currentPageItems.length > 0 && projectedTotalHeightMm > maxAvailableHeightMm);
+    const exceedsCapacity = (currentPageItems.length >= userCapacity && !isAlpha26);
+
+    if (exceedsHeight || exceedsCapacity) {
+      pageChunks.push({
+        pageIndex: pageChunks.length,
+        items: currentPageItems
+      });
+      currentPageItems = [];
+      currentUsedHeightMm = 0;
+      currentColumnOccupied = colsRequired >= columns ? 0 : colsRequired;
+      currentRowMaxHeightMm = colsRequired >= columns ? 0 : itemHeightMm;
+      if (colsRequired >= columns) {
+        currentUsedHeightMm = itemHeightMm + (s.rowGap || 3.5);
+      }
+    } else {
+      currentUsedHeightMm = nextUsedHeightMm;
+      currentColumnOccupied = nextColumnOccupied;
+      currentRowMaxHeightMm = nextRowMaxHeightMm;
+    }
+
+    currentPageItems.push({
+      overallIndex: index + 1,
+      item,
+      isFullWidth
+    });
+  });
+
+  if (currentPageItems.length > 0 || pageChunks.length === 0) {
+    pageChunks.push({
+      pageIndex: pageChunks.length,
+      items: currentPageItems
+    });
   }
 
   return {
@@ -557,22 +681,20 @@ export function computePageLayout(items, settings) {
     isLandscape: isLand,
     pageWidthMm,
     pageHeightMm,
-    wordsPerPage: capacity,
-    capacity,
+    wordsPerPage: userCapacity,
+    capacity: userCapacity,
     copiesPerPage,
     totalPages: pageChunks.length,
-    totalItems: words.length,
+    totalItems: migratedItems.length,
     pageChunks
   };
 }
 
-// 单联 HTML 生成 (纯函数)
+// 单联 HTML 生成 (纯函数，支持混合题型精准渲染)
 export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSize) {
   const copies = Math.max(1, parseInt(s.copiesPerPage, 10) || 1);
-  const isCloze = (s.dictMode === 'cloze');
-  const isClozeInline = isCloze && (s.clozeStyle !== 'below');
+  const isAlpha26 = (s.dictMode === 'alphabet' && chunk.items.length === 26 && chunk.items[0]?.item?.alphaData);
 
-  const isAlpha26 = (s.dictMode === 'alphabet' && chunk.items.length === 26);
   let cardsHtml = '';
   let alpha26RowsHtml = '';
 
@@ -596,7 +718,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
           : (aData.caseStyle === 'lower' ? (aData.lower || '') : `${aData.upper || ''}${aData.lower || ''}`);
 
         cellsHtml += `
-          <div class="word-card alpha-26-cell" data-id="${safeCardId}">
+          <div class="word-card alpha-26-cell" data-id="${safeCardId}" data-debug-id="ITEM-${safeCardId}" data-debug-name="字母格 #${overallIndex} (${escapeHtml(cellLabel)})" data-debug-component="PracticeGridSvg" data-debug-file="src/core/layout.js">
             <div class="alpha-cell-top">
               <span class="word-num entry-index">${overallIndex}.</span>
               <span class="alpha-cell-hint">${escapeHtml(cellLabel)}</span>
@@ -643,21 +765,61 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
       `;
     });
   } else {
-    chunk.items.forEach(({ overallIndex, item }) => {
-      const zhMeaningHtml = formatClozePrompt(item, s.dictMode, {
-        gridStyle: s.gridStyle,
-        clozeStyle: s.clozeStyle || 'inline',
-        clozeZhPosition: s.clozeZhPosition || 'below',
-        clozeBlankWidth: s.clozeBlankWidth || '2words',
-        strokeWidth: s.gridStroke || 0.85,
-        lineColor: s.gridColor || '#cbd5e1'
-      });
+    chunk.items.forEach(({ overallIndex, item, isFullWidth }) => {
+      const qType = item.questionType || 'word-dictation';
+      const isCloze = (qType === 'sentence-cloze');
+      const isClozeInline = isCloze && (s.clozeStyle !== 'below');
+      const safeCardId = escapeHtml(item.id);
+      const safeLetterSpacing = escapeHtml(String(s.letterSpacing || '0').replace(/[^0-9a-zA-Z. -]/g, ''));
 
+      let zhMeaningHtml = '';
       let practiceGridHtml = '';
-      if (!isClozeInline) {
-        const effectiveGridHeight = (copies > 1 && isCloze)
-          ? Math.min(6.5, s.gridHeight || 12)
-          : (s.gridHeight || 12);
+      const effectiveGridHeight = (copies > 1)
+        ? Math.min(8.5, s.gridHeight || 12)
+        : (s.gridHeight || 12);
+
+      if (qType === 'sentence-dictation') {
+        // 句子默写：题干显示中文/提示，下方根据句子长度自适应 1~3 行四线三格
+        const promptText = item.prompt || item.zh || '请写出英文句子';
+        zhMeaningHtml = `<span class="meaning-text entry-zh-hint sentence-dict-prompt">${escapeHtml(promptText)}</span>`;
+        const ansLen = (item.answer || item.en || '').length;
+        let lines = 1;
+        if (ansLen > 80) lines = 3;
+        else if (ansLen > 40) lines = 2;
+
+        practiceGridHtml = createPracticeGridSvg({
+          gridStyle: s.gridStyle,
+          gridLines: lines,
+          gridHeightMm: effectiveGridHeight,
+          strokeWidth: s.gridStroke || 0.85,
+          lineColor: s.gridColor || '#cbd5e1',
+          showVertical: s.showVerticalBorder
+        });
+      } else if (qType === 'sentence-cloze') {
+        // 句子挖空
+        zhMeaningHtml = formatClozePrompt(item, 'cloze', {
+          gridStyle: s.gridStyle,
+          clozeStyle: s.clozeStyle || 'inline',
+          clozeZhPosition: s.clozeZhPosition || 'below',
+          clozeBlankWidth: s.clozeBlankWidth || '2words',
+          strokeWidth: s.gridStroke || 0.85,
+          lineColor: s.gridColor || '#cbd5e1'
+        });
+
+        if (!isClozeInline) {
+          practiceGridHtml = createPracticeGridSvg({
+            gridStyle: s.gridStyle,
+            gridLines: s.gridLinesPerWord || 1,
+            gridHeightMm: effectiveGridHeight,
+            strokeWidth: s.gridStroke || 0.85,
+            lineColor: s.gridColor || '#cbd5e1',
+            showVertical: s.showVerticalBorder
+          });
+        }
+      } else if (qType === 'alphabet') {
+        // 字母专项
+        const promptText = item.prompt || item.zh || item.en;
+        zhMeaningHtml = `<span class="meaning-text entry-zh-hint">${escapeHtml(promptText)}</span>`;
 
         if (item.neighborData || item.id?.startsWith('neighbor') || (item.zh && item.zh.includes('邻居'))) {
           practiceGridHtml = createNeighborPracticeGridSvg(item, {
@@ -681,20 +843,40 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
             showVertical: s.showVerticalBorder
           });
         }
+      } else {
+        // 单词默写 (word-dictation)
+        const promptText = item.prompt || item.zh || item.en;
+        zhMeaningHtml = `<span class="meaning-text entry-zh-hint">${escapeHtml(promptText)}</span>`;
+        practiceGridHtml = createPracticeGridSvg({
+          gridStyle: s.gridStyle,
+          gridLines: s.gridLinesPerWord || 1,
+          gridHeightMm: effectiveGridHeight,
+          strokeWidth: s.gridStroke || 0.85,
+          lineColor: s.gridColor || '#cbd5e1',
+          showVertical: s.showVerticalBorder
+        });
       }
 
-      const cardCls = isClozeInline ? 'cloze-card-inline' : (s.zhPosition === 'left' ? 'meaning-left' : '');
-
-      const safeCardId = escapeHtml(item.id);
-      const safeLetterSpacing = escapeHtml(String(s.letterSpacing || '0').replace(/[^0-9a-zA-Z. -]/g, ''));
+      const cardClasses = [
+        'word-card',
+        'word-entry-item',
+        `type-${qType}`,
+        (qType === 'sentence-cloze') ? 'is-cloze-card' : '',
+        (qType === 'sentence-dictation') ? 'is-sentence-dict-card' : '',
+        (qType === 'alphabet') ? 'is-alphabet-card' : '',
+        (item.neighborData || item.id?.startsWith('neighbor') || (item.zh && item.zh.includes('邻居'))) ? 'is-neighbor-card' : '',
+        isClozeInline ? 'cloze-card-inline' : '',
+        (s.zhPosition === 'left' && qType === 'word-dictation') ? 'meaning-left' : '',
+        isFullWidth ? 'is-full-width' : ''
+      ].filter(Boolean).join(' ');
 
       cardsHtml += `
-        <div class="word-card word-entry-item ${cardCls}" data-id="${safeCardId}" style="letter-spacing:${safeLetterSpacing};">
+        <div class="${cardClasses}" data-id="${safeCardId}" data-debug-id="ITEM-${safeCardId}" data-debug-name="题目 #${overallIndex} (${qType})" data-debug-component="PracticeGrid" data-debug-file="src/core/layout.js" style="letter-spacing:${safeLetterSpacing};">
           <div class="meaning word-prompt-row" style="font-size:${effectivePromptSize}pt;">
             <span class="word-num entry-index">${overallIndex}.</span>
             ${zhMeaningHtml}
           </div>
-          ${!isClozeInline ? `
+          ${practiceGridHtml ? `
             <div class="practice-grid entry-grid-wrap">
               ${practiceGridHtml}
             </div>
@@ -754,7 +936,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   }
 
   // 网格主体
-  const effectiveRowGap = (copies > 1 && s.dictMode === 'cloze')
+  const effectiveRowGap = (copies > 1)
     ? Math.min(2.5, s.rowGap || 3.5)
     : (s.rowGap || 3.5);
 
@@ -788,7 +970,7 @@ export function renderPracticeSheetHtml(layout, settings) {
       <div class="empty-sheet-placeholder no-print" style="background:#ffffff;padding:48px 32px;border-radius:12px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);max-width:440px;margin:60px auto;border:1px solid #e2e8f0;">
         <div style="font-size:36px;margin-bottom:12px;">📝</div>
         <h3 style="color:#2f6659;margin:0 0 8px 0;font-size:16px;font-weight:700;">试卷等待输入中</h3>
-        <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0;">请在左侧文本框输入或粘贴单词/句子，右侧将即时排版生成规范默写纸；也可随时点击左侧「默认9词」载入示例。</p>
+        <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0;">请在左侧选择题型并点击「➕ 添加」，右侧将即时排版生成规范默写纸；支持单词默写、句子挖空与句子默写混合出卷。</p>
       </div>
     `;
   }
@@ -804,6 +986,7 @@ export function renderPracticeSheetHtml(layout, settings) {
 
   layout.pageChunks.forEach((chunk, pageIdx) => {
     let copySlipsHtml = '';
+    const isLastPage = (pageIdx === layout.pageChunks.length - 1);
 
     for (let c = 0; c < copiesPerPage; c++) {
       if (c > 0) {
@@ -817,14 +1000,15 @@ export function renderPracticeSheetHtml(layout, settings) {
       copySlipsHtml += renderCopySlipHtml(chunk, pageIdx, c, s, effectivePromptSize);
     }
 
+    // 关键：最后一页设置 is-last-page，并且打印时取消 break-after
     pagesHtml += `
-      <div class="sheet-page ${isLandscape ? 'landscape' : ''}" style="
+      <div class="sheet-page ${isLandscape ? 'landscape' : ''} ${isLastPage ? 'is-last-page' : ''}" style="
         width: ${pageWidthMm}mm;
         height: ${pageHeightMm}mm;
         min-height: ${pageHeightMm}mm;
         max-height: ${pageHeightMm}mm;
         font-family: ${s.fontFamilyZh};
-        padding: ${s.pageMargin}mm 12mm ${Math.max(5, s.pageMargin - 2)}mm 12mm;
+        padding: ${s.pageMargin}mm 12mm ${Math.max(4, s.pageMargin - 2)}mm 12mm;
       ">
         ${copySlipsHtml}
       </div>

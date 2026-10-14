@@ -1,10 +1,13 @@
 <template>
-  <div class="word-library-pane">
+  <div class="word-library-pane" data-debug-id="L-001" data-debug-name="本地词库区">
     <n-card size="small" :bordered="false" class="pane-card">
       <template #header>
         <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <span style="font-size:14px; font-weight:700; color:var(--text-main);">📚 本地离线词汇库</span>
-          <n-badge :value="`共 ${state.library.words.length} 词`" type="success" id="libStatBadge" />
+          <span style="font-size:14px; font-weight:700; color:var(--text-main); display:inline-flex; align-items:center; gap:6px;">
+            <AppIcon name="book" :size="16" />
+            本地离线词汇库
+          </span>
+          <span class="quick-stat-badge" id="libStatBadge">共 {{ state.library.words.length }} 词</span>
         </div>
       </template>
 
@@ -13,10 +16,13 @@
       </p>
 
       <!-- 词库单元 / 分组管理栏 -->
-      <div class="lib-group-section" id="libGroupSection">
+      <div class="lib-group-section" id="libGroupSection" data-debug-id="L-002" data-debug-name="词库分组导航">
         <div class="lib-group-header">
           <div style="display:flex; align-items:center; gap:5px;">
-            <span style="font-size:12px; font-weight:600; color:var(--text-main);">🏷️ 词库分组 / 单元</span>
+            <span style="font-size:12px; font-weight:600; color:var(--text-main); display:inline-flex; align-items:center; gap:4px;">
+              <AppIcon name="tag" :size="13" />
+              词库分组 / 单元
+            </span>
             <span style="font-size:11px; color:var(--text-light);">({{ groupStats.length }} 组)</span>
           </div>
 
@@ -28,7 +34,8 @@
               @click="openNewGroupModal"
               title="新建单词分组，如 X年级UnitX"
             >
-              ➕ 新建组
+              <AppIcon name="plus" :size="12" />
+              新建组
             </button>
             <button
               type="button"
@@ -37,7 +44,8 @@
               @click="showPresetModal = true"
               title="载入人教PEP小学英语经典单元词库"
             >
-              📚 课标单元
+              <AppIcon name="book" :size="12" />
+              课标单元
             </button>
           </div>
         </div>
@@ -80,7 +88,9 @@
           type="text"
           v-model="searchQuery"
           id="inputSearchLib"
-          placeholder="🔍 搜索词库 (英文、中文或单元分组)..."
+          data-debug-id="L-003"
+          data-debug-name="词库搜索输入框"
+          placeholder="搜索词库 (英文、中文或单元分组)..."
           class="native-search-input"
         />
       </div>
@@ -91,8 +101,16 @@
           <n-button size="small" id="btnLibSelectAll" @click="handleToggleSelectAll">
             {{ isAllSelected ? '取消全选' : '全选 / 反选' }}
           </n-button>
-          <n-button type="primary" size="small" id="btnLibBatchAddToDraft" @click="handleBatchAdd">
-            ➕ 批量加入试卷
+          <n-button
+            type="primary"
+            size="small"
+            id="btnLibBatchAddToDraft"
+            data-debug-id="L-004"
+            data-debug-name="词库批量加入试卷按钮"
+            @click="handleBatchAdd"
+          >
+            <template #icon><AppIcon name="plus" :size="14" /></template>
+            批量加入试卷
           </n-button>
           <n-button
             v-if="selectedIds.size > 0"
@@ -101,15 +119,33 @@
             @click="openBatchSetGroupModal"
             title="为已选中的单词统一设置/移动分组"
           >
-            🏷️ 设为分组
+            <template #icon><AppIcon name="tag" :size="14" /></template>
+            设为分组
           </n-button>
         </div>
 
         <div style="display:flex; gap:6px; align-items:center;">
-          <n-button size="small" type="primary" ghost id="btnLibImport" @click="openImportModal" title="从 Excel / CSV / 剪贴板批量导入单词到词库">
-            📥 导入
+          <n-button
+            size="small"
+            type="primary"
+            ghost
+            id="btnLibImport"
+            data-debug-id="L-005"
+            data-debug-name="词库导入按钮"
+            @click="openImportModal"
+            title="从 Excel / CSV / 剪贴板批量导入单词到词库"
+          >
+            <template #icon><AppIcon name="upload" :size="14" /></template>
+            导入
           </n-button>
-          <n-button size="small" id="btnLibExport" @click="handleExportLib">
+          <n-button
+            size="small"
+            id="btnLibExport"
+            data-debug-id="L-006"
+            data-debug-name="词库导出按钮"
+            @click="handleExportLib"
+          >
+            <template #icon><AppIcon name="download" :size="14" /></template>
             导出
           </n-button>
           <n-popconfirm
@@ -119,6 +155,7 @@
           >
             <template #trigger>
               <n-button size="small" type="error" ghost id="btnLibClear">
+                <template #icon><AppIcon name="trash" :size="14" /></template>
                 清空
               </n-button>
             </template>
@@ -140,19 +177,26 @@
             @click="promptDeleteGroup(activeGroup)"
             title="删除当前分组"
           >
-            🗑️ 删除该组
+            <AppIcon name="trash" :size="12" />
+            删除该组
           </button>
         </span>
       </div>
 
       <!-- 词库条目列表 (由 Vue 响应式 v-for 驱动，无 innerHTML 干扰) -->
-      <div class="words-list-container" id="libWordsContainer">
+      <div
+        class="words-list-container"
+        id="libWordsContainer"
+        data-debug-id="L-007"
+        data-debug-name="词库条目列表"
+      >
         <template v-if="filteredWords.length === 0">
           <div class="empty-list-tip">
             {{ searchQuery ? '未检索到符合条件的词汇' : (activeGroup !== 'all' ? `「${activeGroup}」分组暂无单词，可勾选单词后设置分组移入` : '本地词库为空，可从左侧试卷保存或点击下方导入') }}
             <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;" v-if="!searchQuery">
               <n-button size="small" type="primary" ghost @click="openImportModal" id="btnEmptyTipImport">
-                📥 批量导入单词 (支持 Excel / 剪贴板 / CSV)
+                <template #icon><AppIcon name="upload" :size="14" /></template>
+                批量导入单词 (支持 Excel / 剪贴板 / CSV)
               </n-button>
               <n-button
                 v-if="activeGroup !== 'all' && activeGroup !== '通用词汇'"
@@ -162,7 +206,8 @@
                 @click="promptDeleteGroup(activeGroup)"
                 id="btnDeleteEmptyGroup"
               >
-                🗑️ 删除此空分组
+                <template #icon><AppIcon name="trash" :size="14" /></template>
+                删除此空分组
               </n-button>
             </div>
           </div>
@@ -193,7 +238,8 @@
                   :title="'点击更改分组（当前：' + (w.group || '通用词汇') + '）'"
                   @click.stop="openEditSingleGroup(w)"
                 >
-                  🏷️ {{ w.group || '通用词汇' }}
+                  <AppIcon name="tag" :size="11" />
+                  {{ w.group || '通用词汇' }}
                 </span>
               </div>
               <div style="color:var(--text-muted); font-size:11.5px; margin-top:2px;">
@@ -209,7 +255,8 @@
                 title="添加到当前试卷"
                 @click.stop="handleAddSingle(w)"
               >
-                ➕ 试卷
+                <AppIcon name="plus" :size="11" />
+                试卷
               </button>
               <button
                 type="button"
@@ -218,7 +265,7 @@
                 title="从词库中删除"
                 @click.stop="handleDelete(w.id)"
               >
-                ✕
+                <AppIcon name="trash" :size="11" />
               </button>
             </div>
           </div>
@@ -230,7 +277,7 @@
     <n-modal
       v-model:show="showNewGroupModal"
       preset="card"
-      title="➕ 新建词库分组"
+      title="新建词库分组"
       style="width: 380px; max-width: 92vw;"
     >
       <div style="display:flex; flex-direction:column; gap:12px;">
@@ -256,7 +303,7 @@
     <n-modal
       v-model:show="showBatchGroupModal"
       preset="card"
-      :title="`🏷️ 批量设置分组 (已选 ${selectedIds.size} 词)`"
+      :title="`批量设置分组 (已选 ${selectedIds.size} 词)`"
       style="width: 400px; max-width: 92vw;"
     >
       <div style="display:flex; flex-direction:column; gap:12px;">
@@ -303,7 +350,7 @@
     <n-modal
       v-model:show="showEditSingleModal"
       preset="card"
-      :title="`✏️ 修改「${editingWord?.en || ''}」的分组`"
+      :title="`修改「${editingWord?.en || ''}」的分组`"
       style="width: 380px; max-width: 92vw;"
     >
       <div style="display:flex; flex-direction:column; gap:12px;">
@@ -346,7 +393,7 @@
     <n-modal
       v-model:show="showPresetModal"
       preset="card"
-      title="📚 载入课标教材经典单元词库"
+      title="载入课标教材经典单元词库"
       style="width: 440px; max-width: 95vw;"
     >
       <div style="display:flex; flex-direction:column; gap:12px;">
@@ -370,7 +417,8 @@
               :id="'btnImportUnit_' + cleanId(preset.name)"
               @click="handleImportPresetUnit(preset)"
             >
-              ➕ 导入词库
+              <AppIcon name="plus" :size="12" />
+              导入词库
             </button>
           </div>
         </div>
@@ -385,14 +433,15 @@
     <n-modal
       v-model:show="showImportModal"
       preset="card"
-      title="📥 批量导入单词库 (支持 Excel / 剪贴板 / CSV)"
+      title="批量导入单词库 (支持 Excel / 剪贴板 / CSV)"
       style="width: 540px; max-width: 95vw;"
     >
       <div class="import-modal-content">
         <!-- 格式说明与模板下载卡片 -->
         <div class="import-tips-banner">
-          <div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px;">
-            📊 支持的表格格式规范（可含表头，系统将自动识别）：
+          <div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px; display:flex; align-items:center; gap:4px;">
+            <AppIcon name="tag" :size="13" />
+            支持的表格格式规范（可含表头，系统将自动识别）：
           </div>
           <div style="font-size:11.5px; color:var(--text-main); line-height:1.6;">
             • <strong>3 列格式（强烈推荐）</strong>：<code>[年级与单元] [英文单词] [中文释义]</code>，将自动按每行的年级和单元自动建组归类！<br/>
@@ -406,7 +455,8 @@
               @click="handleDownloadExcelTemplate"
               title="下载带有示例的 Excel 模版文件 (.xlsx)"
             >
-              📥 下载 Excel 模板 (.xlsx)
+              <AppIcon name="download" :size="12" />
+              下载 Excel 模板 (.xlsx)
             </button>
             <button
               type="button"
@@ -415,7 +465,8 @@
               @click="handleDownloadCsvTemplate"
               title="下载通用 CSV 格式模板 (.csv)"
             >
-              📥 下载 CSV 模板 (.csv)
+              <AppIcon name="download" :size="12" />
+              下载 CSV 模板 (.csv)
             </button>
           </div>
         </div>
@@ -429,7 +480,8 @@
             id="tabImportFile"
             @click="importActiveTab = 'file'"
           >
-            📁 上传 Excel / CSV 文件
+            <AppIcon name="upload" :size="13" />
+            上传 Excel / CSV 文件
           </button>
           <button
             type="button"
@@ -438,7 +490,8 @@
             id="tabImportPaste"
             @click="importActiveTab = 'paste'"
           >
-            📋 从 Excel 直接复制粘贴
+            <AppIcon name="edit" :size="13" />
+            从 Excel 直接复制粘贴
           </button>
         </div>
 
@@ -452,7 +505,9 @@
             style="display:none;"
             @change="handleFileSelected"
           />
-          <div style="font-size:28px; margin-bottom:6px;">📊</div>
+          <div style="font-size:24px; margin-bottom:6px; color:var(--primary);">
+            <AppIcon name="upload" :size="28" />
+          </div>
           <div style="font-size:13px; font-weight:600; color:var(--primary);">
             {{ importFileName || '点击选择 Excel / CSV 文件，或将文件拖至此处' }}
           </div>
@@ -559,7 +614,7 @@
     <n-modal
       v-model:show="showDeleteGroupModal"
       preset="card"
-      title="🗑️ 删除词库分组"
+      title="删除词库分组"
       style="width: 440px; max-width: 90vw;"
     >
       <div>
@@ -612,10 +667,11 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { NCard, NBadge, NButton, NPopconfirm, NModal, NInput, useMessage } from 'naive-ui';
+import { NCard, NButton, NPopconfirm, NModal, NInput, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
 import { createDraftItem, PRESET_UNIT_LIBRARIES } from '../core/layout.js';
 import { detectDuplicates } from '../core/storage.js';
+import AppIcon from './AppIcon.vue';
 import {
   parseExcelOrCsvFile,
   parsePastedExcelText,

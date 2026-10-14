@@ -2,6 +2,37 @@
 
 本项目遵循 [Semantic Versioning 2.0.0](https://semver.org/lang/zh-CN/) 语义化版本规范。
 
+## [2.3.0] - 2026-10-14
+
+### 资深架构师全维度重构：真·组卷模式、全网Debug模式、统一线性图标、CSS模块化与末尾空白页消除 (Comprehensive Architectural Refactoring)
+- **界面精简与操作语义升级 (UI Streamlining & Append Semantics)**：
+  - **彻底移除“生成预览”按钮**：实现数据修改、快速输入与试卷设置的完全响应式自动排版预览，配合高效防抖重绘机制，告别“手动点一下按钮才出图”的冗余操作；
+  - **移除可见“默认9词”冗余按钮**：首屏保持绝对干净与空白画布体验，仅保留底部安全桩；
+  - **操作语义升级为“添加到试卷”**：原“载入/替换试卷”及“追加”合并为统一的“➕ 添加到试卷”（`#btnParseText`），严格采用纯追加语义（`push`，绝不静默覆盖已有题目）。
+- **统一数量状态标签 (Unified Quick Stat Badge)**：
+  - 彻底废除 Naive UI 悬浮角标 `n-badge-sup` 与重叠遮挡样式；
+  - 统一行内状态标签 `.quick-stat-badge`（格式显示为“已添加 N 题”），各区域独立使用，彻底消除重复 ID 缺陷。
+- **全站统一图标系统 (Unified SVG Linear Icons - Zero Emoji)**：
+  - 彻底去除全站 UI 中的系统 Emoji，统一采用线性内联 SVG 图标组件 `AppIcon.vue`；
+  - 保持离线单文件运行特性，零体积庞大第三方图标依赖；
+  - 纯装饰性图标自动标记 `aria-hidden="true"`，打印输出中严格过滤操作界面图标。
+- **全网页 Debug 定位模式 (Full-page Component Debug Mode)**：
+  - **快捷键秒级切换**：Windows/Linux (`Ctrl + Alt + D`)、macOS (`Cmd + Option + D`)，即开即关，无需持久化；
+  - **语义化稳定编号全覆盖**：顶部栏（`H-001`~`H-007`）、快速输入区（`Q-001`~`Q-007`）、单词库（`L-001`~`L-007`）、句子挖空区（`C-001`~`C-005`）、试卷设置（`S-001`~`S-006`）、预览舞台（`P-001`~`P-003`）、动态试题（`ITEM-{id}`）；
+  - **非侵入式绝对定位角标**：`pointer-events: none` 绝不拦截用户正常点击；悬停/点击检查器一键复制完整组件信息（编号、名称、Vue组件名、源码文件）；
+  - **配套参考文档**：新增 [docs/debug_map.md](docs/debug_map.md) 编号对照表，方便与 AI Agent 高效交互。
+- **单一模式全面升级为真·组卷模式 (Mixed Sheet Assembly Mode)**：
+  - **试卷数据结构升级**：每道题目独立携带 `questionType`（`word-dictation`, `sentence-cloze`, `sentence-dictation`, `alphabet`），无缝升级旧草稿数据；
+  - **单张试卷混合排版**：支持将单词默写、句子挖空、整句默写、三年级字母专项任意混排在同一张试卷上；
+  - **智能物理高度预算算法**：`estimateQuestionHeightMm` 与 `computePageLayout` 根据题型和内容长度动态分配高度，实现自然平滑跨页。
+- **彻底消除打印与导出 PDF 末尾空白页 (Eliminate Trailing Blank Page in Print)**：
+  - 针对浏览器打印引擎，在最后一个物理页注入 `.is-last-page` 类名；
+  - 严格应用 `break-after: auto !important; page-break-after: avoid !important;`，彻底根除打印时多余的空白第 2 页。
+- **现代前端 CSS 架构模块化重构 (Modular CSS Architecture)**：
+  - 将庞大的单文件样式解耦为 `src/styles/` 独立分层架构：`variables.css`, `base.css`, `layout.css`, `components.css`, `preview.css`, `debug.css`, `print.css`, `app.css`。
+- **新增 v2.3.0 专项端到端自动化验收测试 (`test_v230_refactor.js`)**：
+  - 覆盖界面精简、行内状态标签、零 Emoji 线性图标、Debug 快捷键与编号定位、四题型混排组卷、PDF 消除空白页等 7 大维度，100% 自动化测试通过。
+
 ## [2.2.9] - 2026-10-14
 
 ### 词库分组删除与解散管理优化 (Vocabulary Group Deletion & Management)
