@@ -16,7 +16,7 @@
       <!-- 录入题型切换 (单词默写 / 句子挖空 / 句子默写 / 字母专项 / 选择题 / 填空题 / 英语作文) -->
       <div class="form-row" style="margin-bottom: 12px;">
         <label class="row-label">录入题型</label>
-        <div class="segmented-control" data-debug-id="Q-002" data-debug-name="题型切换器">
+        <div class="segmented-control question-type-segmented" data-debug-id="Q-002" data-debug-name="题型切换器">
           <input
             type="radio"
             name="inputType"
@@ -25,7 +25,7 @@
             :checked="currentInputType === 'word-dictation'"
             @change="onInputTypeChange('word-dictation')"
           />
-          <label for="modeWriting">单词默写</label>
+          <label for="modeWriting" class="qtype-btn qtype-span-3">单词默写</label>
 
           <input
             type="radio"
@@ -35,7 +35,7 @@
             :checked="currentInputType === 'sentence-cloze'"
             @change="onInputTypeChange('sentence-cloze')"
           />
-          <label for="modeCloze">句子挖空</label>
+          <label for="modeCloze" class="qtype-btn qtype-span-3">句子挖空</label>
 
           <input
             type="radio"
@@ -45,7 +45,7 @@
             :checked="currentInputType === 'sentence-dictation'"
             @change="onInputTypeChange('sentence-dictation')"
           />
-          <label for="typeSentence">句子默写</label>
+          <label for="typeSentence" class="qtype-btn qtype-span-3">句子默写</label>
 
           <input
             type="radio"
@@ -55,16 +55,37 @@
             :checked="currentInputType === 'alphabet'"
             @change="onInputTypeChange('alphabet')"
           />
-          <label for="modeAlphabet">字母专项</label>
+          <label for="modeAlphabet" class="qtype-btn qtype-span-3">字母专项</label>
 
-          <input type="radio" name="inputType" id="modeChoice" value="choice" :checked="currentInputType === 'choice'" @change="onInputTypeChange('choice')" />
-          <label for="modeChoice">选择题</label>
+          <input
+            type="radio"
+            name="inputType"
+            id="modeChoice"
+            value="choice"
+            :checked="currentInputType === 'choice'"
+            @change="onInputTypeChange('choice')"
+          />
+          <label for="modeChoice" class="qtype-btn qtype-span-4">选择题</label>
 
-          <input type="radio" name="inputType" id="modeInlineFill" value="inline-fill" :checked="currentInputType === 'inline-fill'" @change="onInputTypeChange('inline-fill')" />
-          <label for="modeInlineFill">填空题</label>
+          <input
+            type="radio"
+            name="inputType"
+            id="modeInlineFill"
+            value="inline-fill"
+            :checked="currentInputType === 'inline-fill'"
+            @change="onInputTypeChange('inline-fill')"
+          />
+          <label for="modeInlineFill" class="qtype-btn qtype-span-4">填空题</label>
 
-          <input type="radio" name="inputType" id="modeComposition" value="english-composition" :checked="currentInputType === 'english-composition'" @change="onInputTypeChange('english-composition')" />
-          <label for="modeComposition">英语作文</label>
+          <input
+            type="radio"
+            name="inputType"
+            id="modeComposition"
+            value="english-composition"
+            :checked="currentInputType === 'english-composition'"
+            @change="onInputTypeChange('english-composition')"
+          />
+          <label for="modeComposition" class="qtype-btn qtype-span-4">英语作文</label>
         </div>
       </div>
 
@@ -811,6 +832,39 @@ onMounted(() => {
 .segmented-control.mini label {
   padding: 3px 6px;
   font-size: 11px;
+}
+
+/* 录入题型切换器专用 12 列两行均分布局 (前4题占3/12，后3题占4/12，两行均整齐撑满且按钮尺寸规整一致) */
+.question-type-segmented {
+  display: grid !important;
+  grid-template-columns: repeat(12, 1fr) !important;
+  gap: 3px !important;
+  padding: 3px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.question-type-segmented .qtype-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 6px 2px !important;
+  font-size: 11.5px !important;
+  line-height: 1.2 !important;
+  border-radius: 4px !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 29px !important;
+  flex: none !important;
+}
+
+.question-type-segmented .qtype-span-3 {
+  grid-column: span 3 !important;
+}
+
+.question-type-segmented .qtype-span-4 {
+  grid-column: span 4 !important;
 }
 
 .form-row-compact {
