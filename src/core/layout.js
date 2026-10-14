@@ -460,10 +460,18 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
   function assembleClozeHtml(formattedEn, rawZh) {
     const zhText = (rawZh || '').trim();
     if (clozeStyle === 'inline') {
+      const englishHtml = `<span class="meaning-text cloze-sentence cloze-english-column">${formattedEn}</span>`;
       if (!zhText || clozeZhPosition === 'hide') {
-        return `<div class="cloze-aligned-row no-zh"><span class="meaning-text cloze-sentence cloze-english-column">${formattedEn}</span></div>`;
+        return `<div class="cloze-position-layout cloze-layout-hide">${englishHtml}</div>`;
       }
-      return `<div class="cloze-aligned-row"><span class="cloze-zh-column">(${escapeHtml(zhText)})</span><span class="meaning-text cloze-sentence cloze-english-column">${formattedEn}</span></div>`;
+      const chineseHtml = `<span class="cloze-zh pos-${clozeZhPosition}">(${escapeHtml(zhText)})</span>`;
+      if (clozeZhPosition === 'above') {
+        return `<div class="cloze-position-layout cloze-layout-above">${chineseHtml}${englishHtml}</div>`;
+      }
+      if (clozeZhPosition === 'right') {
+        return `<div class="cloze-position-layout cloze-layout-right">${englishHtml}${chineseHtml}</div>`;
+      }
+      return `<div class="cloze-position-layout cloze-layout-below">${englishHtml}${chineseHtml}</div>`;
     }
     let zhHtml = '';
     if (zhText && clozeZhPosition !== 'hide') {

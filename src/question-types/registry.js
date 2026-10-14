@@ -239,7 +239,10 @@ export const questionTypeRegistry = {
     createDefault: () => normalizeCloze({}),
     normalize: normalizeCloze,
     validate: (item) => basicValidation(item, ['en']),
-    estimateHeight: (item, context) => context.settings.clozeStyle === 'below' ? 10 + context.effectiveGridHeight : 16,
+    estimateHeight: (item, context) => {
+      if (context.settings.clozeStyle === 'below') return 10 + context.effectiveGridHeight;
+      return ['above', 'below'].includes(context.settings.clozeZhPosition) ? 22 : 16;
+    },
     defaultLayout: { columns: 'auto' },
     migrate: normalizeCloze,
     renderPreview: delegateRenderer('renderSentenceCloze'),

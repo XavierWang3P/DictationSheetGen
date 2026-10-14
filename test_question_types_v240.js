@@ -11,6 +11,7 @@ import { calculateWritingGridWidth } from './src/core/writingGridWidth.js';
 import {
   DEFAULT_SETTINGS,
   computePageLayout,
+  formatClozePrompt,
   renderPracticeSheetHtml
 } from './src/core/layout.js';
 
@@ -63,6 +64,33 @@ test('长句即使指定双列也会跨整行', () => {
     layout: { columns: 2 }
   });
   assert.equal(shouldUseFullRow(item, { ...DEFAULT_SETTINGS, layoutDefaults: DEFAULT_LAYOUT_DEFAULTS }, 160), true);
+});
+
+test('句中挖空严格响应四种中文位置设置', () => {
+  const item = {
+    en: 'Please [open the door].',
+    zh: '请打开门。'
+  };
+  const render = (position) => formatClozePrompt(item, 'cloze', {
+    gridStyle: 'four-line',
+    clozeStyle: 'inline',
+    clozeZhPosition: position,
+    availableWidth: 260
+  });
+
+  const below = render('below');
+  const above = render('above');
+  const right = render('right');
+  const hidden = render('hide');
+
+  assert.match(below, /cloze-layout-below/);
+  assert.ok(below.indexOf('cloze-english-column') < below.indexOf('pos-below'));
+  assert.match(above, /cloze-layout-above/);
+  assert.ok(above.indexOf('pos-above') < above.indexOf('cloze-english-column'));
+  assert.match(right, /cloze-layout-right/);
+  assert.ok(right.indexOf('cloze-english-column') < right.indexOf('pos-right'));
+  assert.match(hidden, /cloze-layout-hide/);
+  assert.doesNotMatch(hidden, /请打开门/);
 });
 
 test('150%书写格宽度使用实际测量结果并正确限幅', () => {

@@ -141,7 +141,7 @@ async function run() {
       state.draft.items = ${JSON.stringify(fixture)};
       Object.assign(state.draft.settings, {
         paperSize: 'A4', orientation: 'portrait', copiesPerPage: 1, wordsPerPage: 30,
-        showAnswerPage: false, clozeStyle: 'inline', clozeBlankWidth: 'auto',
+        showAnswerPage: false, clozeStyle: 'inline', clozeZhPosition: 'below', clozeBlankWidth: 'auto',
         fontFamilyEn: 'Arial, sans-serif', promptFontSize: 14,
         layoutDefaults: { wordDictationColumns: 3, sentenceDictationColumns: 1, sentenceClozeColumns: 'auto', choiceColumns: 'auto', inlineFillColumns: 'auto', englishCompositionColumns: 1 }
       });
@@ -154,7 +154,7 @@ async function run() {
       const word = card('word-short');
       const sentence = card('sentence-long');
       const cloze = card('s-mv7qz8pn-5ylfj');
-      const alignedRow = cloze?.querySelector('.cloze-aligned-row') || null;
+      const positionLayout = cloze?.querySelector('.cloze-position-layout') || null;
       const firstClozeGrid = cloze?.querySelector('.cloze-inline-grid') || null;
       const wordGrid = word?.querySelector('.adaptive-writing-grid');
       const wordGridContainer = wordGrid?.parentElement || null;
@@ -169,9 +169,11 @@ async function run() {
         wordGridUsesFullWidth: wordGrid?.classList.contains('word-dictation-grid') || false,
         clozeCardFound: !!cloze,
         clozeHtml: cloze?.innerHTML?.slice(0, 240) || '',
-        clozeAligned: !!alignedRow,
+        clozePositionClass: positionLayout?.className || '',
+        clozeFirstChildClass: positionLayout?.children?.[0]?.className || '',
+        clozeSecondChildClass: positionLayout?.children?.[1]?.className || '',
         clozeGridCount: cloze?.querySelectorAll('.cloze-inline-grid').length || 0,
-        clozeAlignItems: alignedRow ? getComputedStyle(alignedRow).alignItems : '',
+        clozeLayoutDirection: positionLayout ? getComputedStyle(positionLayout).flexDirection : '',
         clozeBlankVerticalAlign: firstClozeGrid ? getComputedStyle(firstClozeGrid).verticalAlign : '',
         choiceOptions: document.querySelectorAll('.type-choice .choice-option').length,
         fillBlanks: document.querySelectorAll('.type-inline-fill .cloze-inline-grid, .type-inline-fill .inline-fill-blank').length,
@@ -209,7 +211,7 @@ async function run() {
       structuredEditorFlow: editorFlow.initialOptions === 4 && editorFlow.afterStyleOptions === 4 && editorFlow.choiceOptionsAfterEdit === 4 && editorFlow.removedAnswerPruned && editorFlow.inlineBlankCount === 2 && editorFlow.compositionLineCount === 8 && editorFlow.addedTypes.join(',') === 'choice,inline-fill,english-composition',
       allQuestionTypesRendered: screen.choiceOptions === 3 && screen.fillBlanks === 2 && screen.compositionLines === 12,
       perTypeLayout: screen.wordSpan.includes('4') && screen.sentenceSpan.includes('12'),
-      clozeAlignment: screen.clozeAligned && screen.clozeGridCount === 2 && screen.clozeAlignItems === 'baseline' && screen.clozeBlankVerticalAlign === 'middle',
+      clozeAlignment: screen.clozePositionClass.includes('cloze-layout-below') && screen.clozeFirstChildClass.includes('cloze-english-column') && screen.clozeSecondChildClass.includes('pos-below') && screen.clozeLayoutDirection === 'column' && screen.clozeGridCount === 2 && screen.clozeBlankVerticalAlign === 'middle',
       fullWidthWordGrid: screen.wordGridUsesFullWidth && Math.abs(screen.wordGridWidth - screen.wordGridContainerWidth) <= 1,
       noStudentAnswerLeak: !screen.leaksChoiceAnswer && !screen.leaksFillAnswer,
       a4PdfMatchesPreview: pdfA4Pages === screen.pageCount,
