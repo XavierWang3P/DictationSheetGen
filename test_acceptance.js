@@ -182,7 +182,7 @@ async function runTests() {
     );
     console.log('-> 判定:', pass2 ? '✅ PASS' : '❌ FAIL', '\n');
 
-    // 验收 3: 面板折叠与顺序验证 (页面设置默认折叠、标题上移至页面设置之前、其余高级面板默认折叠与交互展开)
+    // 验收 3: 面板折叠与顺序验证（题目区域与四线三格默认展开）
     const r3 = await evalExpr(`(async () => {
       const waitForRender = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const gTitle = document.getElementById('groupTitleInfo');
@@ -205,11 +205,11 @@ async function runTests() {
       await waitForRender();
       const afterRestorePage = gPage.classList.contains('collapsed');
 
-      // 测试单词区域点击头部展开与再次折叠
+      // 测试题目区域从默认展开切换为折叠，再恢复展开
       gWord.querySelector('.group-header').click();
       await waitForRender();
       const afterClickWord = gWord.classList.contains('collapsed');
-      gWord.querySelector('.group-header').click(); // 恢复折叠
+      gWord.querySelector('.group-header').click(); // 恢复展开
       await waitForRender();
       const afterRestoreWord = gWord.classList.contains('collapsed');
 
@@ -220,19 +220,19 @@ async function runTests() {
         isGridCollapsed,
         isTypoCollapsed,
         pageExpandWorks: !afterClickPage && afterRestorePage,
-        wordExpandWorks: !afterClickWord && afterRestoreWord
+        wordToggleWorks: afterClickWord && !afterRestoreWord
       };
     })()`);
-    console.log('【验收 3】标题信息上移、页面设置及高级面板默认折叠与交互展开:');
+    console.log('【验收 3】标题顺序与设置面板默认展开状态:');
     console.log('-> 结果:', JSON.stringify(r3, null, 2));
     const pass3 = (
       r3.isTitleBeforePage &&
       r3.isPageCollapsed &&
-      r3.isWordCollapsed &&
-      r3.isGridCollapsed &&
+      !r3.isWordCollapsed &&
+      !r3.isGridCollapsed &&
       r3.isTypoCollapsed &&
       r3.pageExpandWorks &&
-      r3.wordExpandWorks
+      r3.wordToggleWorks
     );
     console.log('-> 判定:', pass3 ? '✅ PASS' : '❌ FAIL', '\n');
 

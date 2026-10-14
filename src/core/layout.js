@@ -824,14 +824,13 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
     renderWordDictation(item) {
       const measurement = calculateWritingGridWidth({ ...measurementOptions, text: item.answer || item.en || '' });
       const lines = Math.max(1, Math.min(4, Math.ceil(measurement.targetWidth / Math.max(1, availableWidthPx))));
-      const width = measurement.overflow ? availableWidthPx : measurement.width;
       const promptText = item.overrideZh || item.zh || ((item.prompt && item.prompt !== (item.answer || item.en)) ? item.prompt : '听写');
       const answer = teacherMode && (item.answer || item.en)
         ? `<span class="teacher-answer-text">答案：${escapeHtml(item.answer || item.en)}</span>`
         : '';
       return {
         promptHtml: `<span class="meaning-text entry-zh-hint">${escapeHtml(promptText)}</span>${answer}`,
-        practiceHtml: `<div class="adaptive-writing-grid" style="width:${Math.round(width)}px;max-width:100%;">${createPracticeGridSvg({ gridStyle: s.gridStyle, gridLines: lines, gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: s.showVerticalBorder })}</div>`,
+        practiceHtml: `<div class="adaptive-writing-grid word-dictation-grid">${createPracticeGridSvg({ gridStyle: s.gridStyle, gridLines: lines, gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: s.showVerticalBorder })}</div>`,
         classes: ['is-word-card']
       };
     },

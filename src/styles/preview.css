@@ -250,6 +250,12 @@
   min-width: 0;
 }
 
+/* 单词默写始终使用所在题目列的完整可书写宽度。 */
+.word-dictation-grid {
+  width: 100%;
+  max-width: 100%;
+}
+
 .teacher-answer-text {
   display: block;
   width: 100%;

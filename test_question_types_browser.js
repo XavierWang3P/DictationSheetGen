@@ -157,10 +157,7 @@ async function run() {
       const alignedRow = cloze?.querySelector('.cloze-aligned-row') || null;
       const firstClozeGrid = cloze?.querySelector('.cloze-inline-grid') || null;
       const wordGrid = word?.querySelector('.adaptive-writing-grid');
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      ctx.font = '400 18.666662px Arial, sans-serif';
-      const expectedWordWidth = ctx.measureText('apple').width * 1.5;
+      const wordGridContainer = wordGrid?.parentElement || null;
       const studentHtml = document.querySelector('.student-sheet-page')?.innerHTML || '';
       return {
         pageCount: document.querySelectorAll('.sheet-page').length,
@@ -168,7 +165,8 @@ async function run() {
         wordSpan: word?.style.gridColumn || '',
         sentenceSpan: sentence?.style.gridColumn || '',
         wordGridWidth: wordGrid ? parseFloat(getComputedStyle(wordGrid).width) : 0,
-        expectedWordWidth,
+        wordGridContainerWidth: wordGridContainer ? parseFloat(getComputedStyle(wordGridContainer).width) : 0,
+        wordGridUsesFullWidth: wordGrid?.classList.contains('word-dictation-grid') || false,
         clozeCardFound: !!cloze,
         clozeHtml: cloze?.innerHTML?.slice(0, 240) || '',
         clozeAligned: !!alignedRow,
@@ -212,7 +210,7 @@ async function run() {
       allQuestionTypesRendered: screen.choiceOptions === 3 && screen.fillBlanks === 2 && screen.compositionLines === 12,
       perTypeLayout: screen.wordSpan.includes('4') && screen.sentenceSpan.includes('12'),
       clozeAlignment: screen.clozeAligned && screen.clozeGridCount === 2 && screen.clozeAlignItems === 'baseline' && screen.clozeBlankVerticalAlign === 'middle',
-      measuredWidth: Math.abs(screen.wordGridWidth - screen.expectedWordWidth) <= 3,
+      fullWidthWordGrid: screen.wordGridUsesFullWidth && Math.abs(screen.wordGridWidth - screen.wordGridContainerWidth) <= 1,
       noStudentAnswerLeak: !screen.leaksChoiceAnswer && !screen.leaksFillAnswer,
       a4PdfMatchesPreview: pdfA4Pages === screen.pageCount,
       answerVersion: answerMode.studentPages > 0 && answerMode.teacherPages === answerMode.studentPages && answerMode.correctChoiceVisible && answerMode.fillAnswerVisible,

@@ -190,7 +190,7 @@
       </div>
     </section>
 
-    <!-- 模块 4：题目区域排版 (默认折叠) -->
+    <!-- 模块 4：题目区域排版 (默认展开) -->
     <section
       class="settings-group collapsible"
       :class="{ collapsed: isWordCollapsed }"
@@ -428,7 +428,7 @@
       </div>
     </section>
 
-    <!-- 模块 5：四线三格专用设置 (默认折叠) -->
+    <!-- 模块 5：四线三格专用设置 (默认展开) -->
     <section
       class="settings-group collapsible"
       :class="{ collapsed: isGridCollapsed }"
@@ -651,8 +651,8 @@ import {
 import AppIcon from './AppIcon.vue';
 
 const isPageCollapsed = ref(true);
-const isWordCollapsed = ref(true);
-const isGridCollapsed = ref(true);
+const isWordCollapsed = ref(false);
+const isGridCollapsed = ref(false);
 const isTypoCollapsed = ref(true);
 
 const titleFontSizeNum = computed(() => parseFloat(state.draft.settings.titleFontSize) || 18);
