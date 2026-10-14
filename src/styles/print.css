@@ -11,7 +11,8 @@
   .preview-toolbar,
   .debug-badge,
   .debug-overlay,
-  .debug-inspector-card {
+  .debug-inspector-card,
+  .app-icon {
     display: none !important;
   }
 

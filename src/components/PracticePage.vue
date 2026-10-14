@@ -11,7 +11,7 @@
         class="section-cut-divider"
         :class="settings.dividerStyle"
       >
-        <span v-if="settings.showCutGuide" class="cut-scissors-tag">✂ 沿虚线裁切分发</span>
+        <span v-if="settings.showCutGuide" class="cut-scissors-tag">沿虚线裁切分发</span>
       </div>
 
       <!-- 单份练习卷主体 -->

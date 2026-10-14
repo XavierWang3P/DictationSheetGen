@@ -1,8 +1,7 @@
 <template>
   <n-config-provider :locale="zhCN" :date-locale="dateZhCN" :theme-overrides="themeOverrides">
     <n-message-provider>
-      <n-dialog-provider>
-        <div class="app-layout">
+      <div class="app-layout">
           <!-- 动态打印尺寸样式注入 -->
           <component :is="'style'">
             @page {
@@ -28,6 +27,19 @@
             <PreviewViewport />
           </div>
 
+          <!-- 应用版本与版权信息仅用于操作界面，打印/PDF 时自动隐藏 -->
+          <footer
+            class="app-footer no-print"
+            data-debug-id="F-001"
+            data-debug-name="版本与版权信息"
+            data-debug-component="App"
+            data-debug-file="src/App.vue"
+          >
+            <span class="app-footer-version">DictationSheetGen v{{ appVersion }}</span>
+            <span class="app-footer-divider" aria-hidden="true"></span>
+            <span>Copyright © 2026 XavierWang3P</span>
+          </footer>
+
           <!-- 全网页 Debug 覆盖层 (快捷键: Ctrl+Alt+D / Cmd+Opt+D) -->
           <DebugOverlay />
 
@@ -40,17 +52,16 @@
             <button id="btnLoadAlphabet26" @click="handleAlphabet26Sample"></button>
             <button id="btnLoadAlphabetNeighbors" @click="handleAlphabetNeighborsSample"></button>
             <button id="btnLoadAlphabetCase" @click="handleAlphabetCaseSample"></button>
-            <div class="n-badge" style="display:none;"><span class="n-badge-sup" style="display:none;">{{ state.draft.items.length }} 词</span></div>
           </div>
-        </div>
-      </n-dialog-provider>
+      </div>
     </n-message-provider>
   </n-config-provider>
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue';
-import { NConfigProvider, NMessageProvider, NDialogProvider, zhCN, dateZhCN } from 'naive-ui';
+import { NConfigProvider, NMessageProvider, zhCN, dateZhCN } from 'naive-ui';
+import packageInfo from '../package.json';
 import { state, loadSavedState, loadLibraryFromDB } from './stores/appStore.js';
 import { useDebugMode } from './composables/useDebugMode.js';
 import {
@@ -63,6 +74,7 @@ import AppHeader from './components/AppHeader.vue';
 import SidebarTabs from './components/SidebarTabs.vue';
 import PreviewViewport from './components/PreviewViewport.vue';
 import DebugOverlay from './components/DebugOverlay.vue';
+import { naiveThemeOverrides as themeOverrides } from './theme/naiveTheme.js';
 
 import {
   generateAlphabetSequenceItems,
@@ -71,62 +83,9 @@ import {
 } from './core/alphabet.js';
 
 const { registerDebugKeyboardListener, unregisterDebugKeyboardListener } = useDebugMode();
+const appVersion = packageInfo.version;
 
 const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
-
-const themeOverrides = {
-  common: {
-    primaryColor: '#2f6659',
-    primaryColorHover: '#255247',
-    primaryColorPressed: '#1d3e36',
-    primaryColorSuppl: '#e8f0ed',
-
-    infoColor: '#2f6659',
-    infoColorHover: '#255247',
-    infoColorPressed: '#1d3e36',
-    infoColorSuppl: '#e8f0ed',
-
-    successColor: '#43866f',
-    successColorHover: '#38705d',
-    successColorPressed: '#2c594a',
-    successColorSuppl: '#eaf3f0',
-
-    warningColor: '#b7792b',
-    warningColorHover: '#9c6623',
-    warningColorPressed: '#7d521a',
-    warningColorSuppl: '#faefe0',
-
-    errorColor: '#c5524a',
-    errorColorHover: '#a9443e',
-    errorColorPressed: '#8c352f',
-    errorColorSuppl: '#faeceb',
-
-    textColorBase: '#26332f',
-    textColor1: '#26332f',
-    textColor2: '#68756f',
-    textColor3: '#909b96',
-
-    bodyColor: '#f3f5f2',
-    cardColor: '#ffffff',
-    borderColor: '#c9d3ce',
-    dividerColor: '#e2e7e4',
-    borderRadius: '6px'
-  },
-  Button: {
-    textColorPrimary: '#ffffff',
-    colorGhostPrimary: 'transparent',
-    textColorGhostPrimary: '#2f6659',
-    borderGhostPrimary: '1px solid #2f6659',
-    textColorGhostHoverPrimary: '#255247',
-    borderGhostHoverPrimary: '1px solid #255247'
-  },
-  Badge: {
-    colorInfo: '#e8f0ed',
-    textColorInfo: '#2f6659',
-    colorSuccess: '#eaf3f0',
-    textColorSuccess: '#43866f'
-  }
-};
 
 function handleNineSample() {
   if (state.draft.settings.dictMode === 'cloze') {
@@ -451,8 +410,9 @@ html, body {
 
 .word-card.cloze-card-inline .meaning.word-prompt-row {
   display: flex !important;
-  align-items: flex-start !important;
+  align-items: baseline !important;
   flex-wrap: nowrap !important;
+  min-width: 0;
 }
 
 .cloze-content-wrap {
@@ -476,8 +436,11 @@ html, body {
 }
 
 .cloze-blank-line.cloze-inline-grid {
-  height: 9.5mm;
-  vertical-align: bottom;
+  height: 1.75em;
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
 }
 
 .cloze-blank-line.cloze-inline-grid svg {

@@ -7,6 +7,8 @@ async function testAlphabet() {
     '--headless',
     '--remote-debugging-port=9254',
     '--disable-gpu',
+    '--no-sandbox',
+    `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);
 

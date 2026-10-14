@@ -61,24 +61,28 @@
           >
             全部 ({{ state.library.words.length }})
           </button>
-          <button
+          <div
             v-for="grp in groupStats"
             :key="grp.name"
-            type="button"
             class="group-pill-btn"
             :class="{ active: activeGroup === grp.name }"
             :id="'pillGroup_' + cleanId(grp.name)"
+            role="button"
+            tabindex="0"
             @click="activeGroup = grp.name"
+            @keydown.enter.space.prevent="activeGroup = grp.name"
           >
             <span>{{ grp.name }} ({{ grp.count }})</span>
-            <span
+            <IconActionButton
               v-if="grp.name !== '通用词汇'"
               class="pill-del-icon"
               :id="'btnDelPill_' + cleanId(grp.name)"
+              label="删除此分组"
+              icon="x"
+              :icon-size="10"
               @click.stop="promptDeleteGroup(grp.name)"
-              title="删除此分组"
-            >×</span>
-          </button>
+            />
+          </div>
         </div>
       </div>
 
@@ -258,15 +262,14 @@
                 <AppIcon name="plus" :size="11" />
                 试卷
               </button>
-              <button
-                type="button"
+              <IconActionButton
                 class="btn-lib-del btn-act del"
                 :data-id="w.id"
-                title="从词库中删除"
+                label="从词库中删除"
+                icon="trash"
+                :icon-size="11"
                 @click.stop="handleDelete(w.id)"
-              >
-                <AppIcon name="trash" :size="11" />
-              </button>
+              />
             </div>
           </div>
         </template>
@@ -561,7 +564,7 @@
         <div v-if="importParsedWords.length > 0" class="import-preview-box" id="importPreviewBox">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <span style="font-size:12px; font-weight:700; color:var(--text-main);">
-              🔍 成功解析 <strong>{{ importParsedWords.length }}</strong> 词 · 涵盖 <strong>{{ importDistinctGroups.length }}</strong> 个单元
+              成功解析 <strong>{{ importParsedWords.length }}</strong> 词 · 涵盖 <strong>{{ importDistinctGroups.length }}</strong> 个单元
             </span>
             <span style="font-size:11px; color:var(--accent);" v-if="importDupCount > 0">
               ({{ importDupCount }} 条与现有词库重复，将自动去重)
@@ -672,6 +675,7 @@ import { state, db } from '../stores/appStore.js';
 import { createDraftItem, PRESET_UNIT_LIBRARIES } from '../core/layout.js';
 import { detectDuplicates } from '../core/storage.js';
 import AppIcon from './AppIcon.vue';
+import IconActionButton from './IconActionButton.vue';
 import {
   parseExcelOrCsvFile,
   parsePastedExcelText,

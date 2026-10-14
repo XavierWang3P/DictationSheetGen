@@ -56,6 +56,14 @@
           </label>
         </div>
       </div>
+
+      <div class="form-row">
+        <label>教师答案版</label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="checkShowAnswerPage" v-model="state.draft.settings.showAnswerPage" />
+          在学生卷后追加教师答案页
+        </label>
+      </div>
     </section>
 
     <!-- 模块 3：页面设置 (默认折叠) -->
@@ -66,13 +74,13 @@
       data-debug-id="S-003"
       data-debug-name="页面规格与份数设置"
     >
-      <div class="group-header" @click="toggleGroup('page', $event)">
+      <button type="button" class="group-header" @click="toggleGroup('page')" :aria-expanded="!isPageCollapsed">
         <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
           <AppIcon name="file-text" :size="14" />
           页面设置
         </span>
-        <span class="collapse-arrow">›</span>
-      </div>
+        <AppIcon class="collapse-arrow" name="arrow-down" :size="14" />
+      </button>
       <div class="group-body">
         <div class="form-row">
           <label>纸张规格</label>
@@ -83,7 +91,6 @@
               id="sizeA4"
               value="A4"
               :checked="state.draft.settings.paperSize === 'A4'"
-              @click="onPaperSizeChange('A4')"
               @change="onPaperSizeChange('A4')"
             />
             <label for="sizeA4">A4</label>
@@ -93,7 +100,6 @@
               id="sizeB4"
               value="B4"
               :checked="state.draft.settings.paperSize === 'B4'"
-              @click="onPaperSizeChange('B4')"
               @change="onPaperSizeChange('B4')"
             />
             <label for="sizeB4">B4</label>
@@ -103,7 +109,6 @@
               id="size8K"
               value="8K"
               :checked="state.draft.settings.paperSize === '8K'"
-              @click="onPaperSizeChange('8K')"
               @change="onPaperSizeChange('8K')"
             />
             <label for="size8K">8K</label>
@@ -193,54 +198,56 @@
       data-debug-id="S-004"
       data-debug-name="题目排列与容量设置"
     >
-      <div class="group-header" @click="toggleGroup('word', $event)">
+      <button type="button" class="group-header" @click="toggleGroup('word')" :aria-expanded="!isWordCollapsed">
         <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
           <AppIcon name="settings" :size="14" />
           题目区域排版
         </span>
-        <span class="collapse-arrow">›</span>
-      </div>
+        <AppIcon class="collapse-arrow" name="arrow-down" :size="14" />
+      </button>
       <div class="group-body">
-        <div class="form-row">
-          <label>排列列数</label>
-          <div class="segmented-control">
-            <input
-              type="radio"
-              name="colCount"
-              id="col1"
-              value="1"
-              :checked="state.draft.settings.columns === 1"
-              @change="state.draft.settings.columns = 1"
-            />
-            <label for="col1">1 列</label>
-            <input
-              type="radio"
-              name="colCount"
-              id="col2"
-              value="2"
-              :checked="state.draft.settings.columns === 2"
-              @change="state.draft.settings.columns = 2"
-            />
-            <label for="col2">2 列</label>
-            <input
-              type="radio"
-              name="colCount"
-              id="col3"
-              value="3"
-              :checked="state.draft.settings.columns === 3"
-              @change="state.draft.settings.columns = 3"
-            />
-            <label for="col3">3 列 (默认)</label>
-            <input
-              type="radio"
-              name="colCount"
-              id="col4"
-              value="4"
-              :checked="state.draft.settings.columns === 4"
-              @change="state.draft.settings.columns = 4"
-            />
-            <label for="col4">4 列</label>
-          </div>
+        <div class="form-row layout-default-row">
+          <label for="wordDictationColumns">单词默写默认</label>
+          <select id="wordDictationColumns" class="form-select" v-model.number="state.draft.settings.layoutDefaults.wordDictationColumns">
+            <option :value="2">每行2题</option>
+            <option :value="3">每行3题（默认）</option>
+            <option :value="4">每行4题</option>
+          </select>
+        </div>
+
+        <div class="form-row layout-default-row">
+          <label for="sentenceDictationColumns">句子默写默认</label>
+          <select id="sentenceDictationColumns" class="form-select" v-model.number="state.draft.settings.layoutDefaults.sentenceDictationColumns">
+            <option :value="1">每行1题（默认）</option>
+            <option :value="2">每行2题</option>
+          </select>
+        </div>
+
+        <div class="form-row layout-default-row">
+          <label for="sentenceClozeColumns">句子挖空默认</label>
+          <select id="sentenceClozeColumns" class="form-select" v-model="state.draft.settings.layoutDefaults.sentenceClozeColumns">
+            <option value="auto">自动选择每行1题或2题</option>
+            <option :value="1">每行1题</option>
+            <option :value="2">每行2题</option>
+          </select>
+        </div>
+
+        <div class="form-row layout-default-row">
+          <label for="choiceColumns">选择题默认</label>
+          <select id="choiceColumns" class="form-select" v-model="state.draft.settings.layoutDefaults.choiceColumns">
+            <option value="auto">自动选择每行1题或2题</option>
+            <option :value="1">每行1题</option>
+            <option :value="2">每行2题</option>
+          </select>
+        </div>
+
+        <div class="form-row layout-default-row">
+          <label for="inlineFillColumns">填空题默认</label>
+          <select id="inlineFillColumns" class="form-select" v-model="state.draft.settings.layoutDefaults.inlineFillColumns">
+            <option value="auto">自动选择每行1题或2题</option>
+            <option :value="1">每行1题</option>
+            <option :value="2">每行2题</option>
+          </select>
         </div>
 
         <div class="form-row">
@@ -255,7 +262,7 @@
               step="1"
               v-model.number="state.draft.settings.wordsPerPage"
             />
-            <span class="form-range-val" id="valWordsPerPage">{{ state.draft.settings.wordsPerPage }} 词</span>
+            <span class="form-range-val" id="valWordsPerPage">{{ state.draft.settings.wordsPerPage }} 题</span>
           </div>
         </div>
 
@@ -355,7 +362,7 @@
                 :checked="state.draft.settings.clozeBlankWidth === 'auto'"
                 @change="state.draft.settings.clozeBlankWidth = 'auto'"
               />
-              <label for="setBlankWidthAuto">自适应</label>
+              <label for="setBlankWidthAuto">按答案宽度150%（默认）</label>
               <input
                 type="radio"
                 name="settingsClozeBlankWidth"
@@ -373,7 +380,7 @@
                 :checked="state.draft.settings.clozeBlankWidth === '2words'"
                 @change="state.draft.settings.clozeBlankWidth = '2words'"
               />
-              <label for="setBlankWidth2Words">2 词长 (推荐)</label>
+              <label for="setBlankWidth2Words">固定2词长</label>
               <input
                 type="radio"
                 name="settingsClozeBlankWidth"
@@ -429,13 +436,13 @@
       data-debug-id="S-005"
       data-debug-name="四线三格样式设置"
     >
-      <div class="group-header" @click="toggleGroup('grid', $event)">
+      <button type="button" class="group-header" @click="toggleGroup('grid')" :aria-expanded="!isGridCollapsed">
         <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
           <AppIcon name="tag" :size="14" />
           四线三格设置
         </span>
-        <span class="collapse-arrow">›</span>
-      </div>
+        <AppIcon class="collapse-arrow" name="arrow-down" :size="14" />
+      </button>
       <div class="group-body">
         <div class="form-row">
           <label>练习格样式</label>
@@ -545,13 +552,13 @@
       data-debug-id="S-006"
       data-debug-name="字体与间距设置"
     >
-      <div class="group-header" @click="toggleGroup('typo', $event)">
+      <button type="button" class="group-header" @click="toggleGroup('typo')" :aria-expanded="!isTypoCollapsed">
         <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
           <AppIcon name="alphabet" :size="14" />
           字体与间距设置
         </span>
-        <span class="collapse-arrow">›</span>
-      </div>
+        <AppIcon class="collapse-arrow" name="arrow-down" :size="14" />
+      </button>
       <div class="group-body">
         <div class="form-row">
           <label>中文字体</label>
@@ -569,8 +576,31 @@
             <option value="Arial, sans-serif">Arial (清晰无衬线)</option>
             <option value="'Times New Roman', serif">Times New Roman (衬线)</option>
             <option value="'Georgia', serif">Georgia</option>
-            <option value="'HengShui', 'Comic Sans MS', cursive">衡水体手写 (需本地安装)</option>
+            <option
+              v-for="font in EMBEDDED_HANDWRITING_FONTS"
+              :key="font.id"
+              :value="font.cssFamily"
+            >
+              {{ font.label }}
+            </option>
           </select>
+        </div>
+
+        <div class="form-row font-guide-row">
+          <label>字母范字字体</label>
+          <select class="form-select" id="selectAlphabetGuideFont" v-model="state.draft.settings.alphabetGuideFont">
+            <option
+              v-for="font in ALPHABET_GUIDE_FONT_OPTIONS"
+              :key="font.id"
+              :value="font.cssFamily"
+            >
+              {{ font.label }}
+            </option>
+          </select>
+          <div class="font-preview-strip" :style="{ fontFamily: state.draft.settings.alphabetGuideFont }">
+            Aa Bb Gg Jj Pp Qq Yy
+          </div>
+          <p class="field-help">仅控制字母专项格内范字；“★四线三格”字体已内置，但因字形自带格线，不与网站格线重复叠加。</p>
         </div>
 
         <div class="form-row">
@@ -614,7 +644,10 @@
 import { ref, computed } from 'vue';
 import { NInput } from 'naive-ui';
 import { state } from '../stores/appStore.js';
-import { computePageLayout, renderPracticeSheetHtml } from '../core/layout.js';
+import {
+  ALPHABET_GUIDE_FONT_OPTIONS,
+  EMBEDDED_HANDWRITING_FONTS
+} from '../core/handwritingFonts.js';
 import AppIcon from './AppIcon.vue';
 
 const isPageCollapsed = ref(true);
@@ -624,62 +657,30 @@ const isTypoCollapsed = ref(true);
 
 const titleFontSizeNum = computed(() => parseFloat(state.draft.settings.titleFontSize) || 18);
 
-function toggleGroup(groupName, e) {
-  let isCol;
+function toggleGroup(groupName) {
   if (groupName === 'page') {
     isPageCollapsed.value = !isPageCollapsed.value;
-    isCol = isPageCollapsed.value;
   } else if (groupName === 'word') {
     isWordCollapsed.value = !isWordCollapsed.value;
-    isCol = isWordCollapsed.value;
   } else if (groupName === 'grid') {
     isGridCollapsed.value = !isGridCollapsed.value;
-    isCol = isGridCollapsed.value;
   } else if (groupName === 'typo') {
     isTypoCollapsed.value = !isTypoCollapsed.value;
-    isCol = isTypoCollapsed.value;
-  }
-  const sec = e?.currentTarget?.closest?.('.settings-group');
-  if (sec && typeof isCol === 'boolean') {
-    sec.classList.toggle('collapsed', isCol);
   }
 }
 
-const PAPER_SPECS = {
-  A4: { width: '210mm', height: '297mm' },
-  B4: { width: '257mm', height: '364mm' },
-  '8K': { width: '260mm', height: '370mm' }
-};
-
 function onPaperSizeChange(size) {
   state.draft.settings.paperSize = size;
-  const spec = PAPER_SPECS[size];
-  if (spec) {
-    document.querySelectorAll('.sheet-page').forEach(page => {
-      page.style.width = spec.width;
-      page.style.height = spec.height;
-    });
-  }
 }
 
 function onTitleFontSizeInput(e) {
   const val = parseFloat(e.target.value);
   state.draft.settings.titleFontSize = `${val}pt`;
-  const valEl = document.getElementById('valTitleFontSize');
-  if (valEl) valEl.textContent = `${val}pt`;
-  document.querySelectorAll('.sheet-title-text').forEach(el => {
-    el.style.fontSize = `${val}pt`;
-  });
 }
 
 function onPromptFontSizeInput(e) {
   const val = parseFloat(e.target.value);
   state.draft.settings.promptFontSize = val;
-  const valEl = document.getElementById('valPromptFontSize');
-  if (valEl) valEl.textContent = `${val}pt`;
-  document.querySelectorAll('.meaning.word-prompt-row').forEach(el => {
-    el.style.fontSize = `${val}pt`;
-  });
 }
 </script>
 
@@ -704,6 +705,12 @@ function onPromptFontSizeInput(e) {
   justify-content: space-between;
   margin-bottom: 12px;
   user-select: none;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
 }
 
 .settings-group.collapsible .group-header {
@@ -722,14 +729,13 @@ function onPromptFontSizeInput(e) {
 }
 
 .collapse-arrow {
-  font-size: 14px;
   color: var(--text-light);
   transition: transform 0.2s ease;
-  transform: rotate(90deg);
+  transform: rotate(180deg);
 }
 
 .settings-group.collapsed .collapse-arrow {
-  transform: rotate(0deg);
+  transform: rotate(-90deg);
 }
 
 .settings-group.collapsed .group-body {
@@ -842,5 +848,53 @@ function onPromptFontSizeInput(e) {
   color: var(--text-main);
   cursor: pointer;
   outline: none;
+}
+
+.font-guide-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.font-guide-row .form-select {
+  min-width: 0;
+  width: 100%;
+}
+
+.font-preview-strip,
+.font-guide-row .field-help {
+  grid-column: 1 / -1;
+}
+
+.font-preview-strip {
+  min-height: 40px;
+  padding: 7px 10px 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: linear-gradient(
+    to bottom,
+    transparent 24%,
+    #d9e2df 25%,
+    transparent 26%,
+    transparent 49%,
+    #d9e2df 50%,
+    transparent 51%,
+    transparent 74%,
+    #aabbb5 75%,
+    transparent 76%
+  );
+  color: var(--primary);
+  font-size: 24px;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.font-guide-row .field-help {
+  margin: 0;
+  color: var(--text-light);
+  font-size: 11px;
+  line-height: 1.45;
 }
 </style>

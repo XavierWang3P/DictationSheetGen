@@ -167,7 +167,9 @@ export function validateImportData(parsed) {
 
   function sanitizeList(list) {
     if (!Array.isArray(list)) return [];
-    return list.filter(it => it && typeof it === 'object' && (it.en || it.zh || it.translation));
+    return list.filter(it => it && typeof it === 'object' && (
+      it.questionType || it.en || it.zh || it.translation || it.stem || it.title || it.instructions
+    ));
   }
 
   // v4 统一全量格式
@@ -183,7 +185,7 @@ export function validateImportData(parsed) {
 
     return {
       valid: true,
-      version: String(parsed.version || '4.0'),
+      version: String(parsed.version || '5.0'),
       draftItems,
       draftSettings,
       libraryWords,

@@ -2,7 +2,7 @@
  * 通用组件样式体系 (.app-*, .question-*, .quick-stat-badge)
  */
 
-/* 统一行内状态数量徽章 (彻底取代悬浮 n-badge-sup) */
+/* 统一行内状态数量徽章 */
 .quick-stat-badge {
   display: inline-flex;
   align-items: center;

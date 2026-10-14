@@ -5,6 +5,8 @@ async function testPhase2() {
     '--headless',
     '--remote-debugging-port=9253',
     '--disable-gpu',
+    '--no-sandbox',
+    `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);
 

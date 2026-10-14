@@ -1,16 +1,16 @@
 <template>
   <header class="app-header no-print" data-debug-id="H-001" data-debug-name="顶部标题栏">
     <div class="header-brand">
-      <button
+      <IconActionButton
         class="btn-toggle-sidebar"
         id="btnToggleSidebar"
-        title="展开/收起左侧控制栏"
+        label="展开或收起左侧控制栏"
+        icon="menu"
+        :icon-size="16"
         data-debug-id="H-002"
         data-debug-name="侧边栏折叠按钮"
         @click="state.ui.isSidebarCollapsed = !state.ui.isSidebarCollapsed"
-      >
-        <AppIcon name="menu" :size="16" />
-      </button>
+      />
       <div class="brand-text">
         <h1 class="brand-title">小学/初中英语默写纸生成器</h1>
         <span class="brand-subtitle">中小学英语单词 / 句子标准四线三格多联打印排版工具</span>
@@ -90,11 +90,12 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { NButton, NPopconfirm, useMessage } from 'naive-ui';
-import { state, db } from '../stores/appStore.js';
+import { state, db, normalizeSettings } from '../stores/appStore.js';
 import { computePageLayout, DEFAULT_SETTINGS, DEFAULT_WORDS_RAW, createDraftItem } from '../core/layout.js';
 import { validateImportData, detectDuplicates } from '../core/storage.js';
 import { parseCustomText } from '../core/tokenizer.js';
 import AppIcon from './AppIcon.vue';
+import IconActionButton from './IconActionButton.vue';
 
 const message = useMessage();
 const fileInputRef = ref(null);
@@ -113,7 +114,7 @@ function handlePrint() {
 function handleExportConfig() {
   const configData = {
     app: 'DictationSheetGen',
-    version: '4.0',
+    version: '5.0',
     exportedAt: new Date().toISOString(),
     draft: {
       items: state.draft.items,
@@ -179,7 +180,7 @@ function handleFileChange(e) {
         }
 
         if (validation.draftSettings) {
-          state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, validation.draftSettings);
+          state.draft.settings = normalizeSettings(validation.draftSettings);
         }
 
         if (validation.libraryWords.length > 0) {

@@ -5,14 +5,28 @@
       <span class="preview-mode-tag" id="previewModeTag">
         <AppIcon name="file-text" :size="14" />
         {{ layout.paperDim.name }} {{ layout.isLandscape ? '横向' : '纵向' }} ·
-        {{ modeLabel }} · {{ copyLabel }} · 共 {{ layout.totalPages }} 页
+        {{ modeLabel }} · {{ copyLabel }} · 共 {{ renderedPageCount }} 页
       </span>
 
       <div class="zoom-group">
         <n-button-group size="small">
-          <n-button id="btnZoomOut" @click="handleZoomOut" title="缩小预览">-</n-button>
+          <n-tooltip :show-arrow="false" placement="top">
+            <template #trigger>
+              <n-button id="btnZoomOut" aria-label="缩小预览" @click="handleZoomOut">
+                <template #icon><AppIcon name="minus" :size="15" /></template>
+              </n-button>
+            </template>
+            缩小预览
+          </n-tooltip>
           <n-button dashed style="cursor: default;" id="zoomValText">{{ Math.round(state.ui.zoom * 100) }}%</n-button>
-          <n-button id="btnZoomIn" @click="handleZoomIn" title="放大预览">+</n-button>
+          <n-tooltip :show-arrow="false" placement="top">
+            <template #trigger>
+              <n-button id="btnZoomIn" aria-label="放大预览" @click="handleZoomIn">
+                <template #icon><AppIcon name="plus" :size="15" /></template>
+              </n-button>
+            </template>
+            放大预览
+          </n-tooltip>
         </n-button-group>
 
         <n-button size="small" id="btnZoomFit" :type="state.ui.isZoomFit ? 'primary' : 'default'" @click="handleZoomFit">
@@ -38,7 +52,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue';
-import { NButtonGroup, NButton } from 'naive-ui';
+import { NButtonGroup, NButton, NTooltip } from 'naive-ui';
 import { state } from '../stores/appStore.js';
 import { computePageLayout, renderPracticeSheetHtml, PAPER_SIZES } from '../core/layout.js';
 import AppIcon from './AppIcon.vue';
@@ -47,6 +61,7 @@ const stageRef = ref(null);
 
 const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
 const sheetHtml = computed(() => renderPracticeSheetHtml(layout.value, state.draft.settings));
+const renderedPageCount = computed(() => layout.value.totalPages * (state.draft.settings.showAnswerPage ? 2 : 1));
 
 const modeLabel = computed(() => {
   if (state.draft.settings.dictMode === 'alphabet') return '三年级字母专项';
@@ -109,7 +124,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateZoomFit);
-  clearTimeout(renderTimer);
 });
 </script>
 

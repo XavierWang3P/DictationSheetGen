@@ -23,7 +23,6 @@
             id="modeWriting"
             value="word-dictation"
             :checked="currentInputType === 'word-dictation'"
-            @click="onInputTypeChange('word-dictation')"
             @change="onInputTypeChange('word-dictation')"
           />
           <label for="modeWriting">单词默写</label>
@@ -34,7 +33,6 @@
             id="modeCloze"
             value="sentence-cloze"
             :checked="currentInputType === 'sentence-cloze'"
-            @click="onInputTypeChange('sentence-cloze')"
             @change="onInputTypeChange('sentence-cloze')"
           />
           <label for="modeCloze">句子挖空</label>
@@ -45,7 +43,6 @@
             id="typeSentence"
             value="sentence-dictation"
             :checked="currentInputType === 'sentence-dictation'"
-            @click="onInputTypeChange('sentence-dictation')"
             @change="onInputTypeChange('sentence-dictation')"
           />
           <label for="typeSentence">句子默写</label>
@@ -56,10 +53,18 @@
             id="modeAlphabet"
             value="alphabet"
             :checked="currentInputType === 'alphabet'"
-            @click="onInputTypeChange('alphabet')"
             @change="onInputTypeChange('alphabet')"
           />
           <label for="modeAlphabet">字母专项</label>
+
+          <input type="radio" name="inputType" id="modeChoice" value="choice" :checked="currentInputType === 'choice'" @change="onInputTypeChange('choice')" />
+          <label for="modeChoice">选择题</label>
+
+          <input type="radio" name="inputType" id="modeInlineFill" value="inline-fill" :checked="currentInputType === 'inline-fill'" @change="onInputTypeChange('inline-fill')" />
+          <label for="modeInlineFill">填空题</label>
+
+          <input type="radio" name="inputType" id="modeComposition" value="english-composition" :checked="currentInputType === 'english-composition'" @change="onInputTypeChange('english-composition')" />
+          <label for="modeComposition">英语作文</label>
         </div>
       </div>
 
@@ -332,8 +337,17 @@
         </div>
       </div>
 
+      <GeneralQuestionEditor
+        v-if="structuredTypes.includes(currentInputType)"
+        :type="currentInputType"
+        :editing-item="editingItem"
+        @submit="handleStructuredSubmit"
+        @cancel="cancelEditing"
+        @error="message.error"
+      />
+
       <!-- 快速文本录入框 (单词/句子挖空/句子默写模式) -->
-      <template v-if="currentInputType !== 'alphabet'">
+      <template v-if="currentInputType !== 'alphabet' && !structuredTypes.includes(currentInputType)">
         <p class="form-desc" id="formDescWords">
           {{ inputHelperTip }}
         </p>
@@ -440,6 +454,8 @@
               <span v-else-if="item.alphabetType" class="word-item-en word-chip-en">
                 {{ item.prompt }}
               </span>
+              <span v-else-if="item.stem" class="word-item-en word-chip-en">{{ item.stem }}</span>
+              <span v-else-if="item.title || item.instructions" class="word-item-en word-chip-en">{{ item.title || item.instructions }}</span>
               <span v-else class="word-chip-en" style="display:none;"></span>
 
               <span v-if="item.zh" class="word-item-zh word-chip-zh">{{ item.zh }}</span>
@@ -447,15 +463,15 @@
             </div>
 
             <div class="word-item-actions">
-              <button type="button" class="word-item-btn" title="上移" @click.stop="moveUp(index)">
-                <AppIcon name="arrow-up" :size="12" />
-              </button>
-              <button type="button" class="word-item-btn" title="下移" @click.stop="moveDown(index)">
-                <AppIcon name="arrow-down" :size="12" />
-              </button>
-              <button type="button" class="word-item-btn del" title="删除" @click.stop="removeItem(index)">
-                <AppIcon name="trash" :size="12" />
-              </button>
+              <select class="item-layout-select" :value="item.layout?.columns || ''" @change="setItemColumns(item, $event.target.value)" title="单题布局覆盖">
+                <option value="">继承题型默认</option>
+                <option v-for="option in layoutOptionsFor(item)" :key="option" :value="option">每行{{ option }}题</option>
+              </select>
+              <button v-if="structuredTypes.includes(item.questionType)" type="button" class="word-item-btn" title="编辑" @click.stop="editItem(index)">编辑</button>
+              <button type="button" class="word-item-btn" title="复制" @click.stop="duplicateItem(index)">复制</button>
+              <IconActionButton class="word-item-btn" label="上移题目" icon="arrow-up" :icon-size="12" @click.stop="moveUp(index)" />
+              <IconActionButton class="word-item-btn" label="下移题目" icon="arrow-down" :icon-size="12" @click.stop="moveDown(index)" />
+              <IconActionButton class="word-item-btn del" label="删除题目" icon="trash" :icon-size="12" @click.stop="removeItem(index)" />
             </div>
           </div>
         </template>
@@ -483,10 +499,16 @@ import {
   ALPHABET_PRESETS
 } from '../core/alphabet.js';
 import AppIcon from './AppIcon.vue';
+import IconActionButton from './IconActionButton.vue';
+import GeneralQuestionEditor from './GeneralQuestionEditor.vue';
+import { getQuestionTypesByEditor, normalizeQuestion } from '../question-types/registry.js';
 
 const message = useMessage();
 const rawText = ref('');
 const currentInputType = ref('word-dictation');
+const structuredTypes = getQuestionTypesByEditor('GeneralQuestionEditor');
+const editingIndex = ref(-1);
+const editingItem = computed(() => editingIndex.value >= 0 ? state.draft.items[editingIndex.value] : null);
 
 const inputPlaceholder = computed(() => {
   if (currentInputType.value === 'sentence-cloze') {
@@ -516,6 +538,12 @@ function getQuestionTypeLabel(type) {
       return '句默';
     case 'alphabet':
       return '字母';
+    case 'choice':
+      return '选择';
+    case 'inline-fill':
+      return '填空';
+    case 'english-composition':
+      return '作文';
     case 'word-dictation':
     default:
       return '单词';
@@ -524,17 +552,78 @@ function getQuestionTypeLabel(type) {
 
 function onInputTypeChange(type) {
   currentInputType.value = type;
+  if (editingItem.value?.questionType !== type) editingIndex.value = -1;
   if (type === 'sentence-cloze') {
     state.draft.settings.dictMode = 'cloze';
-    state.draft.settings.columns = 2;
   } else if (type === 'alphabet') {
     state.draft.settings.dictMode = 'alphabet';
   } else if (type === 'sentence-dictation') {
     state.draft.settings.dictMode = 'sentence';
-    state.draft.settings.columns = 1;
+  } else if (structuredTypes.includes(type)) {
+    state.draft.settings.dictMode = 'mixed';
   } else {
     state.draft.settings.dictMode = 'writing';
   }
+}
+
+function handleStructuredSubmit(item) {
+  if (editingIndex.value >= 0) {
+    state.draft.items.splice(editingIndex.value, 1, item);
+    editingIndex.value = -1;
+    message.success('题目修改已保存');
+  } else {
+    state.draft.items.push(item);
+    message.success('题目已添加到试卷');
+  }
+}
+
+function editItem(index) {
+  editingIndex.value = index;
+  currentInputType.value = state.draft.items[index].questionType;
+}
+
+function cancelEditing() {
+  editingIndex.value = -1;
+}
+
+function duplicateItem(index) {
+  const source = JSON.parse(JSON.stringify(state.draft.items[index]));
+  source.id = generateId('item');
+  if (Array.isArray(source.options)) {
+    const idMap = new Map();
+    source.options = source.options.map((option) => {
+      const id = generateId('option');
+      idMap.set(option.id, id);
+      return { ...option, id };
+    });
+    source.answers = (source.answers || []).map((id) => idMap.get(id)).filter(Boolean);
+  }
+  if (Array.isArray(source.blanks)) {
+    const idMap = new Map();
+    source.blanks = source.blanks.map((blank) => {
+      const id = generateId('blank');
+      idMap.set(blank.id, id);
+      return { ...blank, id };
+    });
+    source.stemSegments = (source.stemSegments || []).map((segment) => segment.type === 'blank'
+      ? { ...segment, blankId: idMap.get(segment.blankId) }
+      : segment);
+  }
+  state.draft.items.splice(index + 1, 0, normalizeQuestion(source));
+  message.success('已复制题目');
+}
+
+function layoutOptionsFor(item) {
+  if (item.questionType === 'word-dictation') return [2, 3, 4];
+  if (item.questionType === 'english-composition') return [1];
+  if (item.questionType === 'alphabet') return [1, 2, 3, 4];
+  return [1, 2];
+}
+
+function setItemColumns(item, value) {
+  if (!item.layout) item.layout = {};
+  if (!value) delete item.layout.columns;
+  else item.layout.columns = Number(value);
 }
 
 // 字母专项配置
@@ -879,8 +968,23 @@ function removeItem(index) {
 
 .word-item-actions {
   display: flex;
+  align-items: center;
   gap: 4px;
   flex-shrink: 0;
+}
+
+.item-layout-select {
+  max-width: 112px;
+  height: 25px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: white;
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+.form-row > .segmented-control {
+  flex-wrap: wrap;
 }
 
 .word-item-btn {

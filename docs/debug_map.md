@@ -28,6 +28,7 @@
 | **Q-005** | 存入本地词库按钮 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
 | **Q-006** | 清空试卷按钮 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
 | **Q-007** | 当前试卷题目列表容器 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
+| **Q-008** | 选择题、填空题与英语作文结构化编辑器 | `GeneralQuestionEditor.vue` | `src/components/GeneralQuestionEditor.vue` |
 | **L-001** | 本地离线词库面板 | `WordLibraryPane.vue` | `src/components/WordLibraryPane.vue` |
 | **L-002** | 年级/单元分组胶囊栏 | `WordLibraryPane.vue` | `src/components/WordLibraryPane.vue` |
 | **L-003** | 词库英汉搜索输入框 | `WordLibraryPane.vue` | `src/components/WordLibraryPane.vue` |
@@ -50,6 +51,7 @@
 | **P-001** | 试卷排版与打印预览视口 | `PreviewViewport.vue` | `src/components/PreviewViewport.vue` |
 | **P-002** | 缩放比例与适合宽度工具栏 | `PreviewViewport.vue` | `src/components/PreviewViewport.vue` |
 | **P-003** | 纸张渲染流水线容器 | `PreviewViewport.vue` | `src/components/PreviewViewport.vue` |
+| **F-001** | 页面底部版本与版权信息 | `App.vue` | `src/App.vue` |
 | **ITEM-{id}** | 动态题目卡片（依题目唯一ID） | `QuickInputPane.vue` / 试卷 | 动态生成 |
 
 ---

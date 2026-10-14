@@ -7,6 +7,8 @@ async function testClozeFeatures() {
     '--headless',
     '--remote-debugging-port=9258',
     '--disable-gpu',
+    '--no-sandbox',
+    `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);
 
@@ -46,8 +48,8 @@ async function testClozeFeatures() {
 
     await new Promise(r => ws.onopen = r);
 
-    // ================= 验证 1: 句子挖空模式默认切换为 2 列 =================
-    console.log('【验证 1】切换至句子挖空模式，列数默认设为 2 列:');
+    // ================= 验证 1: 句子挖空使用独立自动列数且不影响其他题型 =================
+    console.log('【验证 1】句子挖空使用独立自动列数，不改写其他题型默认值:');
     const r1 = await evalExpr(`(async () => {
       // 切换出卷模式至 cloze
       document.getElementById('modeCloze').click();
@@ -55,11 +57,14 @@ async function testClozeFeatures() {
       const s = window.__appStoreState.draft.settings;
       return {
         dictMode: s.dictMode,
-        columns: s.columns
+        legacyColumns: s.columns,
+        clozeColumns: s.layoutDefaults.sentenceClozeColumns,
+        wordColumns: s.layoutDefaults.wordDictationColumns,
+        sentenceColumns: s.layoutDefaults.sentenceDictationColumns
       };
     })()`);
     console.log('-> 结果:', JSON.stringify(r1, null, 2));
-    const pass1 = r1.dictMode === 'cloze' && r1.columns === 2;
+    const pass1 = r1.dictMode === 'cloze' && r1.legacyColumns === 3 && r1.clozeColumns === 'auto' && r1.wordColumns === 3 && r1.sentenceColumns === 1;
     console.log('-> 判定:', pass1 ? '✅ PASS' : '❌ FAIL', '\n');
 
     // ================= 验证 2: 题量较多时自动切换为 1页2份 或 1份 =================
@@ -90,27 +95,30 @@ async function testClozeFeatures() {
     const pass2 = r2.copies9 === 2 && r2.copies16 === 1;
     console.log('-> 判定:', pass2 ? '✅ PASS' : '❌ FAIL', '\n');
 
-    // ================= 验证 3: 中文提示位置固定在句下独立行 =================
-    console.log('【验证 3】中文提示位置固定在句下独立行，排版整齐一致:');
+    // ================= 验证 3: 中文提示与英文内容使用稳定双区域基线布局 =================
+    console.log('【验证 3】中文提示与英文内容使用稳定双区域基线布局:');
     const r3 = await evalExpr(`(async () => {
       // 载入默认 9 句
       document.getElementById('btnLoadDefaultSample').click();
       await new Promise(r => setTimeout(r, 150));
 
       const card = document.querySelector('.cloze-card-inline');
-      const zhElem = card ? card.querySelector('.cloze-zh.pos-below') : null;
-      const zhDisplay = zhElem ? window.getComputedStyle(zhElem).display : '';
-      const wrapElem = card ? card.querySelector('.cloze-content-wrap') : null;
+      const alignedRow = card ? card.querySelector('.cloze-aligned-row') : null;
+      const zhElem = card ? card.querySelector('.cloze-zh-column') : null;
+      const enElem = card ? card.querySelector('.cloze-english-column') : null;
+      const style = alignedRow ? window.getComputedStyle(alignedRow) : null;
 
       return {
         hasClozeCard: !!card,
-        hasZhBelow: !!zhElem,
-        zhDisplay,
-        hasWrapElem: !!wrapElem
+        hasAlignedRow: !!alignedRow,
+        hasZhColumn: !!zhElem,
+        hasEnglishColumn: !!enElem,
+        rowDisplay: style?.display || '',
+        rowAlignItems: style?.alignItems || ''
       };
     })()`);
     console.log('-> 结果:', JSON.stringify(r3, null, 2));
-    const pass3 = r3.hasClozeCard && r3.hasZhBelow && r3.zhDisplay === 'block' && r3.hasWrapElem;
+    const pass3 = r3.hasClozeCard && r3.hasAlignedRow && r3.hasZhColumn && r3.hasEnglishColumn && r3.rowDisplay === 'grid' && r3.rowAlignItems === 'baseline';
     console.log('-> 判定:', pass3 ? '✅ PASS' : '❌ FAIL', '\n');
 
     // ================= 验证 4: 四线三格挖空格长自定义 (1词长/2词长/3词长) =================

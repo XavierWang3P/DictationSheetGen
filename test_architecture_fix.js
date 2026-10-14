@@ -7,6 +7,8 @@ async function testArchitectureFix() {
     '--headless',
     '--remote-debugging-port=9255',
     '--disable-gpu',
+    '--no-sandbox',
+    `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);
 
@@ -58,6 +60,11 @@ async function testArchitectureFix() {
 
     await new Promise(r => ws.onopen = r);
 
+    for (let retry = 0; retry < 20; retry++) {
+      if (await evalExpr('Boolean(window.__appStoreState)')) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // 启用 Console 监听，捕获所有控制台异常
     await new Promise((resolve) => {
       ws.send(JSON.stringify({ id: id++, method: 'Console.enable' }));
@@ -78,7 +85,7 @@ async function testArchitectureFix() {
 
       // 找到第 1 行的下移按钮并触发真实点击
       const rows = document.querySelectorAll('#wordsListContainer .word-item-row');
-      const downBtn = rows[0].querySelector('button[title="下移"]');
+      const downBtn = rows[0].querySelector('button[aria-label="下移题目"]');
       if (downBtn) downBtn.click();
       await new Promise(r => setTimeout(r, 150));
 

@@ -30,7 +30,8 @@
         <span style="color:#94a3b8; font-size:10px; word-break:break-all;">{{ hoverInfo.file }}</span>
       </div>
       <button type="button" class="debug-copy-btn" @click.stop="copyInfo">
-        {{ copySuccess ? '✓ 已复制到剪贴板' : '📋 复制组件定位信息' }}
+        <AppIcon :name="copySuccess ? 'check' : 'copy'" :size="13" />
+        {{ copySuccess ? '已复制到剪贴板' : '复制组件定位信息' }}
       </button>
     </div>
   </div>

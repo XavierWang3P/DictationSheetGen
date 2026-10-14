@@ -174,15 +174,14 @@
                 <AppIcon name="plus" :size="11" />
                 试卷
               </button>
-              <button
-                type="button"
+              <IconActionButton
                 class="btn-act del btn-sentence-del"
                 :data-id="s.id"
-                title="从句库中删除"
+                label="从句库中删除"
+                icon="trash"
+                :icon-size="11"
                 @click.stop="handleDeleteSentence(s.id)"
-              >
-                <AppIcon name="trash" :size="11" />
-              </button>
+              />
             </div>
           </div>
         </template>
@@ -203,6 +202,7 @@ import {
 } from '../core/tokenizer.js';
 import { createDraftItem, autoAdaptCopiesAndCapacity } from '../core/layout.js';
 import AppIcon from './AppIcon.vue';
+import IconActionButton from './IconActionButton.vue';
 
 const message = useMessage();
 

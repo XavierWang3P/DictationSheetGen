@@ -37,6 +37,8 @@ async function testV230Refactor() {
     '--headless',
     '--remote-debugging-port=9260',
     '--disable-gpu',
+    '--no-sandbox',
+    `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);
 
@@ -151,7 +153,7 @@ async function testV230Refactor() {
       // 检查是否有 duplicate id="quickStatBadge"
       const duplicateIds = document.querySelectorAll('#quickStatBadge');
 
-      // 检查是否有 Naive UI 的悬浮角标 n-badge-sup 在可见区域显示词数
+      // 兼容性回归：不再伪造 Naive UI 内部角标 DOM
       const floatingSups = Array.from(document.querySelectorAll('.n-badge-sup')).filter(s => {
         const style = window.getComputedStyle(s);
         const isVisible = style.display !== 'none' && style.visibility !== 'hidden' && s.offsetParent !== null;

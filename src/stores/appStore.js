@@ -7,10 +7,22 @@ import {
   migrateDraftItem
 } from '../core/layout.js';
 import { StorageDB, detectDuplicates, validateImportData } from '../core/storage.js';
+import { normalizeLayoutDefaults } from '../question-types/registry.js';
+import { resolveAlphabetGuideFont } from '../core/handwritingFonts.js';
 
 const STORAGE_KEY = 'dictation_sheet_generator_v3';
 
 export const db = new StorageDB();
+
+export function normalizeSettings(settings = {}) {
+  const normalizedGuideFont = resolveAlphabetGuideFont(settings.alphabetGuideFont).cssFamily;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...settings,
+    alphabetGuideFont: normalizedGuideFont,
+    layoutDefaults: normalizeLayoutDefaults(settings.layoutDefaults, settings)
+  };
+}
 
 export const state = reactive({
   library: {
@@ -32,7 +44,7 @@ export const state = reactive({
   },
   draft: {
     items: [],
-    settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
+    settings: normalizeSettings()
   },
   ui: {
     activeView: 'paneQuick',
@@ -57,7 +69,7 @@ Object.defineProperty(state, 'words', {
 Object.defineProperty(state, 'settings', {
   get() { return this.draft.settings; },
   set(val) {
-    this.draft.settings = Object.assign({}, DEFAULT_SETTINGS, val);
+    this.draft.settings = normalizeSettings(val);
   }
 });
 
@@ -100,12 +112,12 @@ export function loadSavedState() {
           state.draft.items = data.draft.items.map(it => migrateDraftItem(it, fallbackMode));
         }
         if (data.draft.settings) {
-          state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.draft.settings);
+          state.draft.settings = normalizeSettings(data.draft.settings);
         }
       } else if (Array.isArray(data.words)) {
         state.draft.items = data.words.map(it => migrateDraftItem(it, fallbackMode));
         if (data.settings) {
-          state.draft.settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);
+          state.draft.settings = normalizeSettings(data.settings);
         }
       }
     }
@@ -117,7 +129,7 @@ export function loadSavedState() {
 export function saveState() {
   try {
     const payload = {
-      version: '4.0',
+      version: '5.0',
       savedAt: Date.now(),
       draft: {
         items: state.draft.items,

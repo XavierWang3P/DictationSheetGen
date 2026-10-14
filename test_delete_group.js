@@ -7,6 +7,8 @@ async function testDeleteGroup() {
     '--headless',
     '--remote-debugging-port=9266',
     '--disable-gpu',
+    '--no-sandbox',
+    `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1600,1400',
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);

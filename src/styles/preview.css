@@ -160,7 +160,8 @@
   margin-bottom: 1mm;
   display: flex;
   align-items: baseline;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .word-num.entry-index {
@@ -197,8 +198,12 @@
 .cloze-inline-grid {
   border-bottom: none;
   vertical-align: middle;
-  height: 6.8mm;
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  height: 1.75em;
   margin: 0 2px;
+  max-width: 100%;
 }
 
 .cloze-inline-grid svg {
@@ -212,6 +217,96 @@
   flex-direction: column;
   width: 100%;
 }
+
+.cloze-aligned-row {
+  display: grid;
+  grid-template-columns: minmax(18mm, max-content) minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 2mm;
+  flex: 1;
+  min-width: 0;
+}
+
+.cloze-aligned-row.no-zh {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cloze-zh-column {
+  min-width: 18mm;
+  max-width: 44mm;
+  color: #475569;
+  font-size: 0.85em;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.cloze-english-column {
+  min-width: 0;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.adaptive-writing-grid {
+  min-width: 0;
+}
+
+.teacher-answer-text {
+  display: block;
+  width: 100%;
+  color: #2f6659;
+  font-size: 0.78em;
+  font-weight: 600;
+  margin-top: 1mm;
+}
+
+.teacher-inline-answer {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #2f6659;
+  font-size: 0.78em;
+  font-weight: 700;
+}
+
+.choice-options {
+  display: grid;
+  gap: 1.4mm 3mm;
+  line-height: 1.45;
+}
+
+.choice-options.layout-single { grid-template-columns: 1fr; }
+.choice-options.layout-double { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.choice-options.layout-inline { grid-template-columns: repeat(auto-fit, minmax(24mm, max-content)); }
+.choice-option { display: inline-flex; gap: 1.2mm; min-width: 0; overflow-wrap: anywhere; }
+.choice-option.is-correct { color: #2f6659; font-weight: 700; }
+.choice-label { flex-shrink: 0; font-family: Arial, sans-serif; }
+
+.inline-fill-stem {
+  min-width: 0;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.inline-fill-blank {
+  display: inline-flex;
+  position: relative;
+  min-width: 40px;
+  max-width: 100%;
+  height: 1.4em;
+  margin: 0 1.2mm;
+  border-bottom: 1.2px solid #334155;
+  vertical-align: middle;
+  align-items: center;
+  justify-content: center;
+}
+
+.is-composition-card { break-inside: avoid; }
+.composition-heading { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
+.composition-part { color: #64748b; font-size: 0.78em; font-weight: 400; }
+.composition-instructions { margin-top: 1mm; color: #475569; font-size: 0.9em; }
+.composition-lines { width: 100%; }
 
 .cloze-zh {
   font-size: 0.85em;
@@ -307,6 +402,32 @@
 .alpha-cell-grid svg {
   display: block;
   width: 100%;
+}
+
+/* 格线允许随题目宽度伸缩，范字层保持字体原始比例，避免窄列中横向压扁。 */
+.alphabet-grid-shell {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.alphabet-grid-lines,
+.alphabet-guide-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.alphabet-guide-layer {
+  overflow: visible;
+  pointer-events: none;
+}
+
+.alphabet-guide-text {
+  font-style: normal;
+  letter-spacing: 0;
 }
 
 /* 字母左右邻居与大小写转换专属排版 */

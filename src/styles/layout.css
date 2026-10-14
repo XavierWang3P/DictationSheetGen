@@ -11,8 +11,45 @@
 .app-workspace {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   position: relative;
+}
+
+.app-footer {
+  min-height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 5px 16px;
+  border-top: 1px solid var(--color-border, #d9e1dd);
+  background: var(--color-bg-card, #ffffff);
+  color: var(--color-text-muted, #68756f);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.app-footer-version {
+  color: var(--color-primary, #2f6659);
+  font-weight: 600;
+}
+
+.app-footer-divider {
+  width: 1px;
+  height: 10px;
+  flex: 0 0 1px;
+  background: var(--color-border, #d9e1dd);
+}
+
+@media (max-width: 640px) {
+  .app-footer {
+    gap: 7px;
+    padding-inline: 8px;
+    font-size: 10px;
+  }
 }
 
 .app-sidebar {

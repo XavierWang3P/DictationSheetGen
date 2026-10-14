@@ -7,6 +7,8 @@ async function testEmptyStartup() {
     '--headless',
     '--remote-debugging-port=9261',
     '--disable-gpu',
+    '--no-sandbox',
+    `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1600,1400',
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);
@@ -57,7 +59,7 @@ async function testEmptyStartup() {
       state.draft.items = [];
 
       const textarea = document.getElementById('customWordTextarea');
-      const badge = document.querySelector('.n-badge .n-badge-sup');
+      const badge = document.getElementById('badgeWordCount');
       const emptyTip = document.querySelector('.empty-sheet-placeholder');
       const wordEntries = document.querySelectorAll('.word-entry-item');
 
@@ -75,7 +77,7 @@ async function testEmptyStartup() {
       r1.itemCount === 0 &&
       r1.textareaValue === '' &&
       r1.renderedWordEntries === 0 &&
-      r1.badgeText === '0 词' &&
+      r1.badgeText === '已添加 0 题' &&
       r1.hasEmptyPlaceholder
     );
     console.log('-> 判定:', pass1 ? '✅ PASS' : '❌ FAIL', '\n');
@@ -89,7 +91,7 @@ async function testEmptyStartup() {
 
       const state = window.__appStoreState;
       const wordEntries = document.querySelectorAll('.word-entry-item');
-      const badge = document.querySelector('.n-badge .n-badge-sup');
+      const badge = document.getElementById('badgeWordCount');
 
       return {
         itemCount: state.draft.items.length,
@@ -101,7 +103,7 @@ async function testEmptyStartup() {
     const pass2 = (
       r2.itemCount === 9 &&
       r2.renderedWordEntries === 27 &&
-      r2.badgeText === '9 词'
+      r2.badgeText === '已添加 9 题'
     );
     console.log('-> 判定:', pass2 ? '✅ PASS' : '❌ FAIL', '\n');
 
