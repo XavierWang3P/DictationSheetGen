@@ -11,15 +11,63 @@ export function escapeHtml(str) {
 }
 
 export const DEFAULT_WORDS_RAW = [
-  { en: 'beautiful', zh: '美丽的；优美的' },
-  { en: 'hard-working', zh: '工作努力的；辛勤的' },
-  { en: 'rope', zh: '绳；粗绳' },
-  { en: 'clever', zh: '聪明的；聪颖的' },
-  { en: 'robot', zh: '机器人' },
-  { en: 'piano', zh: '钢琴' },
-  { en: 'young', zh: '幼小的；年轻的' },
-  { en: 'jump', zh: '跳；跃' },
-  { en: 'chess', zh: '国际象棋' }
+  { en: 'beautiful', zh: '美丽的；优美的', group: '五年级上册 Unit 1' },
+  { en: 'hard-working', zh: '工作努力的；辛勤的', group: '五年级上册 Unit 1' },
+  { en: 'rope', zh: '绳；粗绳', group: '五年级上册 Unit 1' },
+  { en: 'clever', zh: '聪明的；聪颖的', group: '五年级上册 Unit 1' },
+  { en: 'robot', zh: '机器人', group: '五年级上册 Unit 1' },
+  { en: 'piano', zh: '钢琴', group: '五年级上册 Unit 1' },
+  { en: 'young', zh: '幼小的；年轻的', group: '五年级上册 Unit 1' },
+  { en: 'jump', zh: '跳；跃', group: '五年级上册 Unit 1' },
+  { en: 'chess', zh: '国际象棋', group: '五年级上册 Unit 1' }
+];
+
+// 小学各年级经典课标单元词库预设
+export const PRESET_UNIT_LIBRARIES = [
+  {
+    name: '三年级上册 Unit 1',
+    description: 'PEP三年级英语上册 Unit 1 Hello 文具与文具盒核心词',
+    words: [
+      { en: 'ruler', zh: '尺子', group: '三年级上册 Unit 1' },
+      { en: 'eraser', zh: '橡皮', group: '三年级上册 Unit 1' },
+      { en: 'pencil', zh: '铅笔', group: '三年级上册 Unit 1' },
+      { en: 'crayon', zh: '蜡笔', group: '三年级上册 Unit 1' },
+      { en: 'book', zh: '书', group: '三年级上册 Unit 1' },
+      { en: 'bag', zh: '书包', group: '三年级上册 Unit 1' },
+      { en: 'pen', zh: '钢笔', group: '三年级上册 Unit 1' },
+      { en: 'pencil box', zh: '文具盒', group: '三年级上册 Unit 1' }
+    ]
+  },
+  {
+    name: '四年级上册 Unit 1',
+    description: 'PEP四年级英语上册 Unit 1 My classroom 教室与设施核心词',
+    words: [
+      { en: 'classroom', zh: '教室', group: '四年级上册 Unit 1' },
+      { en: 'window', zh: '窗户', group: '四年级上册 Unit 1' },
+      { en: 'blackboard', zh: '黑板', group: '四年级上册 Unit 1' },
+      { en: 'light', zh: '电灯', group: '四年级上册 Unit 1' },
+      { en: 'picture', zh: '图画', group: '四年级上册 Unit 1' },
+      { en: 'door', zh: '门', group: '四年级上册 Unit 1' },
+      { en: 'computer', zh: '计算机', group: '四年级上册 Unit 1' },
+      { en: 'fan', zh: '风扇', group: '四年级上册 Unit 1' },
+      { en: 'wall', zh: '墙壁', group: '四年级上册 Unit 1' }
+    ]
+  },
+  {
+    name: '五年级上册 Unit 1',
+    description: 'PEP五年级英语上册 Unit 1 What is he like 人物外貌与性格核心词',
+    words: [
+      { en: 'beautiful', zh: '美丽的；优美的', group: '五年级上册 Unit 1' },
+      { en: 'hard-working', zh: '工作努力的；辛勤的', group: '五年级上册 Unit 1' },
+      { en: 'rope', zh: '绳；粗绳', group: '五年级上册 Unit 1' },
+      { en: 'clever', zh: '聪明的；聪颖的', group: '五年级上册 Unit 1' },
+      { en: 'robot', zh: '机器人', group: '五年级上册 Unit 1' },
+      { en: 'piano', zh: '钢琴', group: '五年级上册 Unit 1' },
+      { en: 'young', zh: '幼小的；年轻的', group: '五年级上册 Unit 1' },
+      { en: 'jump', zh: '跳；跃', group: '五年级上册 Unit 1' },
+      { en: 'chess', zh: '国际象棋', group: '五年级上册 Unit 1' }
+    ]
+  }
 ];
 
 export const DEFAULT_CLOZE_WORDS_RAW = [

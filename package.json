@@ -1,7 +1,7 @@
 {
   "name": "dictationsheetgen",
-  "version": "2.2.4",
-  "description": "中小学英语默写纸生成器。采用 Vue 3 + Naive UI 现代架构，支持离线单文件运行、四线三格排版、句子挖空、三年级字母专项默写与本地离线词库。",
+  "version": "2.2.5",
+  "description": "中小学英语默写纸生成器。采用 Vue 3 + Naive UI 现代架构，支持离线单文件运行、四线三格排版、句子挖空、三年级字母专项默写与本地离线词库（支持按年级/单元分组管理）。",
   "main": "test_acceptance.js",
   "directories": {
     "doc": "docs"
@@ -16,7 +16,8 @@
     "test:alpha": "node test_alphabet.js",
     "test:arch": "node test_architecture_fix.js",
     "test:cloze": "node test_cloze_features.js",
-    "test:all": "node test_acceptance.js && node test_phase2.js && node test_phase3.js && node test_alphabet.js && node test_architecture_fix.js && node test_cloze_features.js"
+    "test:group": "node test_word_grouping.js",
+    "test:all": "node test_acceptance.js && node test_phase2.js && node test_phase3.js && node test_alphabet.js && node test_architecture_fix.js && node test_cloze_features.js && node test_word_grouping.js"
   },
   "repository": {
     "type": "git",

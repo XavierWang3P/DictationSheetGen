@@ -555,17 +555,24 @@ async function handleSaveDraftToLib() {
     message.info(`试卷中的 ${state.draft.items.length} 个单词均已存在于词库中`);
     return;
   }
+  // 提取当前试卷标题作为分组名，若无则使用“通用词汇”
+  let targetGroup = '通用词汇';
+  if (state.draft.settings.title && state.draft.settings.title.trim()) {
+    targetGroup = state.draft.settings.title.replace(/单词默写|默写纸|练习卷|专项卷/g, '').trim() || '通用词汇';
+  }
+
   const newWords = dupCheck.unique.map(it => ({
     id: it.id || generateId('w'),
     en: it.en,
     zh: it.zh,
     phonetic: it.phonetic || '',
+    group: it.group || targetGroup,
     updatedAt: Date.now()
   }));
   state.library.words = state.library.words.concat(newWords);
   await db.bulkPut('words', newWords);
   const dupTip = dupCheck.duplicates.length > 0 ? ` (${dupCheck.duplicates.length} 条已存在跳过)` : '';
-  message.success(`已成功将 ${newWords.length} 个新词保存到本地词库${dupTip}！`);
+  message.success(`已成功将 ${newWords.length} 个新词保存到本地词库「${targetGroup}」${dupTip}！`);
 }
 
 function handleLoadDefault() {

@@ -17,6 +17,7 @@ export const state = reactive({
       id: `w-default-${i + 1}`,
       en: w.en,
       zh: w.zh,
+      group: w.group || '五年级上册 Unit 1',
       updatedAt: Date.now()
     })),
     sentences: DEFAULT_CLOZE_WORDS_RAW.map((s, i) => ({
@@ -149,13 +150,17 @@ export async function loadLibraryFromDB() {
     const sentences = await db.getAll('sentences');
 
     if (words && words.length > 0) {
-      state.library.words = words;
+      state.library.words = words.map(w => ({
+        ...w,
+        group: w.group || '通用词汇'
+      }));
     } else {
       // 预设默认推荐词库
       const defaultWords = DEFAULT_WORDS_RAW.map(w => ({
         id: `w-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
         en: w.en,
         zh: w.zh,
+        group: w.group || '五年级上册 Unit 1',
         updatedAt: Date.now()
       }));
       state.library.words = defaultWords;
