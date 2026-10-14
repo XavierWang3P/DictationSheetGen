@@ -62,7 +62,14 @@
             :id="'pillGroup_' + cleanId(grp.name)"
             @click="activeGroup = grp.name"
           >
-            {{ grp.name }} ({{ grp.count }})
+            <span>{{ grp.name }} ({{ grp.count }})</span>
+            <span
+              v-if="grp.name !== '通用词汇'"
+              class="pill-del-icon"
+              :id="'btnDelPill_' + cleanId(grp.name)"
+              @click.stop="promptDeleteGroup(grp.name)"
+              title="删除此分组"
+            >×</span>
           </button>
         </div>
       </div>
@@ -125,6 +132,16 @@
         当前展示 <strong>{{ filteredWords.length }}</strong> 词 · 已选中 <strong id="libSelectedCount" style="color:var(--primary);">{{ selectedIds.size }}</strong> 词
         <span v-if="activeGroup !== 'all'" style="margin-left:6px; color:var(--primary); font-weight:500;">
           [当前单元: {{ activeGroup }}]
+          <button
+            v-if="activeGroup !== '通用词汇'"
+            type="button"
+            class="btn-delete-group-inline"
+            id="btnDeleteCurrentGroup"
+            @click="promptDeleteGroup(activeGroup)"
+            title="删除当前分组"
+          >
+            🗑️ 删除该组
+          </button>
         </span>
       </div>
 
@@ -133,9 +150,19 @@
         <template v-if="filteredWords.length === 0">
           <div class="empty-list-tip">
             {{ searchQuery ? '未检索到符合条件的词汇' : (activeGroup !== 'all' ? `「${activeGroup}」分组暂无单词，可勾选单词后设置分组移入` : '本地词库为空，可从左侧试卷保存或点击下方导入') }}
-            <div style="margin-top:10px;" v-if="!searchQuery">
+            <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;" v-if="!searchQuery">
               <n-button size="small" type="primary" ghost @click="openImportModal" id="btnEmptyTipImport">
                 📥 批量导入单词 (支持 Excel / 剪贴板 / CSV)
+              </n-button>
+              <n-button
+                v-if="activeGroup !== 'all' && activeGroup !== '通用词汇'"
+                size="small"
+                type="error"
+                ghost
+                @click="promptDeleteGroup(activeGroup)"
+                id="btnDeleteEmptyGroup"
+              >
+                🗑️ 删除此空分组
               </n-button>
             </div>
           </div>
@@ -527,6 +554,59 @@
         </div>
       </div>
     </n-modal>
+
+    <!-- 弹窗 6: 删除/解散分组 -->
+    <n-modal
+      v-model:show="showDeleteGroupModal"
+      preset="card"
+      title="🗑️ 删除词库分组"
+      style="width: 440px; max-width: 90vw;"
+    >
+      <div>
+        <p style="font-size:13px; color:var(--text-main); margin-bottom:12px; line-height:1.5;">
+          确定要删除分组 <strong>「{{ groupToDelete }}」</strong> 吗？<br/>
+          该分组下当前共有 <strong style="color:var(--primary);">{{ groupWordsCount }}</strong> 个单词。
+        </p>
+
+        <div style="background:var(--bg-sidebar); border:1px solid var(--border-color); border-radius:6px; padding:10px 12px; margin-bottom:14px;">
+          <div style="font-size:12px; font-weight:600; margin-bottom:8px; color:var(--text-main);">
+            请选择对组内 {{ groupWordsCount }} 个单词的处理方式：
+          </div>
+
+          <label style="display:flex; align-items:flex-start; gap:8px; margin-bottom:10px; cursor:pointer; font-size:12px;">
+            <input type="radio" v-model="deleteGroupAction" value="dissolve" name="delGroupOpt" id="radioDelGroupDissolve" style="margin-top:2px;" />
+            <div>
+              <strong>仅解散该分组（推荐）</strong>
+              <div style="color:var(--text-muted); font-size:11px; margin-top:2px;">
+                保留组内单词，将它们移入「通用词汇」，单词不会从词库丢失。
+              </div>
+            </div>
+          </label>
+
+          <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:12px;">
+            <input type="radio" v-model="deleteGroupAction" value="deleteAll" name="delGroupOpt" id="radioDelGroupDeleteAll" style="margin-top:2px;" />
+            <div>
+              <strong style="color:var(--danger);">彻底删除分组及组内全部单词</strong>
+              <div style="color:var(--text-muted); font-size:11px; margin-top:2px;">
+                将这 {{ groupWordsCount }} 个单词同时从词库中彻底移除（不可恢复）。
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <n-button size="small" @click="showDeleteGroupModal = false">取消</n-button>
+          <n-button
+            type="error"
+            size="small"
+            id="btnConfirmDeleteGroup"
+            @click="handleConfirmDeleteGroup"
+          >
+            确认删除
+          </n-button>
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
 
@@ -582,7 +662,28 @@ const editingWord = ref(null);
 const editingTargetGroup = ref('');
 
 const showPresetModal = ref(false);
-const customGroups = ref(new Set());
+
+// 删除分组状态
+const showDeleteGroupModal = ref(false);
+const groupToDelete = ref('');
+const groupWordsCount = ref(0);
+const deleteGroupAction = ref('dissolve'); // 'dissolve' or 'deleteAll'
+
+function getSavedCustomGroups() {
+  try {
+    const raw = localStorage.getItem('dictation_custom_groups');
+    if (raw) return new Set(JSON.parse(raw));
+  } catch (e) {}
+  return new Set();
+}
+
+function saveCustomGroups() {
+  try {
+    localStorage.setItem('dictation_custom_groups', JSON.stringify(Array.from(customGroups.value)));
+  } catch (e) {}
+}
+
+const customGroups = ref(getSavedCustomGroups());
 
 function cleanId(str) {
   return (str || '').replace(/\s+/g, '_');
@@ -598,9 +699,6 @@ const allGroups = computed(() => {
   customGroups.value.forEach(g => {
     if (g) set.add(g);
   });
-  if (activeGroup.value && activeGroup.value !== 'all') {
-    set.add(activeGroup.value);
-  }
   return Array.from(set);
 });
 
@@ -618,10 +716,6 @@ const groupStats = computed(() => {
       map.set(g, 0);
     }
   });
-  // 3. 当前激活选中的分组如果不在统计中也纳入
-  if (activeGroup.value && activeGroup.value !== 'all' && !map.has(activeGroup.value)) {
-    map.set(activeGroup.value, 0);
-  }
   return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
 });
 
@@ -681,10 +775,81 @@ function handleCreateGroup() {
   const nextSet = new Set(customGroups.value);
   nextSet.add(name);
   customGroups.value = nextSet;
+  saveCustomGroups();
   activeGroup.value = name;
   newGroupName.value = '';
   showNewGroupModal.value = false;
   message.success(`已创建并切换至新分组「${name}」！勾选单词后点击“设为分组”即可归入`);
+}
+
+function promptDeleteGroup(groupName) {
+  if (!groupName || groupName === 'all' || groupName === '通用词汇') {
+    message.warning('系统内置默认分组不可删除');
+    return;
+  }
+  groupToDelete.value = groupName;
+  const count = state.library.words.filter(w => (w.group || '通用词汇').trim() === groupName).length;
+  groupWordsCount.value = count;
+  deleteGroupAction.value = 'dissolve';
+
+  if (count === 0) {
+    doDeleteEmptyGroup(groupName);
+  } else {
+    showDeleteGroupModal.value = true;
+  }
+}
+
+function doDeleteEmptyGroup(grp) {
+  customGroups.value.delete(grp);
+  customGroups.value = new Set(customGroups.value);
+  saveCustomGroups();
+  if (activeGroup.value === grp) {
+    activeGroup.value = 'all';
+  }
+  message.success(`已删除空分组「${grp}」！`);
+}
+
+async function handleConfirmDeleteGroup() {
+  const grp = groupToDelete.value;
+  if (!grp) return;
+
+  if (deleteGroupAction.value === 'deleteAll') {
+    const wordsToDelete = state.library.words.filter(w => (w.group || '通用词汇').trim() === grp);
+    state.library.words = state.library.words.filter(w => (w.group || '通用词汇').trim() !== grp);
+
+    const newSelected = new Set(selectedIds.value);
+    wordsToDelete.forEach(w => newSelected.delete(w.id));
+    selectedIds.value = newSelected;
+
+    if (db && typeof db.delete === 'function') {
+      for (const w of wordsToDelete) {
+        await db.delete('words', w.id);
+      }
+    }
+    message.success(`已彻底删除分组「${grp}」及内部 ${wordsToDelete.length} 个单词！`);
+  } else {
+    const updated = [];
+    state.library.words.forEach(w => {
+      if ((w.group || '通用词汇').trim() === grp) {
+        w.group = '通用词汇';
+        w.updatedAt = Date.now();
+        updated.push(w);
+      }
+    });
+    if (db && typeof db.bulkPut === 'function' && updated.length > 0) {
+      await db.bulkPut('words', updated);
+    }
+    message.success(`已解散分组「${grp}」，内部 ${updated.length} 个单词已保留并转入「通用词汇」！`);
+  }
+
+  customGroups.value.delete(grp);
+  customGroups.value = new Set(customGroups.value);
+  saveCustomGroups();
+
+  if (activeGroup.value === grp) {
+    activeGroup.value = 'all';
+  }
+  showDeleteGroupModal.value = false;
 }
 
 function openBatchSetGroupModal() {
@@ -832,6 +997,8 @@ async function handleClearLib() {
   state.library.words = [];
   selectedIds.value = new Set();
   activeGroup.value = 'all';
+  customGroups.value = new Set();
+  saveCustomGroups();
   await db.clear('words');
   message.info('本地词库已清空');
 }
@@ -924,6 +1091,7 @@ async function handleConfirmImport() {
       customGroups.value.add(w.group);
     }
   });
+  saveCustomGroups();
 
   if (db && typeof db.bulkPut === 'function') {
     await db.bulkPut('words', wordsToAdd);
@@ -1013,6 +1181,9 @@ function handleDownloadCsvTemplate() {
 }
 
 .group-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   white-space: nowrap;
   font-size: 11px;
   padding: 3px 8px;
@@ -1035,6 +1206,52 @@ function handleDownloadCsvTemplate() {
   color: #ffffff;
   border-color: var(--primary);
   font-weight: 600;
+}
+
+.pill-del-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 50%;
+  color: var(--text-light);
+  margin-left: 2px;
+  transition: all 0.15s ease;
+}
+
+.pill-del-icon:hover {
+  background: #faeceb;
+  color: var(--danger);
+  font-weight: bold;
+}
+
+.group-pill-btn.active .pill-del-icon {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.group-pill-btn.active .pill-del-icon:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.btn-delete-group-inline {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--danger);
+  font-size: 10.5px;
+  padding: 1px 6px;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-group-inline:hover {
+  background: #faeceb;
+  border-color: var(--danger);
 }
 
 .native-search-input {

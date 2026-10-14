@@ -1,7 +1,7 @@
 {
   "name": "dictationsheetgen",
-  "version": "2.2.8",
-  "description": "中小学英语默写纸生成器。采用 Vue 3 + Naive UI 现代架构，支持离线单文件运行、四线三格排版、句子挖空、三年级字母专项默写、Excel/CSV/剪贴板表格智能导入与本地离线词库（支持按年级/单元分组管理、完全中文化与首屏干净空白输入体验）。",
+  "version": "2.2.9",
+  "description": "中小学英语默写纸生成器。采用 Vue 3 + Naive UI 现代架构，支持离线单文件运行、四线三格排版、句子挖空、三年级字母专项默写、Excel/CSV/剪贴板表格智能导入与本地离线词库（支持按年级/单元分组管理、分组解散与彻底删除、完全中文化与首屏干净空白输入体验）。",
   "main": "test_acceptance.js",
   "directories": {
     "doc": "docs"
@@ -20,7 +20,8 @@
     "test:i18n": "node test_popconfirm_i18n.js",
     "test:startup": "node test_empty_startup.js",
     "test:excel": "node test_excel_import.js",
-    "test:all": "node test_acceptance.js && node test_phase2.js && node test_phase3.js && node test_alphabet.js && node test_architecture_fix.js && node test_cloze_features.js && node test_word_grouping.js && node test_popconfirm_i18n.js && node test_empty_startup.js && node test_excel_import.js"
+    "test:delgroup": "node test_delete_group.js",
+    "test:all": "node test_acceptance.js && node test_phase2.js && node test_phase3.js && node test_alphabet.js && node test_architecture_fix.js && node test_cloze_features.js && node test_word_grouping.js && node test_popconfirm_i18n.js && node test_empty_startup.js && node test_excel_import.js && node test_delete_group.js"
   },
   "repository": {
     "type": "git",
