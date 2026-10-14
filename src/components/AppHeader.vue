@@ -287,9 +287,9 @@ function handleResetDefaults() {
 }
 
 .header-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 7px;
   object-fit: contain;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
