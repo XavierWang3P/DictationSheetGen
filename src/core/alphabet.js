@@ -65,8 +65,7 @@ export function generateAlphabetSequenceItems(options = {}) {
     }
 
     if (subMode === 'full') {
-      const typeLabel = caseStyle === 'upper' ? u : (caseStyle === 'lower' ? l : `${u}${l}`);
-      promptZh = `第 ${letterIdx + 1} 字母 (${typeLabel})`;
+      promptZh = `第 ${letterIdx + 1} 字母`;
     } else if (subMode === 'gap') {
       const isBlank = blankIndices.has(letterIdx);
       if (isBlank) {
@@ -81,6 +80,8 @@ export function generateAlphabetSequenceItems(options = {}) {
     return createDraftItem({
       id: generateId('alpha'),
       type: 'word',
+      questionType: 'alphabet',
+      alphabetType: 'sequence',
       en: targetEn,
       zh: promptZh,
       phonetic: '',
@@ -92,7 +93,8 @@ export function generateAlphabetSequenceItems(options = {}) {
         targetEn,
         isBlank: subMode === 'gap' ? blankIndices.has(letterIdx) : (subMode === 'full' ? true : false),
         caseStyle,
-        subMode
+        subMode,
+        rowMode: Number(options.rowMode) === 4 ? 4 : 3
       }
     });
   });
@@ -104,13 +106,15 @@ export function generateAlphabetSequenceItems(options = {}) {
  * @param {number} options.count 题量 (默认 9)
  * @param {string} options.caseStyle 'upper' | 'lower' | 'pair' | 'mix'
  * @param {string} options.neighborType 'both' (左右两邻) | 'middle' (中间字母) | 'pre' | 'post' | 'random'
+ * @param {string} options.layoutStyle 'right-2col' (右侧四线格，每行2题) | 'bottom-4col' (下方四线格，每行4题)
  * @returns {Array} DraftItem 数组
  */
 export function generateLetterNeighborsItems(options = {}) {
   const {
     count = 9,
     caseStyle = 'upper',
-    neighborType = 'both'
+    neighborType = 'both',
+    layoutStyle = null
   } = options;
 
   // 可作为中间已知字母的索引：1 (B/b) 到 24 (Y/y)
@@ -165,18 +169,26 @@ export function generateLetterNeighborsItems(options = {}) {
       targetEn = nextChar;
     }
 
+    const columns = layoutStyle === 'bottom-4col' ? 4 : (layoutStyle === 'right-2col' ? 2 : undefined);
+    const gridPosition = layoutStyle === 'bottom-4col' ? 'below' : (layoutStyle === 'right-2col' ? 'right' : undefined);
+
     return createDraftItem({
       id: generateId('neighbor'),
       type: 'word',
+      questionType: 'alphabet',
+      alphabetType: 'neighbor',
       en: targetEn,
       zh: promptZh,
+      prompt: promptZh,
       phonetic: '',
+      layout: (columns && gridPosition) ? { columns, gridPosition } : {},
       neighborData: {
         type,
         midChar,
         prevChar,
         nextChar,
-        curCase
+        curCase,
+        layoutStyle
       }
     });
   });
@@ -187,12 +199,14 @@ export function generateLetterNeighborsItems(options = {}) {
  * @param {Object} options
  * @param {number} options.count 题量 (默认 9)
  * @param {string} options.direction 'upper_to_lower' (给大写写小写) | 'lower_to_upper' (给小写写大写) | 'random_switch' (混合互换) | 'pair_write' (写大小写对)
+ * @param {string} options.layoutStyle 'right-2col' (右侧四线格，每行2题) | 'bottom-4col' (下方四线格，每行4题)
  * @returns {Array} DraftItem 数组
  */
 export function generateCaseConversionItems(options = {}) {
   const {
     count = 9,
-    direction = 'upper_to_lower'
+    direction = 'upper_to_lower',
+    layoutStyle = null
   } = options;
 
   const allIndices = Array.from({ length: 26 }, (_, i) => i);
@@ -216,27 +230,36 @@ export function generateCaseConversionItems(options = {}) {
     let targetEn = '';
 
     if (dir === 'upper_to_lower') {
-      promptZh = `写小写:  ${u}  ➔  ___`;
+      promptZh = `${u} 的小写`;
       targetEn = l;
     } else if (dir === 'lower_to_upper') {
-      promptZh = `写大写:  ${l}  ➔  ___`;
+      promptZh = `${l} 的大写`;
       targetEn = u;
     } else if (dir === 'pair_write') {
-      promptZh = `大小写:  ${u}  ➔  ___`;
+      promptZh = `${u} 的大小写`;
       targetEn = `${u} ${l}`;
     }
+
+    const columns = layoutStyle === 'bottom-4col' ? 4 : (layoutStyle === 'right-2col' ? 2 : undefined);
+    const gridPosition = layoutStyle === 'bottom-4col' ? 'below' : (layoutStyle === 'right-2col' ? 'right' : undefined);
 
     return createDraftItem({
       id: generateId('case'),
       type: 'word',
+      questionType: 'alphabet',
+      alphabetType: 'case',
       en: targetEn,
       zh: promptZh,
+      prompt: promptZh,
       phonetic: '',
+      layout: (columns && gridPosition) ? { columns, gridPosition } : {},
       caseData: {
         dir,
         upper: u,
         lower: l,
-        targetEn
+        sourceChar: (dir === 'lower_to_upper') ? l : u,
+        targetChar: targetEn,
+        layoutStyle
       }
     });
   });

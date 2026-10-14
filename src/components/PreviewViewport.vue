@@ -38,6 +38,49 @@
       </div>
     </div>
 
+    <!-- 排版检测助手横幅 (当一页多份题目溢出到第二页时提示) -->
+    <div
+      v-if="overflowDetected"
+      class="layout-assistant-banner no-print"
+      id="layoutAssistantBanner"
+      data-debug-id="P-004"
+      data-debug-name="排版检测助手提示条"
+    >
+      <div class="assistant-content">
+        <AppIcon name="alert-circle" :size="16" class="assistant-icon" />
+        <span class="assistant-text">
+          <strong>排版助手提示：</strong>当前每联 {{ state.draft.items.length }} 题超出一联空间，已溢出到第 {{ layout.totalPages || layout.pages?.length || 1 }} 页。建议减少每页份数以保证裁切为单页。
+        </span>
+      </div>
+      <div class="assistant-actions">
+        <button
+          v-if="state.draft.settings.copiesPerPage === 3"
+          type="button"
+          class="assistant-btn"
+          id="btnSwitchTo2Copies"
+          @click="switchToCopies(2)"
+        >
+          切换为一页 2 份
+        </button>
+        <button
+          type="button"
+          class="assistant-btn"
+          id="btnSwitchTo1Copy"
+          @click="switchToCopies(1)"
+        >
+          切换为全页 1 份
+        </button>
+        <button
+          type="button"
+          class="assistant-btn primary"
+          id="btnAutoFitCopies"
+          @click="autoFitCopies"
+        >
+          ⚡ 一键自动适配单页
+        </button>
+      </div>
+    </div>
+
     <!-- 纸张展示容器 -->
     <div class="paper-stage" id="paperStage" ref="stageRef" data-debug-id="P-002" data-debug-name="试卷纸张渲染舞台">
       <div
@@ -62,6 +105,30 @@ const stageRef = ref(null);
 const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
 const sheetHtml = computed(() => renderPracticeSheetHtml(layout.value, state.draft.settings));
 const renderedPageCount = computed(() => layout.value.totalPages * (state.draft.settings.showAnswerPage ? 2 : 1));
+
+const overflowDetected = computed(() => {
+  if (state.draft.settings.autoOptimizeCopies === false) return false;
+  const copies = Number(state.draft.settings.copiesPerPage) || 1;
+  const total = layout.value?.totalPages || layout.value?.pages?.length || 1;
+  return copies > 1 && total > 1;
+});
+
+function switchToCopies(count) {
+  state.draft.settings.copiesPerPage = count;
+}
+
+function autoFitCopies() {
+  const currentCopies = Number(state.draft.settings.copiesPerPage) || 1;
+  if (currentCopies === 3) {
+    const test2 = computePageLayout(state.draft.items, { ...state.draft.settings, copiesPerPage: 2 });
+    const total2 = test2.totalPages || test2.pages?.length || 1;
+    if (total2 === 1) {
+      state.draft.settings.copiesPerPage = 2;
+      return;
+    }
+  }
+  state.draft.settings.copiesPerPage = 1;
+}
 
 const modeLabel = computed(() => {
   if (state.draft.settings.dictMode === 'alphabet') return '三年级字母专项';

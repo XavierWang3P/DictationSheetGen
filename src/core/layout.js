@@ -137,6 +137,9 @@ export const DEFAULT_SETTINGS = {
   fontFamilyZh: "'KaiTi', '楷体', STKaiti, serif",
   fontFamilyEn: 'Arial, sans-serif',
   alphabetGuideFont: DEFAULT_ALPHABET_GUIDE_FONT,
+  alphabetLayout: 'auto',
+  alphabet26Rows: 3,
+  autoOptimizeCopies: true,
   letterSpacing: '0',
   showAnswerPage: false
 };
@@ -317,7 +320,7 @@ export function createNeighborPracticeGridSvg(item, options = {}) {
   });
 }
 
-// 字母大小写转换双联书写格
+// 字母大小写转换书写格
 export function createCasePracticeGridSvg(item, options = {}) {
   const {
     gridHeightMm = 11,
@@ -325,11 +328,32 @@ export function createCasePracticeGridSvg(item, options = {}) {
     lineColor = '#cbd5e1',
     alphabetGuideFont = DEFAULT_ALPHABET_GUIDE_FONT
   } = options;
-  const cData = item.caseData || {};
+  const cData = item?.caseData || {};
   const dir = cData.dir || 'upper_to_lower';
   const u = cData.upper || '';
   const l = cData.lower || '';
   const sourceChar = (dir === 'lower_to_upper') ? l : u;
+  const targetChar = (dir === 'lower_to_upper') ? u : l;
+  const isRightOrBottom = item?.layout?.gridPosition === 'right' || item?.layout?.gridPosition === 'below' || cData.layoutStyle === 'right-2col' || cData.layoutStyle === 'bottom-4col';
+
+  if (isRightOrBottom) {
+    const lineMarkup = `
+      <line x1="0" y1="2.0" x2="100" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="0" y1="8.5" x2="100" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="0" y1="16.5" x2="100" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
+      <line x1="0" y1="23.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+      <line x1="100" y1="2.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+    `;
+    const guideText = options.isTeacher ? (cData.targetChar || targetChar) : '';
+    return createAlphabetGridShell({
+      viewBoxWidth: 100,
+      gridHeightMm,
+      lineMarkup,
+      alphabetGuideFont,
+      guides: guideText ? [{ xPercent: 50, text: guideText }] : []
+    });
+  }
 
   const lineMarkup = `
       <line x1="0" y1="2.0" x2="95" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
@@ -790,11 +814,13 @@ export function computePageLayout(items, settings) {
     capacity: userCapacity,
     copiesPerPage,
     totalPages: pageChunks.length,
+    pageCount: pageChunks.length,
     totalItems: migratedItems.length,
     gridUnits,
     contentWidthMm,
     layoutDefaults: s.layoutDefaults,
-    pageChunks
+    pageChunks,
+    pages: pageChunks
   };
 }
 
@@ -919,11 +945,19 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
       if (item.neighborData || item.id?.startsWith('neighbor') || (item.zh && item.zh.includes('邻居'))) {
         gridHtml = createNeighborPracticeGridSvg(item, { gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', alphabetGuideFont: s.alphabetGuideFont });
       } else if (item.caseData || item.id?.startsWith('case')) {
-        gridHtml = createCasePracticeGridSvg(item, { gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', alphabetGuideFont: s.alphabetGuideFont });
+        gridHtml = createCasePracticeGridSvg(item, { gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', alphabetGuideFont: s.alphabetGuideFont, isTeacher: !!s._teacherMode });
       } else {
         gridHtml = createPracticeGridSvg({ gridStyle: s.gridStyle, gridLines: s.gridLinesPerWord || 1, gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: s.showVerticalBorder });
       }
-      return { promptHtml: `<span class="meaning-text entry-zh-hint">${escapeHtml(promptText)}</span>`, practiceHtml: gridHtml, classes: ['is-alphabet-card'] };
+      const isHorizontalGrid = (item.layout?.gridPosition === 'right') ||
+        (item.caseData?.layoutStyle === 'right-2col') ||
+        (item.neighborData?.layoutStyle === 'right-2col') ||
+        (!item.layout?.gridPosition && s.alphabetLayout === 'right-2col' && item.layout?.gridPosition !== 'below');
+      return {
+        promptHtml: `<span class="meaning-text entry-zh-hint">${escapeHtml(promptText)}</span>`,
+        practiceHtml: gridHtml,
+        classes: ['is-alphabet-card', isHorizontalGrid ? 'meaning-left' : '']
+      };
     },
     renderChoice(item) {
       if (teacherMode) {
@@ -1001,12 +1035,23 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   let alpha26RowsHtml = '';
 
   if (isAlpha26) {
-    const effectiveGridHeight = (copies > 1) ? 11 : 18;
-    const rows = [
-      chunk.items.slice(0, 9),
-      chunk.items.slice(9, 18),
-      chunk.items.slice(18, 26)
-    ];
+    const rowMode = (chunk.items[0]?.item?.alphaData?.rowMode === 4 || s.alphabet26Rows === 4) ? 4 : 3;
+    const effectiveGridHeight = (rowMode === 4)
+      ? ((copies > 1) ? 9.5 : 14)
+      : ((copies > 1) ? 11 : 18);
+
+    const rows = (rowMode === 4)
+      ? [
+          chunk.items.slice(0, 7),
+          chunk.items.slice(7, 14),
+          chunk.items.slice(14, 21),
+          chunk.items.slice(21, 26)
+        ]
+      : [
+          chunk.items.slice(0, 9),
+          chunk.items.slice(9, 18),
+          chunk.items.slice(18, 26)
+        ];
 
     rows.forEach((rowItems, rIdx) => {
       let cellsHtml = '';
@@ -1040,7 +1085,25 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
         `;
       });
 
-      if (rIdx === 2) {
+      if (rowMode === 4 && rIdx === 3) {
+        for (let d = 0; d < 2; d++) {
+          cellsHtml += `
+            <div class="alpha-26-cell alpha-dummy-cell">
+              <div class="alpha-cell-top">
+                <span class="alpha-cell-hint" style="color:#cbd5e1;">★</span>
+              </div>
+              <div class="alpha-cell-grid">
+                ${createSingleAlphabetGridSvg({
+                  gridHeightMm: effectiveGridHeight,
+                  strokeWidth: s.gridStroke || 0.85,
+                  lineColor: s.gridColor || '#cbd5e1',
+                  alphabetGuideFont: s.alphabetGuideFont
+                })}
+              </div>
+            </div>
+          `;
+        }
+      } else if (rowMode === 3 && rIdx === 2) {
         cellsHtml += `
           <div class="alpha-26-cell alpha-dummy-cell">
             <div class="alpha-cell-top">
@@ -1075,13 +1138,16 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
       const zhMeaningHtml = rendered.promptHtml || '';
       const practiceGridHtml = rendered.practiceHtml || '';
 
+      const isAlphabetHorizontal = (item.neighborData || item.caseData || qType === 'alphabet') &&
+        (item.layout?.gridPosition === 'right' || item.caseData?.layoutStyle === 'right-2col' || item.neighborData?.layoutStyle === 'right-2col' || (!item.layout?.gridPosition && s.alphabetLayout === 'right-2col' && item.layout?.gridPosition !== 'below'));
+
       const cardClasses = [
         'word-card',
         'word-entry-item',
         `type-${qType}`,
         ...(rendered.classes || []),
         (item.neighborData || item.id?.startsWith('neighbor') || (item.zh && item.zh.includes('邻居'))) ? 'is-neighbor-card' : '',
-        (s.zhPosition === 'left' && qType === 'word-dictation') ? 'meaning-left' : '',
+        ((s.zhPosition === 'left' && qType === 'word-dictation') || isAlphabetHorizontal) ? 'meaning-left' : '',
         isFullWidth ? 'is-full-width' : ''
       ].filter(Boolean).join(' ');
 

@@ -353,7 +353,13 @@ export function resolveQuestionColumns(item, settings = {}) {
   if (type === 'word-dictation') return defaults.wordDictationColumns;
   if (type === 'sentence-dictation') return defaults.sentenceDictationColumns;
   if (type === 'english-composition') return defaults.englishCompositionColumns || 1;
-  if (type === 'alphabet') return Math.min(5, Math.max(1, Number(settings.columns) || 3));
+  if (type === 'alphabet') {
+    if (item?.neighborData?.layoutStyle === 'bottom-4col' || item?.caseData?.layoutStyle === 'bottom-4col') return 4;
+    if (item?.neighborData?.layoutStyle === 'right-2col' || item?.caseData?.layoutStyle === 'right-2col') return 2;
+    if (settings.alphabetLayout === 'bottom-4col') return 4;
+    if (settings.alphabetLayout === 'right-2col') return 2;
+    return Math.min(5, Math.max(1, Number(settings.columns) || 3));
+  }
 
   let value = 'auto';
   if (type === 'sentence-cloze') value = defaults.sentenceClozeColumns;

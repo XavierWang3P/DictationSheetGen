@@ -173,6 +173,14 @@
         </div>
 
         <div class="form-row">
+          <label>排版检测助手</label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="checkAutoOptimizeCopies" v-model="state.draft.settings.autoOptimizeCopies" />
+            当单联题目溢出至第二页时智能提示
+          </label>
+        </div>
+
+        <div class="form-row">
           <label>页边距 (mm)</label>
           <div class="form-range-wrap">
             <input
@@ -272,6 +280,23 @@
             <option :value="3">每行3题（不建议）</option>
             <option :value="4">每行4题（不建议）</option>
             <option :value="5">每行5题（不建议）</option>
+          </select>
+        </div>
+
+        <div class="form-row layout-default-row">
+          <label for="alphabetLayout">字母邻居与转换默认</label>
+          <select id="alphabetLayout" class="form-select" v-model="state.draft.settings.alphabetLayout">
+            <option value="auto">自动（继承页面列数：每行3题）</option>
+            <option value="right-2col">右侧四线格（每行2题，推荐）</option>
+            <option value="bottom-4col">下方四线格（每行4题）</option>
+          </select>
+        </div>
+
+        <div class="form-row layout-default-row">
+          <label for="alphabet26Rows">26个字母默写默认</label>
+          <select id="alphabet26Rows" class="form-select" v-model.number="state.draft.settings.alphabet26Rows">
+            <option :value="3">3 行 (3×9，含1个★占位格)</option>
+            <option :value="4">4 行 (4×7，含2个★占位格，单格更宽)</option>
           </select>
         </div>
 

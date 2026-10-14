@@ -301,6 +301,16 @@
           <!-- 子面板 1: 26个字母默写 -->
           <div v-if="alphabetActiveType === 'sequence'" class="alpha-sub-config" id="paneAlphaSeq">
             <div class="form-row-compact">
+              <span class="sub-label">排版行数:</span>
+              <div class="segmented-control mini">
+                <input type="radio" id="alphaRows3" :value="3" v-model="alphaSeqConfig.rowMode" />
+                <label for="alphaRows3">3 行 (3×9)</label>
+                <input type="radio" id="alphaRows4" :value="4" v-model="alphaSeqConfig.rowMode" />
+                <label for="alphaRows4">4 行 (4×7)</label>
+              </div>
+            </div>
+
+            <div class="form-row-compact">
               <span class="sub-label">大小写样式:</span>
               <div class="segmented-control mini">
                 <input type="radio" id="alphaCasePair" value="pair" v-model="alphaSeqConfig.caseStyle" />
@@ -316,7 +326,7 @@
               <span class="sub-label">默写形式:</span>
               <div class="segmented-control mini">
                 <input type="radio" id="alphaSubFull" value="full" v-model="alphaSeqConfig.subMode" />
-                <label for="alphaSubFull">3行完整四线格 (全默写)</label>
+                <label for="alphaSubFull">完整四线格 (全默写)</label>
                 <input type="radio" id="alphaSubGap" value="gap" v-model="alphaSeqConfig.subMode" />
                 <label for="alphaSubGap">字母表接龙填空</label>
                 <input type="radio" id="alphaSubShuffle" value="shuffle" v-model="alphaSeqConfig.subMode" />
@@ -327,6 +337,16 @@
 
           <!-- 子面板 2: 字母左右邻居 -->
           <div v-if="alphabetActiveType === 'neighbors'" class="alpha-sub-config" id="paneAlphaNeighbors">
+            <div class="form-row-compact">
+              <span class="sub-label">排版样式:</span>
+              <div class="segmented-control mini">
+                <input type="radio" id="neighLayoutRight" value="right-2col" v-model="alphaNeighConfig.layoutStyle" />
+                <label for="neighLayoutRight">右侧四线格 (每行2题)</label>
+                <input type="radio" id="neighLayoutBottom" value="bottom-4col" v-model="alphaNeighConfig.layoutStyle" />
+                <label for="neighLayoutBottom">下方四线格 (每行4题)</label>
+              </div>
+            </div>
+
             <div class="form-row-compact">
               <span class="sub-label">题目数量:</span>
               <div class="segmented-control mini">
@@ -354,6 +374,30 @@
 
           <!-- 子面板 3: 大小写转换 -->
           <div v-if="alphabetActiveType === 'case'" class="alpha-sub-config" id="paneAlphaCase">
+            <div class="form-row-compact">
+              <span class="sub-label">排版样式:</span>
+              <div class="segmented-control mini">
+                <input type="radio" id="caseLayoutRight" value="right-2col" v-model="alphaCaseConfig.layoutStyle" />
+                <label for="caseLayoutRight">右侧四线格 (每行2题)</label>
+                <input type="radio" id="caseLayoutBottom" value="bottom-4col" v-model="alphaCaseConfig.layoutStyle" />
+                <label for="caseLayoutBottom">下方四线格 (每行4题)</label>
+              </div>
+            </div>
+
+            <div class="form-row-compact">
+              <span class="sub-label">题目数量:</span>
+              <div class="segmented-control mini">
+                <input type="radio" id="caseCount6" :value="6" v-model="alphaCaseConfig.count" />
+                <label for="caseCount6">6 题</label>
+                <input type="radio" id="caseCount8" :value="8" v-model="alphaCaseConfig.count" />
+                <label for="caseCount8">8 题 (推荐)</label>
+                <input type="radio" id="caseCount10" :value="10" v-model="alphaCaseConfig.count" />
+                <label for="caseCount10">10 题</label>
+                <input type="radio" id="caseCount12" :value="12" v-model="alphaCaseConfig.count" />
+                <label for="caseCount12">12 题</label>
+              </div>
+            </div>
+
             <div class="form-row-compact">
               <span class="sub-label">转换形式:</span>
               <div class="segmented-control mini">
@@ -659,24 +703,27 @@ function cancelEditing() {
 
 // 字母专项配置
 const alphabetActiveType = ref('sequence');
-const alphaSeqConfig = ref({ caseStyle: 'pair', subMode: 'full' });
-const alphaNeighConfig = ref({ count: 9, caseStyle: 'upper' });
-const alphaCaseConfig = ref({ direction: 'random_switch' });
+const alphaSeqConfig = ref({ caseStyle: 'pair', subMode: 'full', rowMode: 3 });
+const alphaNeighConfig = ref({ count: 9, caseStyle: 'upper', layoutStyle: 'right-2col' });
+const alphaCaseConfig = ref({ count: 8, direction: 'random_switch', layoutStyle: 'right-2col' });
 
 function handleGenerateAlphabet() {
   let newItems = [];
   if (alphabetActiveType.value === 'sequence') {
     newItems = generateAlphabetSequenceItems(alphaSeqConfig.value);
+    state.draft.settings.alphabet26Rows = Number(alphaSeqConfig.value.rowMode) === 4 ? 4 : 3;
   } else if (alphabetActiveType.value === 'neighbors') {
     newItems = generateLetterNeighborsItems({
       count: alphaNeighConfig.value.count,
       caseStyle: alphaNeighConfig.value.caseStyle,
-      neighborType: 'both'
+      neighborType: 'both',
+      layoutStyle: alphaNeighConfig.value.layoutStyle
     });
   } else if (alphabetActiveType.value === 'case') {
     newItems = generateCaseConversionItems({
-      count: 9,
-      direction: alphaCaseConfig.value.direction
+      count: alphaCaseConfig.value.count || 8,
+      direction: alphaCaseConfig.value.direction,
+      layoutStyle: alphaCaseConfig.value.layoutStyle
     });
   }
 

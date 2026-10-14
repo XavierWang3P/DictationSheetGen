@@ -13,6 +13,7 @@
 import { computed, h } from 'vue';
 import { NIcon } from 'naive-ui';
 import AddOutline from '@vicons/ionicons5/es/AddOutline';
+import AlertCircleOutline from '@vicons/ionicons5/es/AlertCircleOutline';
 import BookOutline from '@vicons/ionicons5/es/BookOutline';
 import BugOutline from '@vicons/ionicons5/es/BugOutline';
 import CheckmarkOutline from '@vicons/ionicons5/es/CheckmarkOutline';
@@ -78,6 +79,7 @@ const props = defineProps({
 });
 
 const iconMap = Object.freeze({
+  'alert-circle': AlertCircleOutline,
   plus: AddOutline,
   book: BookOutline,
   search: SearchOutline,
