@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme-overrides="themeOverrides">
+  <n-config-provider :locale="zhCN" :date-locale="dateZhCN" :theme-overrides="themeOverrides">
     <n-message-provider>
       <n-dialog-provider>
         <div class="app-layout">
@@ -45,7 +45,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue';
-import { NConfigProvider, NMessageProvider, NDialogProvider } from 'naive-ui';
+import { NConfigProvider, NMessageProvider, NDialogProvider, zhCN, dateZhCN } from 'naive-ui';
 import { state, loadSavedState, loadLibraryFromDB } from './stores/appStore.js';
 import { computePageLayout, createDraftItem } from './core/layout.js';
 import AppHeader from './components/AppHeader.vue';

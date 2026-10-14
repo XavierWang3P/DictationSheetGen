@@ -2,6 +2,16 @@
 
 本项目遵循 [Semantic Versioning 2.0.0](https://semver.org/lang/zh-CN/) 语义化版本规范。
 
+## [2.2.6] - 2026-10-14
+
+### UI 全局组件中文化专项优化 (Complete UI Localization)
+- **提示框确认与取消按钮完全中文化**：
+  - 修复 `<n-config-provider>` 默认英文语言包问题，全局注入 `zhCN` 与 `dateZhCN` 完整中文语言包；
+  - 针对全站所有的 `<n-popconfirm>` 提示浮层（清空试卷、清空词库、恢复默认），显式配置 `positive-text="确定"` 与 `negative-text="取消"`；
+  - 彻底将提示框中残留的 `Cancel` / `Confirm` 英文按钮替换为规范的中文 `取消` / `确定`。
+- **新增端到端提示框本地化自动化测试 (`test_popconfirm_i18n.js`)**：
+  - 自动化验证真实 DOM 中提示框的呼出与按钮文本，确保全站组件本地化体验 100% 严谨一致。
+
 ## [2.2.5] - 2026-10-14
 
 ### 词库年级与单元分组管理专项升级 (Vocabulary Library Grade & Unit Grouping)

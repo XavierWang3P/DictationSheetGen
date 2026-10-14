@@ -102,7 +102,11 @@
           <n-button size="small" id="btnLibExport" @click="handleExportLib">
             导出
           </n-button>
-          <n-popconfirm @positive-click="handleClearLib">
+          <n-popconfirm
+            @positive-click="handleClearLib"
+            positive-text="确定"
+            negative-text="取消"
+          >
             <template #trigger>
               <n-button size="small" type="error" ghost id="btnLibClear">
                 清空

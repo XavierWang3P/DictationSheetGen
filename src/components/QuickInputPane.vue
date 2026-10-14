@@ -341,7 +341,11 @@
           <n-button size="small" id="btnLoadDefaultSample" @click="handleLoadDefault">
             默认9词
           </n-button>
-          <n-popconfirm @positive-click="handleClear">
+          <n-popconfirm
+            @positive-click="handleClear"
+            positive-text="确定"
+            negative-text="取消"
+          >
             <template #trigger>
               <n-button size="small" type="error" ghost id="btnClearWords">
                 清空试卷

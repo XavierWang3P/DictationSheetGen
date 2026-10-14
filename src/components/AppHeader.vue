@@ -35,7 +35,11 @@
       </n-button>
       <input type="file" ref="fileInputRef" id="fileImportInput" accept=".json,.txt" style="display:none;" @change="handleFileChange" />
 
-      <n-popconfirm @positive-click="handleResetDefaults">
+      <n-popconfirm
+        @positive-click="handleResetDefaults"
+        positive-text="确定"
+        negative-text="取消"
+      >
         <template #trigger>
           <n-button size="small" type="error" ghost id="btnResetDefaults" title="恢复为默认测试数据与版式参数">
             ↺ 恢复默认
