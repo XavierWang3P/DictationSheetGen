@@ -1018,12 +1018,14 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
         const cellLabel = (aData.caseStyle === 'upper')
           ? (aData.upper || '')
           : (aData.caseStyle === 'lower' ? (aData.lower || '') : `${aData.upper || ''}${aData.lower || ''}`);
+        const showCellHint = s._teacherMode || (!aData.isBlank && aData.subMode === 'gap');
+        const hintHtml = showCellHint ? `<span class="alpha-cell-hint">${escapeHtml(cellLabel)}</span>` : '';
 
         cellsHtml += `
           <div class="word-card alpha-26-cell" data-id="${safeCardId}" data-debug-id="ITEM-${safeCardId}" data-debug-name="字母格 #${overallIndex} (${escapeHtml(cellLabel)})" data-debug-component="PracticeGridSvg" data-debug-file="src/core/layout.js">
             <div class="alpha-cell-top">
               <span class="word-num entry-index">${overallIndex}.</span>
-              <span class="alpha-cell-hint">${escapeHtml(cellLabel)}</span>
+              ${hintHtml}
             </div>
             <div class="alpha-cell-grid">
               ${createSingleAlphabetGridSvg({
@@ -1162,8 +1164,9 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   ` : `
     <div class="sheet-body-grid" style="
       grid-template-columns: repeat(60, minmax(0, 1fr));
-      column-gap: ${effectiveColGap}mm;
+      column-gap: 0;
       row-gap: ${effectiveRowGap}mm;
+      --col-gap: ${effectiveColGap}mm;
     ">
       ${cardsHtml}
     </div>

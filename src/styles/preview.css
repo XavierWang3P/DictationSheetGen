@@ -142,6 +142,9 @@
   box-sizing: border-box;
   overflow: hidden;
   break-inside: avoid;
+  min-width: 0;
+  padding-left: calc(var(--col-gap, 6mm) / 2);
+  padding-right: calc(var(--col-gap, 6mm) / 2);
 }
 
 .word-card.is-full-width {
