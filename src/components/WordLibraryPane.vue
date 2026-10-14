@@ -99,6 +99,9 @@
         </div>
 
         <div style="display:flex; gap:6px; align-items:center;">
+          <n-button size="small" type="primary" ghost id="btnLibImport" @click="openImportModal" title="从 Excel / CSV / 剪贴板批量导入单词到词库">
+            📥 导入
+          </n-button>
           <n-button size="small" id="btnLibExport" @click="handleExportLib">
             导出
           </n-button>
@@ -129,7 +132,12 @@
       <div class="words-list-container" id="libWordsContainer">
         <template v-if="filteredWords.length === 0">
           <div class="empty-list-tip">
-            {{ searchQuery ? '未检索到符合条件的词汇' : (activeGroup !== 'all' ? `「${activeGroup}」分组暂无单词，可勾选单词后设置分组移入` : '本地词库为空，可从左侧试卷保存或点击导入') }}
+            {{ searchQuery ? '未检索到符合条件的词汇' : (activeGroup !== 'all' ? `「${activeGroup}」分组暂无单词，可勾选单词后设置分组移入` : '本地词库为空，可从左侧试卷保存或点击下方导入') }}
+            <div style="margin-top:10px;" v-if="!searchQuery">
+              <n-button size="small" type="primary" ghost @click="openImportModal" id="btnEmptyTipImport">
+                📥 批量导入单词 (支持 Excel / 剪贴板 / CSV)
+              </n-button>
+            </div>
           </div>
         </template>
 
@@ -345,6 +353,180 @@
         </div>
       </div>
     </n-modal>
+
+    <!-- 弹窗 5: 批量导入词库 (Excel / CSV / 剪贴板 / 文本) -->
+    <n-modal
+      v-model:show="showImportModal"
+      preset="card"
+      title="📥 批量导入单词库 (支持 Excel / 剪贴板 / CSV)"
+      style="width: 540px; max-width: 95vw;"
+    >
+      <div class="import-modal-content">
+        <!-- 格式说明与模板下载卡片 -->
+        <div class="import-tips-banner">
+          <div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px;">
+            📊 支持的表格格式规范（可含表头，系统将自动识别）：
+          </div>
+          <div style="font-size:11.5px; color:var(--text-main); line-height:1.6;">
+            • <strong>3 列格式（强烈推荐）</strong>：<code>[年级与单元] [英文单词] [中文释义]</code>，将自动按每行的年级和单元自动建组归类！<br/>
+            • <strong>2 列格式</strong>：<code>[英文单词] [中文释义]</code>，将统一归入下方所选的默认单元分组中。
+          </div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button
+              type="button"
+              class="lib-group-action-btn"
+              id="btnDownloadExcelTpl"
+              @click="handleDownloadExcelTemplate"
+              title="下载带有示例的 Excel 模版文件 (.xlsx)"
+            >
+              📥 下载 Excel 模板 (.xlsx)
+            </button>
+            <button
+              type="button"
+              class="lib-group-action-btn"
+              id="btnDownloadCsvTpl"
+              @click="handleDownloadCsvTemplate"
+              title="下载通用 CSV 格式模板 (.csv)"
+            >
+              📥 下载 CSV 模板 (.csv)
+            </button>
+          </div>
+        </div>
+
+        <!-- 导入模式切换 (文件上传 vs 复制粘贴) -->
+        <div style="display:flex; gap:8px; margin-top:12px; margin-bottom:10px;">
+          <button
+            type="button"
+            class="tab-switch-pill"
+            :class="{ active: importActiveTab === 'file' }"
+            id="tabImportFile"
+            @click="importActiveTab = 'file'"
+          >
+            📁 上传 Excel / CSV 文件
+          </button>
+          <button
+            type="button"
+            class="tab-switch-pill"
+            :class="{ active: importActiveTab === 'paste' }"
+            id="tabImportPaste"
+            @click="importActiveTab = 'paste'"
+          >
+            📋 从 Excel 直接复制粘贴
+          </button>
+        </div>
+
+        <!-- A: 文件上传区域 -->
+        <div v-if="importActiveTab === 'file'" class="file-upload-box" @click="triggerImportFileInput">
+          <input
+            type="file"
+            ref="importFileRef"
+            id="fileLibImportInput"
+            accept=".xlsx,.xls,.csv,.txt,.json"
+            style="display:none;"
+            @change="handleFileSelected"
+          />
+          <div style="font-size:28px; margin-bottom:6px;">📊</div>
+          <div style="font-size:13px; font-weight:600; color:var(--primary);">
+            {{ importFileName || '点击选择 Excel / CSV 文件，或将文件拖至此处' }}
+          </div>
+          <div style="font-size:11px; color:var(--text-light); margin-top:4px;">
+            支持 .xlsx, .xls, .csv, .txt 或 .json 备份文件
+          </div>
+        </div>
+
+        <!-- B: 剪贴板文本粘贴区域 -->
+        <div v-else>
+          <textarea
+            v-model="importPastedText"
+            id="textareaPasteExcel"
+            class="native-search-input"
+            rows="6"
+            placeholder="请在此处按 Ctrl + V 粘贴从 Excel 或 WPS 选中的单元格。例如：&#10;三年级上册 Unit 1	ruler	尺子&#10;三年级上册 Unit 1	pencil	铅笔&#10;四年级上册 Unit 1	window	窗户"
+            style="width:100%; height:130px; font-size:12px; line-height:1.5; font-family:monospace; resize:vertical;"
+            @input="handlePasteInput"
+          ></textarea>
+        </div>
+
+        <!-- 默认归属单元设置 (针对两列无单元的表格) -->
+        <div style="margin-top:10px;">
+          <label style="font-size:11.5px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;">
+            若表格未标注年级单元，默认归入单元分组：
+          </label>
+          <div style="display:flex; gap:6px;">
+            <select
+              v-model="importDefaultGroup"
+              class="native-search-input"
+              id="selectImportDefaultGroup"
+              style="width:160px; font-size:12px; padding:4px 8px;"
+              @change="recalcParsedWords"
+            >
+              <option value="通用词汇">通用词汇</option>
+              <option v-for="g in allGroups" :key="g" :value="g">{{ g }}</option>
+            </select>
+            <input
+              type="text"
+              v-model="importCustomGroup"
+              id="inputImportCustomGroup"
+              placeholder="或输入新建单元（如：三年级Unit 3）"
+              class="native-search-input"
+              style="flex:1; font-size:12px;"
+              @input="onImportCustomGroupInput"
+            />
+          </div>
+        </div>
+
+        <!-- 即时解析结果预览卡片 -->
+        <div v-if="importParsedWords.length > 0" class="import-preview-box" id="importPreviewBox">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-main);">
+              🔍 成功解析 <strong>{{ importParsedWords.length }}</strong> 词 · 涵盖 <strong>{{ importDistinctGroups.length }}</strong> 个单元
+            </span>
+            <span style="font-size:11px; color:var(--accent);" v-if="importDupCount > 0">
+              ({{ importDupCount }} 条与现有词库重复，将自动去重)
+            </span>
+          </div>
+
+          <!-- 预览前 4 条数据展示 -->
+          <div class="import-preview-table-wrap">
+            <table class="import-preview-table">
+              <thead>
+                <tr>
+                  <th style="width:28px;">#</th>
+                  <th>单元分组</th>
+                  <th>英文单词</th>
+                  <th>中文释义</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(w, idx) in importParsedWords.slice(0, 4)" :key="idx">
+                  <td>{{ idx + 1 }}</td>
+                  <td><span class="preview-group-badge">{{ w.group }}</span></td>
+                  <td><strong>{{ w.en }}</strong></td>
+                  <td>{{ w.zh || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="importParsedWords.length > 4" style="text-align:center; font-size:11px; color:var(--text-muted); padding:4px 0;">
+              ... 还有剩余 {{ importParsedWords.length - 4 }} 个词汇即将导入 ...
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部控制按钮 -->
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+          <n-button size="small" @click="showImportModal = false">取消</n-button>
+          <n-button
+            type="primary"
+            size="small"
+            id="btnConfirmImportLib"
+            :disabled="importParsedWords.length === 0"
+            @click="handleConfirmImport"
+          >
+            确认导入词库 ({{ importParsedWords.length }} 词)
+          </n-button>
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
 
@@ -354,11 +536,38 @@ import { NCard, NBadge, NButton, NPopconfirm, NModal, NInput, useMessage } from 
 import { state, db } from '../stores/appStore.js';
 import { createDraftItem, PRESET_UNIT_LIBRARIES } from '../core/layout.js';
 import { detectDuplicates } from '../core/storage.js';
+import {
+  parseExcelOrCsvFile,
+  parsePastedExcelText,
+  downloadExcelTemplate,
+  downloadCsvTemplate
+} from '../core/excelParser.js';
 
 const message = useMessage();
 const searchQuery = ref('');
 const selectedIds = ref(new Set());
 const activeGroup = ref('all');
+
+// 批量导入弹窗状态
+const showImportModal = ref(false);
+const importActiveTab = ref('file'); // 'file' or 'paste'
+const importDefaultGroup = ref('通用词汇');
+const importCustomGroup = ref('');
+const importPastedText = ref('');
+const importParsedWords = ref([]);
+const importFileName = ref('');
+const importFileRef = ref(null);
+const importLoading = ref(false);
+
+const importDistinctGroups = computed(() => {
+  return [...new Set(importParsedWords.value.map(w => w.group || '通用词汇'))];
+});
+
+const importDupCount = computed(() => {
+  if (importParsedWords.value.length === 0) return 0;
+  const dupCheck = detectDuplicates(state.library.words, importParsedWords.value);
+  return dupCheck.duplicates.length;
+});
 
 // 弹窗状态
 const showNewGroupModal = ref(false);
@@ -626,6 +835,121 @@ async function handleClearLib() {
   await db.clear('words');
   message.info('本地词库已清空');
 }
+
+// 批量导入处理函数
+function openImportModal() {
+  showImportModal.value = true;
+  importActiveTab.value = 'file';
+  importDefaultGroup.value = '通用词汇';
+  importCustomGroup.value = '';
+  importPastedText.value = '';
+  importParsedWords.value = [];
+  importFileName.value = '';
+  if (importFileRef.value) {
+    importFileRef.value.value = '';
+  }
+}
+
+function triggerImportFileInput() {
+  if (importFileRef.value) {
+    importFileRef.value.click();
+  }
+}
+
+async function handleFileSelected(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  importFileName.value = file.name;
+  importLoading.value = true;
+  try {
+    const defaultGrp = (importCustomGroup.value.trim() || importDefaultGroup.value || '通用词汇').trim();
+    const words = await parseExcelOrCsvFile(file, defaultGrp);
+    importParsedWords.value = words;
+    if (words.length === 0) {
+      message.warning('未能从该文件中解析到有效单词，请检查表格内容');
+    } else {
+      message.success(`成功读取 ${words.length} 个单词！`);
+    }
+  } catch (err) {
+    console.error('File parse error:', err);
+    message.error('文件解析失败：' + (err.message || '格式不支持'));
+  } finally {
+    importLoading.value = false;
+  }
+}
+
+function handlePasteInput() {
+  const defaultGrp = (importCustomGroup.value.trim() || importDefaultGroup.value || '通用词汇').trim();
+  const words = parsePastedExcelText(importPastedText.value, defaultGrp);
+  importParsedWords.value = words;
+}
+
+function recalcParsedWords() {
+  const defaultGrp = (importCustomGroup.value.trim() || importDefaultGroup.value || '通用词汇').trim();
+  if (importActiveTab.value === 'paste') {
+    handlePasteInput();
+  } else if (importParsedWords.value.length > 0) {
+    importParsedWords.value = importParsedWords.value.map(w => ({
+      ...w,
+      group: w.hasExplicitGroup ? w.group : defaultGrp
+    }));
+  }
+}
+
+function onImportCustomGroupInput() {
+  if (importCustomGroup.value.trim()) {
+    importDefaultGroup.value = importCustomGroup.value.trim();
+  }
+  recalcParsedWords();
+}
+
+async function handleConfirmImport() {
+  if (importParsedWords.value.length === 0) return;
+
+  const dupCheck = detectDuplicates(state.library.words, importParsedWords.value);
+  const wordsToAdd = dupCheck.unique;
+
+  if (wordsToAdd.length === 0) {
+    message.warning('所导入的单词全部与现有词库重复，未添加新词');
+    showImportModal.value = false;
+    return;
+  }
+
+  // 追加到本地词库
+  state.library.words = [...state.library.words, ...wordsToAdd];
+
+  // 记录新分组
+  wordsToAdd.forEach(w => {
+    if (w.group && w.group !== '通用词汇') {
+      customGroups.value.add(w.group);
+    }
+  });
+
+  if (db && typeof db.bulkPut === 'function') {
+    await db.bulkPut('words', wordsToAdd);
+  }
+
+  const dupMsg = dupCheck.duplicates.length > 0 ? ` (自动跳过 ${dupCheck.duplicates.length} 个重复词)` : '';
+  message.success(`成功导入 ${wordsToAdd.length} 个单词！${dupMsg}`);
+
+  showImportModal.value = false;
+
+  // 若本次导入为单一单元，自动切至该单元便于查看
+  const newGroups = [...new Set(wordsToAdd.map(w => w.group).filter(Boolean))];
+  if (newGroups.length === 1 && activeGroup.value !== 'all') {
+    activeGroup.value = newGroups[0];
+  }
+}
+
+function handleDownloadExcelTemplate() {
+  downloadExcelTemplate();
+  message.success('已开始下载中小学英语默写词库导入模板 (.xlsx)');
+}
+
+function handleDownloadCsvTemplate() {
+  downloadCsvTemplate();
+  message.success('已开始下载中小学英语默写词库导入模板 (.csv)');
+}
 </script>
 
 <style scoped>
@@ -863,5 +1187,106 @@ async function handleClearLib() {
   border: 1px solid var(--border-light);
   border-radius: 6px;
   gap: 8px;
+}
+
+/* 批量导入弹窗相关样式 */
+.import-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.import-tips-banner {
+  background: var(--bg-sidebar);
+  border: 1px dashed var(--primary-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.tab-switch-pill {
+  flex: 1;
+  padding: 7px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-weight: 500;
+  text-align: center;
+}
+
+.tab-switch-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.tab-switch-pill.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.file-upload-box {
+  border: 2px dashed var(--primary-border);
+  background: var(--bg-sidebar);
+  border-radius: 8px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-upload-box:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+.import-preview-box {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 6px;
+}
+
+.import-preview-table-wrap {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.import-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+  text-align: left;
+}
+
+.import-preview-table th {
+  background: var(--bg-sidebar);
+  padding: 6px 8px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.import-preview-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-main);
+}
+
+.preview-group-badge {
+  display: inline-block;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
 }
 </style>
