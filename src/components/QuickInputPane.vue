@@ -296,7 +296,7 @@
 
         <div class="form-row" id="rowClozeBlankWidth" style="margin-bottom: 8px;">
           <label class="row-label">四线格长</label>
-          <div class="segmented-control mini">
+          <div class="segmented-control mini cloze-width-control">
             <input
               type="radio"
               name="clozeBlankWidth"
@@ -314,7 +314,16 @@
               :checked="state.draft.settings.clozeBlankWidth === '1word'"
               @change="state.draft.settings.clozeBlankWidth = '1word'"
             />
-            <label for="blankWidth1Word">1 词长</label>
+            <label for="blankWidth1Word">1格</label>
+            <input
+              type="radio"
+              name="clozeBlankWidth"
+              id="blankWidth1Point5Words"
+              value="1.5words"
+              :checked="state.draft.settings.clozeBlankWidth === '1.5words'"
+              @change="state.draft.settings.clozeBlankWidth = '1.5words'"
+            />
+            <label for="blankWidth1Point5Words">1.5格</label>
             <input
               type="radio"
               name="clozeBlankWidth"
@@ -323,7 +332,16 @@
               :checked="state.draft.settings.clozeBlankWidth === '2words'"
               @change="state.draft.settings.clozeBlankWidth = '2words'"
             />
-            <label for="blankWidth2Words">2 词长</label>
+            <label for="blankWidth2Words">2格</label>
+            <input
+              type="radio"
+              name="clozeBlankWidth"
+              id="blankWidth2Point5Words"
+              value="2.5words"
+              :checked="state.draft.settings.clozeBlankWidth === '2.5words'"
+              @change="state.draft.settings.clozeBlankWidth = '2.5words'"
+            />
+            <label for="blankWidth2Point5Words">2.5格</label>
             <input
               type="radio"
               name="clozeBlankWidth"
@@ -332,7 +350,7 @@
               :checked="state.draft.settings.clozeBlankWidth === '3words'"
               @change="state.draft.settings.clozeBlankWidth = '3words'"
             />
-            <label for="blankWidth3Words">3 词长</label>
+            <label for="blankWidth3Words">3格</label>
           </div>
         </div>
       </div>
@@ -1082,6 +1100,10 @@ function removeItem(index) {
 .segmented-control.mini label {
   padding: 2px 7px;
   font-size: 11px;
+}
+
+.cloze-width-control {
+  flex-wrap: wrap;
 }
 
 .alpha-presets-wrap {

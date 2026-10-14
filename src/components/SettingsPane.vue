@@ -353,7 +353,7 @@
 
           <div class="form-row">
             <label>四线格挖空长度</label>
-            <div class="segmented-control mini">
+            <div class="segmented-control mini cloze-width-control">
               <input
                 type="radio"
                 name="settingsClozeBlankWidth"
@@ -371,7 +371,16 @@
                 :checked="state.draft.settings.clozeBlankWidth === '1word'"
                 @change="state.draft.settings.clozeBlankWidth = '1word'"
               />
-              <label for="setBlankWidth1Word">1 词长 (60px)</label>
+              <label for="setBlankWidth1Word">1格</label>
+              <input
+                type="radio"
+                name="settingsClozeBlankWidth"
+                id="setBlankWidth1Point5Words"
+                value="1.5words"
+                :checked="state.draft.settings.clozeBlankWidth === '1.5words'"
+                @change="state.draft.settings.clozeBlankWidth = '1.5words'"
+              />
+              <label for="setBlankWidth1Point5Words">1.5格</label>
               <input
                 type="radio"
                 name="settingsClozeBlankWidth"
@@ -380,7 +389,16 @@
                 :checked="state.draft.settings.clozeBlankWidth === '2words'"
                 @change="state.draft.settings.clozeBlankWidth = '2words'"
               />
-              <label for="setBlankWidth2Words">固定2词长</label>
+              <label for="setBlankWidth2Words">2格</label>
+              <input
+                type="radio"
+                name="settingsClozeBlankWidth"
+                id="setBlankWidth2Point5Words"
+                value="2.5words"
+                :checked="state.draft.settings.clozeBlankWidth === '2.5words'"
+                @change="state.draft.settings.clozeBlankWidth = '2.5words'"
+              />
+              <label for="setBlankWidth2Point5Words">2.5格</label>
               <input
                 type="radio"
                 name="settingsClozeBlankWidth"
@@ -389,7 +407,7 @@
                 :checked="state.draft.settings.clozeBlankWidth === '3words'"
                 @change="state.draft.settings.clozeBlankWidth = '3words'"
               />
-              <label for="setBlankWidth3Words">3 词长 (150px)</label>
+              <label for="setBlankWidth3Words">3格</label>
             </div>
           </div>
         </template>
@@ -792,6 +810,11 @@ function onPromptFontSizeInput(e) {
   color: var(--primary);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.cloze-width-control {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .form-range-wrap {

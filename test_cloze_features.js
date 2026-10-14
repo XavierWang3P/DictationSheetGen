@@ -151,8 +151,8 @@ async function testClozeFeatures() {
     );
     console.log('-> 判定:', pass3 ? '✅ PASS' : '❌ FAIL', '\n');
 
-    // ================= 验证 4: 四线三格挖空格长自定义 (1词长/2词长/3词长) =================
-    console.log('【验证 4】四线三格支持自定义长度 (1词长 62px, 2词长 108px, 3词长 152px):');
+    // ================= 验证 4: 四线三格挖空格长包含半格档位 =================
+    console.log('【验证 4】四线三格支持 1格、1.5格、2格、2.5格、3格:');
     const r4 = await evalExpr(`(async () => {
       // 切换为 1 词长
       document.getElementById('blankWidth1Word').click();
@@ -160,11 +160,21 @@ async function testClozeFeatures() {
       const svg1 = document.querySelector('.cloze-blank-line.cloze-inline-grid');
       const w1 = svg1 ? svg1.style.width : '';
 
+      document.getElementById('blankWidth1Point5Words').click();
+      await new Promise(r => setTimeout(r, 100));
+      const svg15 = document.querySelector('.cloze-blank-line.cloze-inline-grid');
+      const w15 = svg15 ? svg15.style.width : '';
+
       // 切换为 2 词长
       document.getElementById('blankWidth2Words').click();
       await new Promise(r => setTimeout(r, 100));
       const svg2 = document.querySelector('.cloze-blank-line.cloze-inline-grid');
       const w2 = svg2 ? svg2.style.width : '';
+
+      document.getElementById('blankWidth2Point5Words').click();
+      await new Promise(r => setTimeout(r, 100));
+      const svg25 = document.querySelector('.cloze-blank-line.cloze-inline-grid');
+      const w25 = svg25 ? svg25.style.width : '';
 
       // 切换为 3 词长
       document.getElementById('blankWidth3Words').click();
@@ -174,12 +184,14 @@ async function testClozeFeatures() {
 
       return {
         w1,
+        w15,
         w2,
+        w25,
         w3
       };
     })()`);
     console.log('-> 结果:', JSON.stringify(r4, null, 2));
-    const pass4 = r4.w1 === '62px' && r4.w2 === '108px' && r4.w3 === '152px';
+    const pass4 = r4.w1 === '62px' && r4.w15 === '85px' && r4.w2 === '108px' && r4.w25 === '130px' && r4.w3 === '152px';
     console.log('-> 判定:', pass4 ? '✅ PASS' : '❌ FAIL', '\n');
 
     console.log('=== 全部专项测试完成 ===');

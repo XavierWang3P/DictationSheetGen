@@ -142,7 +142,7 @@ async function run() {
       Object.assign(state.draft.settings, {
         paperSize: 'A4', orientation: 'portrait', copiesPerPage: 1, wordsPerPage: 30,
         showAnswerPage: false, clozeStyle: 'inline', clozeZhPosition: 'below', clozeBlankWidth: 'auto',
-        fontFamilyEn: 'Arial, sans-serif', promptFontSize: 14,
+        fontFamilyEn: "'Times New Roman', serif", promptFontSize: 14,
         layoutDefaults: { wordDictationColumns: 3, sentenceDictationColumns: 1, sentenceClozeColumns: 'auto', choiceColumns: 'auto', inlineFillColumns: 'auto', englishCompositionColumns: 1 }
       });
       await new Promise(r => setTimeout(r, 400));
@@ -156,6 +156,7 @@ async function run() {
       const cloze = card('s-mv7qz8pn-5ylfj');
       const positionLayout = cloze?.querySelector('.cloze-position-layout') || null;
       const firstClozeGrid = cloze?.querySelector('.cloze-inline-grid') || null;
+      const clozeEnglish = cloze?.querySelector('.cloze-english-column') || null;
       const wordGrid = word?.querySelector('.adaptive-writing-grid');
       const wordGridContainer = wordGrid?.parentElement || null;
       const studentHtml = document.querySelector('.student-sheet-page')?.innerHTML || '';
@@ -175,6 +176,7 @@ async function run() {
         clozeGridCount: cloze?.querySelectorAll('.cloze-inline-grid').length || 0,
         clozeLayoutDirection: positionLayout ? getComputedStyle(positionLayout).flexDirection : '',
         clozeBlankVerticalAlign: firstClozeGrid ? getComputedStyle(firstClozeGrid).verticalAlign : '',
+        clozeEnglishFont: clozeEnglish ? getComputedStyle(clozeEnglish).fontFamily : '',
         choiceOptions: document.querySelectorAll('.type-choice .choice-option').length,
         fillBlanks: document.querySelectorAll('.type-inline-fill .cloze-inline-grid, .type-inline-fill .inline-fill-blank').length,
         compositionLines: document.querySelectorAll('.type-english-composition .four-line-svg').length,
@@ -199,8 +201,15 @@ async function run() {
       studentPages: document.querySelectorAll('.student-sheet-page').length,
       teacherPages: document.querySelectorAll('.teacher-answer-page').length,
       lastPageCount: document.querySelectorAll('.sheet-page.is-last-page').length,
-      correctChoiceVisible: !!document.querySelector('.teacher-answer-page .choice-option.is-correct'),
+      studentInfoCount: document.querySelectorAll('.teacher-answer-page .sheet-student-info').length,
+      writingGridCount: document.querySelectorAll('.teacher-answer-page .four-line-svg, .teacher-answer-page .single-line-svg, .teacher-answer-page .practice-grid').length,
+      choiceOptionsCount: document.querySelectorAll('.teacher-answer-page .choice-options').length,
+      compositionLinesCount: document.querySelectorAll('.teacher-answer-page .composition-lines').length,
+      compactCopies: document.querySelectorAll('.teacher-answer-page .teacher-answer-copy').length,
+      answerTextCount: document.querySelectorAll('.teacher-answer-page .teacher-answer-text').length,
+      choiceAnswerVisible: (document.querySelector('.teacher-answer-page')?.textContent || '').includes('Apple'),
       fillAnswerVisible: (document.querySelector('.teacher-answer-page')?.textContent || '').includes('speaks'),
+      englishAnswerFont: document.querySelector('.teacher-answer-page .teacher-answer-value') ? getComputedStyle(document.querySelector('.teacher-answer-page .teacher-answer-value')).fontFamily : '',
       pageOverflow: Array.from(document.querySelectorAll('.sheet-page')).some(page => page.scrollWidth > page.clientWidth + 1 || page.scrollHeight > page.clientHeight + 1)
     }))()`);
     const printB4 = await call('Page.printToPDF', { printBackground: true, preferCSSPageSize: true });
@@ -212,10 +221,11 @@ async function run() {
       allQuestionTypesRendered: screen.choiceOptions === 3 && screen.fillBlanks === 2 && screen.compositionLines === 12,
       perTypeLayout: screen.wordSpan.includes('4') && screen.sentenceSpan.includes('12'),
       clozeAlignment: screen.clozePositionClass.includes('cloze-layout-below') && screen.clozeFirstChildClass.includes('cloze-english-column') && screen.clozeSecondChildClass.includes('pos-below') && screen.clozeLayoutDirection === 'column' && screen.clozeGridCount === 2 && screen.clozeBlankVerticalAlign === 'middle',
+      englishFontApplied: screen.clozeEnglishFont.includes('Times New Roman'),
       fullWidthWordGrid: screen.wordGridUsesFullWidth && Math.abs(screen.wordGridWidth - screen.wordGridContainerWidth) <= 1,
       noStudentAnswerLeak: !screen.leaksChoiceAnswer && !screen.leaksFillAnswer,
       a4PdfMatchesPreview: pdfA4Pages === screen.pageCount,
-      answerVersion: answerMode.studentPages > 0 && answerMode.teacherPages === answerMode.studentPages && answerMode.correctChoiceVisible && answerMode.fillAnswerVisible,
+      answerVersion: answerMode.studentPages > 0 && answerMode.teacherPages === answerMode.studentPages && answerMode.studentInfoCount === 0 && answerMode.writingGridCount === 0 && answerMode.choiceOptionsCount === 0 && answerMode.compositionLinesCount === 0 && answerMode.compactCopies > 0 && answerMode.answerTextCount >= 5 && answerMode.choiceAnswerVisible && answerMode.fillAnswerVisible && answerMode.englishAnswerFont.includes('Times New Roman'),
       b4PdfMatchesPreview: pdfB4Pages === answerMode.domPages,
       oneLastPageOnly: screen.lastPageCount === 1 && answerMode.lastPageCount === 1,
       noOverflow: !screen.pageOverflow && !answerMode.pageOverflow,

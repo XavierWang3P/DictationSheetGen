@@ -402,16 +402,18 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
     let cleanWord = (wordText || '').trim();
     let customWidth = null;
 
-    // 支持行内标记宽度，如 [word:1word]、[word:2words]、[word:100px] 等
-    const widthMatch = cleanWord.match(/:(1word|2words|3words|\d+px|\d+)$/i);
+    // 支持行内标记宽度，如 [word:1word]、[word:1.5words]、[word:100px] 等
+    const widthMatch = cleanWord.match(/:(1word|1\.5words|2words|2\.5words|3words|\d+(?:\.\d+)?px|\d+(?:\.\d+)?)$/i);
     if (widthMatch) {
       const tag = widthMatch[1].toLowerCase();
       cleanWord = cleanWord.substring(0, widthMatch.index).trim();
       if (tag === '1word' || tag === '1') customWidth = 62;
+      else if (tag === '1.5words') customWidth = 85;
       else if (tag === '2words' || tag === '2') customWidth = 108;
+      else if (tag === '2.5words') customWidth = 130;
       else if (tag === '3words' || tag === '3') customWidth = 152;
-      else if (tag.endsWith('px')) customWidth = parseInt(tag, 10);
-      else if (!isNaN(parseInt(tag, 10))) customWidth = parseInt(tag, 10);
+      else if (tag.endsWith('px')) customWidth = parseFloat(tag);
+      else if (!isNaN(parseFloat(tag))) customWidth = parseFloat(tag);
     }
 
     let widthPx;
@@ -421,8 +423,12 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
       widthPx = clozeBlankWidth;
     } else if (clozeBlankWidth === '1word') {
       widthPx = 62; // 1 词长 (约 16mm)
+    } else if (clozeBlankWidth === '1.5words') {
+      widthPx = 85;
     } else if (clozeBlankWidth === '2words') {
       widthPx = 108; // 2 词长 (约 28mm，推荐)
+    } else if (clozeBlankWidth === '2.5words') {
+      widthPx = 130;
     } else if (clozeBlankWidth === '3words') {
       widthPx = 152; // 3 词长 (约 40mm)
     } else {
@@ -806,6 +812,13 @@ function createInlineGridHtml(widthPx, s, answerText = '') {
   </span>`;
 }
 
+function createTeacherQuestionAnswerHtml(questionHtml, answerText) {
+  const answerHtml = answerText
+    ? `<span class="teacher-answer-text"><span class="teacher-answer-label">答案：</span><span class="teacher-answer-value">${escapeHtml(answerText)}</span></span>`
+    : '';
+  return `<div class="teacher-question-answer"><div class="teacher-question-text">${questionHtml}</div>${answerHtml}</div>`;
+}
+
 function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teacherMode) {
   const isAlphabet = entry?.item?.questionType === 'alphabet' || entry?.item?.alphaData || entry?.item?.neighborData || entry?.item?.caseData;
   const multiCopyGridLimit = isAlphabet ? 11 : 8.5;
@@ -830,31 +843,50 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
     availableWidthPx,
     teacherMode,
     renderWordDictation(item) {
+      const promptText = item.overrideZh || item.zh || ((item.prompt && item.prompt !== (item.answer || item.en)) ? item.prompt : '听写');
+      if (teacherMode) {
+        return {
+          promptHtml: createTeacherQuestionAnswerHtml(escapeHtml(promptText), item.answer || item.en || ''),
+          practiceHtml: '',
+          classes: ['is-word-card', 'is-teacher-answer-card']
+        };
+      }
       const measurement = calculateWritingGridWidth({ ...measurementOptions, text: item.answer || item.en || '' });
       const lines = Math.max(1, Math.min(4, Math.ceil(measurement.targetWidth / Math.max(1, availableWidthPx))));
-      const promptText = item.overrideZh || item.zh || ((item.prompt && item.prompt !== (item.answer || item.en)) ? item.prompt : '听写');
-      const answer = teacherMode && (item.answer || item.en)
-        ? `<span class="teacher-answer-text">答案：${escapeHtml(item.answer || item.en)}</span>`
-        : '';
       return {
-        promptHtml: `<span class="meaning-text entry-zh-hint">${escapeHtml(promptText)}</span>${answer}`,
+        promptHtml: `<span class="meaning-text entry-zh-hint">${escapeHtml(promptText)}</span>`,
         practiceHtml: `<div class="adaptive-writing-grid word-dictation-grid">${createPracticeGridSvg({ gridStyle: s.gridStyle, gridLines: lines, gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: s.showVerticalBorder })}</div>`,
         classes: ['is-word-card']
       };
     },
     renderSentenceDictation(item) {
+      const promptText = item.overrideZh || item.zh || ((item.prompt && item.prompt !== (item.answer || item.en)) ? item.prompt : '请写出英文句子');
+      if (teacherMode) {
+        return {
+          promptHtml: createTeacherQuestionAnswerHtml(escapeHtml(promptText), item.answer || item.en || ''),
+          practiceHtml: '',
+          classes: ['is-sentence-dict-card', 'is-teacher-answer-card']
+        };
+      }
       const measurement = calculateWritingGridWidth({ ...measurementOptions, text: item.answer || item.en || '' });
       const lines = Math.max(1, Math.min(4, Math.ceil(measurement.targetWidth / Math.max(1, availableWidthPx))));
-      const answer = teacherMode && (item.answer || item.en)
-        ? `<span class="teacher-answer-text">答案：${escapeHtml(item.answer || item.en)}</span>`
-        : '';
       return {
-        promptHtml: `<span class="meaning-text entry-zh-hint sentence-dict-prompt">${escapeHtml(item.overrideZh || item.zh || ((item.prompt && item.prompt !== (item.answer || item.en)) ? item.prompt : '请写出英文句子'))}</span>${answer}`,
+        promptHtml: `<span class="meaning-text entry-zh-hint sentence-dict-prompt">${escapeHtml(promptText)}</span>`,
         practiceHtml: createPracticeGridSvg({ gridStyle: s.gridStyle, gridLines: lines, gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: s.showVerticalBorder }),
         classes: ['is-sentence-dict-card']
       };
     },
     renderSentenceCloze(item) {
+      if (teacherMode) {
+        const questionText = (item.en || '').replace(/\[[^\]]+\]|\{[^}]+\}/g, '_____');
+        const zhText = item.overrideZh || item.zh || item.translation || '';
+        const questionHtml = `<span class="teacher-question-english">${escapeHtml(questionText)}</span>${zhText ? `<span class="teacher-question-zh">（${escapeHtml(zhText)}）</span>` : ''}`;
+        return {
+          promptHtml: createTeacherQuestionAnswerHtml(questionHtml, (item.en || '').replace(/[\[\]{}]/g, '')),
+          practiceHtml: '',
+          classes: ['is-cloze-card', 'is-teacher-answer-card']
+        };
+      }
       const clozeHtml = formatClozePrompt(item, 'cloze', {
         gridStyle: s.gridStyle,
         clozeStyle: s.clozeStyle || 'inline',
@@ -867,18 +899,22 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         letterSpacing: parseFloat(s.letterSpacing) || 0,
         availableWidth: Math.max(48, availableWidthPx * 0.72)
       });
-      const answer = teacherMode && item.en
-        ? `<span class="teacher-answer-text">答案：${escapeHtml(item.en.replace(/[\[\]{}]/g, ''))}</span>`
-        : '';
       const isInline = (s.clozeStyle || 'inline') !== 'below';
       return {
-        promptHtml: `${clozeHtml}${answer}`,
+        promptHtml: clozeHtml,
         practiceHtml: isInline ? '' : createPracticeGridSvg({ gridStyle: s.gridStyle, gridLines: s.gridLinesPerWord || 1, gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: s.showVerticalBorder }),
         classes: ['is-cloze-card', isInline ? 'cloze-card-inline' : '']
       };
     },
     renderAlphabet(item) {
       const promptText = item.prompt || item.zh || item.en;
+      if (teacherMode) {
+        return {
+          promptHtml: createTeacherQuestionAnswerHtml(escapeHtml(promptText), item.answer || item.en || ''),
+          practiceHtml: '',
+          classes: ['is-alphabet-card', 'is-teacher-answer-card']
+        };
+      }
       let gridHtml = '';
       if (item.neighborData || item.id?.startsWith('neighbor') || (item.zh && item.zh.includes('邻居'))) {
         gridHtml = createNeighborPracticeGridSvg(item, { gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', alphabetGuideFont: s.alphabetGuideFont });
@@ -890,17 +926,38 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
       return { promptHtml: `<span class="meaning-text entry-zh-hint">${escapeHtml(promptText)}</span>`, practiceHtml: gridHtml, classes: ['is-alphabet-card'] };
     },
     renderChoice(item) {
+      if (teacherMode) {
+        const answerText = item.options
+          .filter((option) => item.answers.includes(option.id))
+          .map((option) => `${option.label}. ${option.text}`)
+          .join('；');
+        return {
+          promptHtml: createTeacherQuestionAnswerHtml(`<span class="teacher-question-english">${escapeHtml(item.stem)}</span>`, answerText),
+          practiceHtml: '',
+          classes: ['is-choice-card', 'is-teacher-answer-card']
+        };
+      }
       const optionLayout = item.optionLayout === 'auto'
         ? (item.options.some((option) => option.text.length > 18) ? 'single' : (item.options.length <= 3 ? 'inline' : 'double'))
         : item.optionLayout;
       const options = item.options.map((option) => {
-        const correct = teacherMode && item.answers.includes(option.id);
-        return `<span class="choice-option${correct ? ' is-correct' : ''}"><span class="choice-label">${escapeHtml(option.label)}.</span><span>${escapeHtml(option.text)}</span></span>`;
+        return `<span class="choice-option"><span class="choice-label">${escapeHtml(option.label)}.</span><span>${escapeHtml(option.text)}</span></span>`;
       }).join('');
       return { promptHtml: `<span class="meaning-text choice-stem">${escapeHtml(item.stem)}</span>`, practiceHtml: `<div class="choice-options layout-${optionLayout}">${options}</div>`, classes: ['is-choice-card'] };
     },
     renderInlineFill(item) {
       const blankMap = new Map(item.blanks.map((blank) => [blank.id, blank]));
+      if (teacherMode) {
+        const questionSegments = item.stemSegments.map((segment) => segment.type === 'text'
+          ? escapeHtml(segment.text)
+          : '<span class="teacher-inline-blank">______</span>').join('');
+        const answerText = item.blanks.map((blank, index) => `${index + 1}. ${blank.answer || '未设置'}`).join('；');
+        return {
+          promptHtml: createTeacherQuestionAnswerHtml(`<span class="teacher-question-english">${questionSegments}</span>`, answerText),
+          practiceHtml: '',
+          classes: ['is-inline-fill-card', 'is-teacher-answer-card']
+        };
+      }
       const segments = item.stemSegments.map((segment) => {
         if (segment.type === 'text') return escapeHtml(segment.text);
         const blank = blankMap.get(segment.blankId);
@@ -908,8 +965,8 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         const measurement = blank.widthMode === 'manual'
           ? { width: Math.min(availableWidthPx, blank.width) }
           : calculateWritingGridWidth({ ...measurementOptions, text: blank.answer || '' });
-        if (blank.lineStyle === 'four-line') return createInlineGridHtml(measurement.width, s, teacherMode ? blank.answer : '');
-        return `<span class="inline-fill-blank" style="width:${Math.round(measurement.width)}px;">${teacherMode ? `<span class="teacher-inline-answer">${escapeHtml(blank.answer)}</span>` : ''}</span>`;
+        if (blank.lineStyle === 'four-line') return createInlineGridHtml(measurement.width, s);
+        return `<span class="inline-fill-blank" style="width:${Math.round(measurement.width)}px;"></span>`;
       }).join('');
       return { promptHtml: `<span class="meaning-text inline-fill-stem">${segments}</span>`, practiceHtml: '', classes: ['is-inline-fill-card'] };
     },
@@ -919,6 +976,13 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
       const continuation = fragment?.isContinuation ? (item.continuationMode === 'repeat' ? item.title : '续写') : item.title;
       const heading = item.showTitleArea ? `<div class="composition-heading"><strong>${escapeHtml(continuation || '英语作文')}</strong>${fragment ? `<span class="composition-part">第 ${fragment.part} 页</span>` : ''}</div>` : '';
       const instructions = !fragment?.isContinuation && item.instructions ? `<div class="composition-instructions">${escapeHtml(item.instructions)}</div>` : '';
+      if (teacherMode) {
+        return {
+          promptHtml: createTeacherQuestionAnswerHtml(`<span class="teacher-question-english">${heading}${instructions}</span>`, '开放性作答'),
+          practiceHtml: '',
+          classes: ['is-composition-card', 'is-teacher-answer-card']
+        };
+      }
       return {
         promptHtml: `${heading}${instructions}`,
         practiceHtml: `<div class="composition-lines">${createPracticeGridSvg({ gridStyle: item.writingStyle === 'four-line' ? 'four-line' : 'single-line', gridLines: lineCount, gridHeightMm: item.lineHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: item.writingStyle === 'four-line' && s.showVerticalBorder })}</div>`,
@@ -1038,7 +1102,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   // 考生信息栏
   let studentInfoHtml = '';
   const showAnyStudentInfo = s.showStudentName || s.showStudentClass || s.showStudentNo || s.showStudentDate || s.showStudentScore;
-  if (showAnyStudentInfo) {
+  if (!s._teacherMode && showAnyStudentInfo) {
     const infoItems = [];
     if (s.showStudentName) infoItems.push(`<span class="info-item">姓名：<span class="info-line info-line-name"></span></span>`);
     if (s.showStudentClass) infoItems.push(`<span class="info-item">班级：<span class="info-line info-line-class"></span></span>`);
@@ -1059,6 +1123,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   const titleSize = (typeof rawTitleSize === 'number' || !String(rawTitleSize).endsWith('pt')) ? `${rawTitleSize}pt` : rawTitleSize;
   const safeTitleSize = escapeHtml(String(titleSize).replace(/[^0-9a-zA-Z.]/g, ''));
   const safeFontFamily = escapeHtml(s.fontFamilyZh || "'KaiTi', '楷体', STKaiti, serif");
+  const safeFontFamilyEn = escapeHtml(s.fontFamilyEn || 'Arial, sans-serif');
   const safeTitleAlign = escapeHtml(s.titleAlign || 'center');
 
   let headerHtml = '';
@@ -1085,9 +1150,10 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   }
 
   // 网格主体
-  const effectiveRowGap = (copies > 1)
-    ? Math.min(2.5, s.rowGap || 3.5)
-    : (s.rowGap || 3.5);
+  const effectiveRowGap = s._teacherMode
+    ? Math.min(1.2, s.rowGap || 3.5)
+    : ((copies > 1) ? Math.min(2.5, s.rowGap || 3.5) : (s.rowGap || 3.5));
+  const effectiveColGap = s._teacherMode ? Math.min(4, s.colGap || 6) : s.colGap;
 
   const bodyHtml = isAlpha26 ? `
     <div class="alphabet-26-sheet-container">
@@ -1096,16 +1162,16 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   ` : `
     <div class="sheet-body-grid" style="
       grid-template-columns: repeat(12, minmax(0, 1fr));
-      column-gap: ${s.colGap}mm;
+      column-gap: ${effectiveColGap}mm;
       row-gap: ${effectiveRowGap}mm;
     ">
       ${cardsHtml}
     </div>
   `;
 
-  const sectionCls = (copies > 1) ? 'multi-copy' : 'single-copy';
+  const sectionCls = `${(copies > 1) ? 'multi-copy' : 'single-copy'}${s._teacherMode ? ' teacher-answer-copy' : ''}`;
   return `
-    <div class="sheet-copy-section ${sectionCls}">
+    <div class="sheet-copy-section ${sectionCls}" style="--font-en:${safeFontFamilyEn};">
       ${headerHtml}
       ${bodyHtml}
     </div>
@@ -1127,6 +1193,7 @@ export function renderPracticeSheetHtml(layout, settings) {
   s.layoutDefaults = normalizeLayoutDefaults(settings?.layoutDefaults, settings || {});
   const { copiesPerPage, isLandscape, pageWidthMm, pageHeightMm } = layout;
   const curPromptSize = s.promptFontSize || 14;
+  const safePageFontEn = escapeHtml(s.fontFamilyEn || 'Arial, sans-serif');
   const effectivePromptSize = (copiesPerPage > 1 && s.dictMode === 'cloze')
     ? Math.min(12, curPromptSize)
     : curPromptSize;
@@ -1160,6 +1227,7 @@ export function renderPracticeSheetHtml(layout, settings) {
           min-height: ${pageHeightMm}mm;
           max-height: ${pageHeightMm}mm;
           font-family: ${s.fontFamilyZh};
+          --font-en: ${safePageFontEn};
           padding: ${s.pageMargin}mm 12mm ${Math.max(4, s.pageMargin - 2)}mm 12mm;
         ">${copySlipsHtml}</div>`;
     });

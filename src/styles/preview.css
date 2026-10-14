@@ -268,6 +268,7 @@
   min-width: 0;
   line-height: 1.75;
   overflow-wrap: anywhere;
+  font-family: var(--font-en, Arial, sans-serif);
 }
 
 .adaptive-writing-grid {
@@ -281,12 +282,55 @@
 }
 
 .teacher-answer-text {
-  display: block;
-  width: 100%;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1mm;
+  width: auto;
   color: #2f6659;
-  font-size: 0.78em;
+  font-size: 0.86em;
   font-weight: 600;
-  margin-top: 1mm;
+  margin: 0;
+}
+
+.teacher-answer-value {
+  font-family: var(--font-en, Arial, sans-serif);
+  font-weight: 700;
+}
+
+.teacher-question-answer {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 1mm 3mm;
+}
+
+.teacher-question-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.teacher-question-english,
+.choice-stem,
+.choice-option,
+.inline-fill-stem,
+.composition-heading,
+.composition-instructions {
+  font-family: var(--font-en, Arial, sans-serif);
+}
+
+.teacher-question-zh {
+  margin-left: 1.5mm;
+  color: #64748b;
+  font-size: 0.86em;
+}
+
+.teacher-inline-blank {
+  display: inline-block;
+  min-width: 12mm;
+  margin-inline: 1mm;
+  border-bottom: 1px solid #64748b;
 }
 
 .teacher-inline-answer {
@@ -337,6 +381,50 @@
 .composition-part { color: #64748b; font-size: 0.78em; font-weight: 400; }
 .composition-instructions { margin-top: 1mm; color: #475569; font-size: 0.9em; }
 .composition-lines { width: 100%; }
+
+/* 教师答案页只保留题目与答案，使用紧凑核对版式。 */
+.teacher-answer-page .sheet-copy-section.teacher-answer-copy {
+  flex: 1;
+  padding-block: 0.8mm;
+}
+
+.teacher-answer-page .sheet-header,
+.teacher-answer-page .sheet-header.sheet-header-compact {
+  margin-bottom: 0.8mm;
+}
+
+.teacher-answer-page .sheet-title-text {
+  margin-bottom: 0.6mm;
+  font-size: 12.5pt !important;
+  line-height: 1.15;
+}
+
+.teacher-answer-page .sheet-body-grid {
+  flex: 0 0 auto;
+  align-content: start;
+}
+
+.teacher-answer-page .word-card.is-teacher-answer-card {
+  overflow: visible;
+  padding: 0.6mm 0 0.9mm;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.teacher-answer-page .meaning.word-prompt-row {
+  align-items: flex-start !important;
+  margin-bottom: 0;
+  font-size: 10.5pt !important;
+  line-height: 1.3;
+}
+
+.teacher-answer-page .practice-grid,
+.teacher-answer-page .four-line-svg,
+.teacher-answer-page .single-line-svg,
+.teacher-answer-page .composition-lines,
+.teacher-answer-page .choice-options,
+.teacher-answer-page .sheet-student-info {
+  display: none !important;
+}
 
 .cloze-zh {
   font-size: 0.85em;
