@@ -1,5 +1,14 @@
 <template>
-  <n-config-provider :locale="zhCN" :date-locale="dateZhCN" :theme-overrides="themeOverrides">
+  <!-- 移动端全屏提示页 (当检测到手机访问时，不加载或展示网站主功能界面) -->
+  <MobileNotice v-if="isMobile" />
+
+  <!-- 桌面端主功能界面 -->
+  <n-config-provider
+    v-else
+    :locale="zhCN"
+    :date-locale="dateZhCN"
+    :theme-overrides="themeOverrides"
+  >
     <n-message-provider>
       <div class="app-layout">
           <!-- 动态打印尺寸样式注入 -->
@@ -104,7 +113,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { NConfigProvider, NMessageProvider, NTooltip, zhCN, dateZhCN } from 'naive-ui';
 import packageInfo from '../package.json';
 import { state, loadSavedState, loadLibraryFromDB } from './stores/appStore.js';
@@ -121,6 +130,8 @@ import SidebarTabs from './components/SidebarTabs.vue';
 import PreviewViewport from './components/PreviewViewport.vue';
 import LayoutInspector from './components/LayoutInspector.vue';
 import DebugOverlay from './components/DebugOverlay.vue';
+import MobileNotice from './components/MobileNotice.vue';
+import { isMobilePhoneDevice } from './core/deviceDetect.js';
 import { naiveThemeOverrides as themeOverrides } from './theme/naiveTheme.js';
 
 import {
@@ -131,6 +142,29 @@ import {
 
 const { registerDebugKeyboardListener, unregisterDebugKeyboardListener } = useDebugMode();
 const appVersion = packageInfo.version;
+
+// 移动端状态检测与响应式监听
+const isMobile = ref(isMobilePhoneDevice());
+
+// 同步 class 到 document.documentElement，配合 CSS 彻底杜绝界面闪烁
+watch(isMobile, (val) => {
+  if (typeof document !== 'undefined') {
+    if (val) {
+      document.documentElement.classList.add('is-mobile-device');
+    } else {
+      document.documentElement.classList.remove('is-mobile-device');
+    }
+  }
+}, { immediate: true });
+
+const updateMobileStatus = () => {
+  const nextVal = isMobilePhoneDevice();
+  if (isMobile.value !== nextVal) {
+    isMobile.value = nextVal;
+  }
+};
+
+let mql = null;
 
 const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
 
@@ -193,6 +227,16 @@ function handleAlphabetCaseSample() {
 }
 
 onMounted(async () => {
+  window.addEventListener('resize', updateMobileStatus, { passive: true });
+  window.addEventListener('orientationchange', updateMobileStatus, { passive: true });
+  if (window.screen && window.screen.orientation) {
+    window.screen.orientation.addEventListener('change', updateMobileStatus);
+  }
+  if (typeof window.matchMedia === 'function') {
+    mql = window.matchMedia('(max-width: 768px)');
+    mql.addEventListener?.('change', updateMobileStatus);
+  }
+
   registerDebugKeyboardListener();
   loadSavedState();
   await loadLibraryFromDB();
@@ -200,9 +244,17 @@ onMounted(async () => {
   window._setAlphabet26Sample = handleAlphabet26Sample;
   window._setAlphabetNeighborsSample = handleAlphabetNeighborsSample;
   window._setAlphabetCaseSample = handleAlphabetCaseSample;
+  window._setIsMobile = (val) => { isMobile.value = val; };
+  window._getIsMobile = () => isMobile.value;
 });
 
 onUnmounted(() => {
+  window.removeEventListener('resize', updateMobileStatus);
+  window.removeEventListener('orientationchange', updateMobileStatus);
+  if (window.screen && window.screen.orientation) {
+    window.screen.orientation.removeEventListener('change', updateMobileStatus);
+  }
+  mql?.removeEventListener?.('change', updateMobileStatus);
   unregisterDebugKeyboardListener();
 });
 </script>

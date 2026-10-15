@@ -71,13 +71,14 @@
             :key="item.id || index"
             class="word-item-row compact-exam-row word-chip"
             :class="{
-              'is-separator-row': item.questionType === 'separator'
+              'is-separator-row': item.questionType === 'separator',
+              'is-selected-for-edit': editingIndex === index && isEditModalOpen
             }"
             :data-id="item.id"
             :data-debug-id="'ITEM-' + item.id"
             data-debug-name="试卷题目项"
-            title="双击题目可编辑"
-            @dblclick="openEditModal(index)"
+            title="点击题目可编辑"
+            @click="handleItemClick(item, index, $event)"
           >
             <!-- 序号与题型前导区 -->
             <div class="row-leading">
@@ -122,7 +123,7 @@
             </div>
 
             <!-- 紧凑 1:1 正方形操作按钮组 (24x24px)，默认半透明，悬停浮现 -->
-            <div class="word-item-actions" @click.stop @dblclick.stop>
+            <div class="word-item-actions" @click.stop>
               <IconActionButton
                 class="word-item-btn"
                 label="上移题目"
@@ -467,6 +468,17 @@ const editModalTitle = computed(() => {
   const typeName = getQuestionTypeLabel(editForm.value.questionType);
   return `编辑题目内容 - ${typeName}（第 ${editingIndex.value + 1} 项）`;
 });
+
+function handleItemClick(item, index, event) {
+  if (event?.target?.closest('button, input, select, .word-item-actions, .col-override-tag, .n-base-selection')) {
+    return;
+  }
+  if (isEditModalOpen.value && editingIndex.value !== -1) {
+    if (editingIndex.value === index) return;
+    saveEditModal();
+  }
+  openEditModal(index);
+}
 
 function openEditModal(index) {
   const item = state.draft.items[index];
@@ -814,6 +826,12 @@ function switchToTab(tabKey) {
 
 .compact-exam-row:hover {
   background: var(--color-primary-light, #f0f6f4);
+}
+
+.compact-exam-row.is-selected-for-edit {
+  background: rgba(47, 102, 89, 0.08) !important;
+  border-left: 3px solid var(--primary) !important;
+  box-shadow: inset 0 0 0 1px rgba(47, 102, 89, 0.2);
 }
 
 /* 隔断题目行突出样式 */

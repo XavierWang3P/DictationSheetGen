@@ -178,12 +178,18 @@
   min-width: 0;
 }
 
+.word-num,
+.entry-index,
 .word-num.entry-index {
-  font-family: Arial, sans-serif;
-  color: #64748b;
-  font-weight: 400;
-  margin-right: 3px;
-  font-size: 0.9em;
+  font-family: 'Times New Roman', Times, serif !important;
+  color: #64748b !important;
+  font-weight: 400 !important;
+  margin-right: 5px !important;
+  font-size: 1em;
+  line-height: inherit;
+  display: inline-flex;
+  align-items: baseline;
+  vertical-align: baseline;
   flex-shrink: 0;
 }
 
@@ -282,7 +288,7 @@
   min-width: 0;
   line-height: 1.75;
   overflow-wrap: anywhere;
-  font-family: var(--font-en, Arial, sans-serif);
+  font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
 }
 
 .adaptive-writing-grid {
@@ -307,7 +313,7 @@
 }
 
 .teacher-answer-value {
-  font-family: var(--font-en, Arial, sans-serif);
+  font-family: 'Times New Roman', Times, serif !important;
   font-weight: 700;
 }
 
@@ -328,7 +334,7 @@
 .teacher-question-english,
 .composition-heading,
 .composition-instructions {
-  font-family: var(--font-en, Arial, sans-serif);
+  font-family: 'Times New Roman', Times, var(--font-zh, 'KaiTi', '楷体', STKaiti, serif);
 }
 
 .teacher-question-zh {
@@ -368,7 +374,7 @@
 .choice-options.layout-three .choice-option { white-space: nowrap !important; }
 .choice-option { display: inline-flex; gap: 1.2mm; min-width: 0; overflow-wrap: anywhere; }
 .choice-option.is-correct { color: #2f6659; font-weight: 700; }
-.choice-label { flex-shrink: 0; font-family: Arial, sans-serif; }
+.choice-label { flex-shrink: 0; font-family: 'Times New Roman', Times, serif; }
 
 .choice-bracket {
   display: inline-block;
@@ -807,15 +813,24 @@
   font-family: 'Times New Roman', Times, serif !important;
 }
 
-/* 填空题与选择题中文辅助提示使用中文字体 */
+/* 填空题与选择题中文辅助提示使用中文字体（默认楷体） */
 .inline-fill-zh-hint,
 .choice-zh-hint {
-  font-family: var(--font-zh, inherit) !important;
+  font-family: var(--font-zh, 'KaiTi', '楷体', STKaiti, serif) !important;
   font-size: 0.9em;
   color: #64748b;
 }
 
-/* 试卷中文字体穿透（提示语、释义、作文要求、考生栏、标题等全局生效） */
+.inline-fill-zh-above {
+  display: block;
+  margin-bottom: 1mm;
+  line-height: 1.3;
+  font-family: var(--font-zh, 'KaiTi', '楷体', STKaiti, serif) !important;
+  font-size: 0.9em;
+  color: #64748b;
+}
+
+/* 试卷中文字体穿透（中英混排时英文字符优先 Times New Roman，中文字符使用楷体） */
 .sheet-page,
 .sheet-title-text,
 .sheet-student-info,
@@ -836,10 +851,10 @@
 .fold-seam-label,
 .half-page-footer,
 .split-half-empty {
-  font-family: var(--font-zh, inherit);
+  font-family: 'Times New Roman', Times, var(--font-zh, 'KaiTi', '楷体', STKaiti, serif);
 }
 
-/* 字母专项提示固定使用 xumin 字体 */
+/* 字母专项提示与四线三格内容固定使用 XuMin 字体 */
 .word-card.type-alphabet .meaning.word-prompt-row,
 .word-card.type-alphabet .meaning-text,
 .is-alphabet-card .alphabet-prompt-text,
@@ -849,12 +864,14 @@
   font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
 }
 
-/* 句子挖空题型遵循英文字体设置 (var(--font-en)) */
+/* 句子挖空题型默认强制使用 XuMin 字体 */
+.type-sentence-cloze,
 .type-sentence-cloze .cloze-english-column,
 .type-sentence-cloze .cloze-blank-line,
+.type-sentence-cloze .cloze-sentence,
 .cloze-card-inline,
 .cloze-sentence-content {
-  font-family: var(--font-en, Arial, sans-serif);
+  font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
 }
 
 /* 多联拼版 (2联、3联、4联、6联) 容器体系 */
@@ -976,7 +993,7 @@
   writing-mode: vertical-rl;
   letter-spacing: 5px;
   padding: 8px 0;
-  font-family: var(--font-zh, 'SimSun', serif);
+  font-family: var(--font-zh, 'KaiTi', '楷体', STKaiti, serif);
 }
 
 .half-page-footer {

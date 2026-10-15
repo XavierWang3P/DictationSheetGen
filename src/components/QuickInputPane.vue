@@ -12,9 +12,20 @@
       </span>
     </div>
 
-    <!-- 录入题型切换 (单词默写 / 句子挖空 / 句子默写 / 字母专项 / 选择题 / 填空题 / 英语作文 / 分栏隔断) -->
+    <!-- 录入题型切换 (单词默写 / 句子挖空 / 句子默写 / 字母专项 / 选择题 / 填空题 / 英语作文) -->
     <div class="form-row" style="margin-bottom: 12px;">
-      <label class="row-label">录入题型</label>
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:6px;">
+        <label class="row-label" style="margin:0;">录入题型</label>
+        <button
+          type="button"
+          class="btn-quick-separator"
+          id="btnOpenInsertSeparatorModal"
+          title="在试卷中插入一条题型分隔线"
+          @click="showSeparatorModal = true"
+        >
+          <AppIcon name="minus" :size="12" /> + 插入分隔线
+        </button>
+      </div>
       <div class="grid-button-group question-type-grid" data-debug-id="Q-002" data-debug-name="题型切换器">
         <input
           type="radio"
@@ -85,16 +96,6 @@
           @change="onInputTypeChange('english-composition')"
         />
         <label for="modeComposition" class="grid-btn">英语作文</label>
-
-        <input
-          type="radio"
-          name="inputType"
-          id="modeSeparator"
-          value="separator"
-          :checked="currentInputType === 'separator'"
-          @change="onInputTypeChange('separator')"
-        />
-        <label for="modeSeparator" class="grid-btn">分栏隔断</label>
       </div>
     </div>
 
@@ -153,33 +154,6 @@
             </div>
           </div>
 
-          <!-- 实时效果预览 -->
-          <div style="margin-top: 6px;">
-            <label class="item-label" style="display:block; margin-bottom: 6px;">
-              默写纸挖空效果预览：
-            </label>
-            <div class="visual-cloze-preview" id="visualClozePreview">
-              <template v-if="visualSegments.length === 0">
-                <span class="token-placeholder">暂无预览内容</span>
-              </template>
-              <template v-else>
-                <div style="font-size:13px; color:var(--text-main); line-height:1.6;">
-                  <template v-for="(seg, sIdx) in visualSegments" :key="sIdx">
-                    <span
-                      v-if="seg.blank"
-                      style="border-bottom:2px solid var(--primary); color:var(--primary); font-weight:700; padding:0 4px; margin:0 2px;"
-                    >
-                      ( {{ seg.text.trim() }} )
-                    </span>
-                    <span v-else>{{ seg.text }}</span>
-                  </template>
-                </div>
-                <div v-if="visualTranslationText" style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-                  释义：{{ visualTranslationText }}
-                </div>
-              </template>
-            </div>
-          </div>
 
           <!-- 批量多句粘贴 (可选) -->
           <div style="margin-top: 8px;">
@@ -412,49 +386,6 @@
         @error="message.error"
       />
 
-      <!-- 题型 4: 分栏隔断组件 (独立分栏规则与区域隔断) -->
-      <div v-else-if="currentInputType === 'separator'" class="separator-unified-editor">
-        <QuestionEditorShell
-          title="分栏隔断设置"
-          tip="自定义后续题数列数"
-          tooltip="插入隔断后，试卷被划分为独立区域，该隔断之后的所有题目将遵循此区域专属的每行题数列数规则"
-        >
-          <div class="form-item-block">
-            <label class="item-label">隔断标题</label>
-            <input
-              type="text"
-              class="native-search-input"
-              v-model="separatorForm.title"
-              placeholder="例如：Part 2: 重点句子挖空默写（可留空仅显示线条）"
-            />
-          </div>
-
-          <div class="form-item-block">
-            <label class="item-label">后续题数列数</label>
-            <div class="grid-button-group separator-cols-grid">
-              <input type="radio" id="sepColInherit" :value="null" v-model="separatorForm.sectionColumns" />
-              <label for="sepColInherit" class="grid-btn">默认</label>
-              <input type="radio" id="sepCol1" :value="1" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol1" class="grid-btn">1列</label>
-              <input type="radio" id="sepCol2" :value="2" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol2" class="grid-btn">2列</label>
-              <input type="radio" id="sepCol3" :value="3" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol3" class="grid-btn">3列</label>
-              <input type="radio" id="sepCol4" :value="4" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol4" class="grid-btn">4列</label>
-              <input type="radio" id="sepCol5" :value="5" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol5" class="grid-btn">5列</label>
-            </div>
-          </div>
-
-          <template #actions>
-            <n-button type="primary" size="small" id="btnAddSeparator" class="primary-action-btn" @click="handleAppendSeparator">
-              <template #icon><AppIcon name="plus" :size="14" /></template>
-              插入分栏隔断到试卷
-            </n-button>
-          </template>
-        </QuestionEditorShell>
-      </div>
 
       <!-- 题型 5: 单词默写与整句默写快速文本录入框 -->
       <div v-else class="text-unified-editor">
@@ -537,12 +468,58 @@
           查看与调整题目清单 <AppIcon name="arrow-right" :size="14" />
         </button>
       </div>
+
+    <!-- 插入题型分隔线弹窗 -->
+    <n-modal
+      v-model:show="showSeparatorModal"
+      preset="card"
+      title="插入题型分隔线"
+      style="max-width: 440px; width: 92vw;"
+    >
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="form-item-block">
+          <label class="item-label">分隔线标题（可选，留空为纯分隔线）</label>
+          <input
+            type="text"
+            class="native-search-input"
+            v-model="separatorForm.title"
+            placeholder="例如：Part II 重点句子挖空默写（可留空）"
+          />
+        </div>
+
+        <div class="form-item-block">
+          <label class="item-label">后续题目独立分栏（每行题数）</label>
+          <div class="grid-button-group separator-cols-grid">
+            <input type="radio" id="sepColInherit" :value="null" v-model="separatorForm.sectionColumns" />
+            <label for="sepColInherit" class="grid-btn">默认</label>
+            <input type="radio" id="sepCol1" :value="1" v-model="separatorForm.sectionColumns" />
+            <label for="sepCol1" class="grid-btn">1列</label>
+            <input type="radio" id="sepCol2" :value="2" v-model="separatorForm.sectionColumns" />
+            <label for="sepCol2" class="grid-btn">2列</label>
+            <input type="radio" id="sepCol3" :value="3" v-model="separatorForm.sectionColumns" />
+            <label for="sepCol3" class="grid-btn">3列</label>
+            <input type="radio" id="sepCol4" :value="4" v-model="separatorForm.sectionColumns" />
+            <label for="sepCol4" class="grid-btn">4列</label>
+            <input type="radio" id="sepCol5" :value="5" v-model="separatorForm.sectionColumns" />
+            <label for="sepCol5" class="grid-btn">5列</label>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
+          <n-button size="small" @click="showSeparatorModal = false">取消</n-button>
+          <n-button type="primary" size="small" id="btnAddSeparator" @click="handleAppendSeparator">
+            <template #icon><AppIcon name="plus" :size="14" /></template>
+            确认插入分隔线
+          </n-button>
+        </div>
+      </div>
+    </n-modal>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { NButton, NPopconfirm, useMessage } from 'naive-ui';
+import { NButton, NPopconfirm, NModal, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
 import {
   parseCustomText,
@@ -741,9 +718,10 @@ const alphaSeqConfig = ref({ caseStyle: 'pair', subMode: 'full', rowMode: 3 });
 const alphaNeighConfig = ref({ count: 10, caseStyle: 'upper', layoutStyle: 'bottom-5col' });
 const alphaCaseConfig = ref({ count: 8, direction: 'random_switch', layoutStyle: 'right-4col' });
 
-// 分栏隔断设置
+// 题型分隔线设置
+const showSeparatorModal = ref(false);
 const separatorForm = ref({
-  title: '二、拓展强化练习',
+  title: '',
   sectionColumns: null
 });
 
@@ -755,7 +733,8 @@ function handleAppendSeparator() {
   });
   state.draft.items.push(item);
   state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
-  message.success('已插入分栏隔断！后续题目将遵循此区域独立分栏。');
+  showSeparatorModal.value = false;
+  message.success('已插入题型分隔线！后续题目将遵循此区域独立分栏。');
 }
 
 function handleGenerateAlphabet() {
@@ -975,11 +954,38 @@ onMounted(() => {
   align-items: center;
 }
 
+.btn-quick-separator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 4px;
+  border: 1px solid var(--primary);
+  background: rgba(47, 102, 89, 0.08);
+  color: var(--primary);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-quick-separator:hover {
+  background: var(--primary);
+  color: white;
+}
+
+#inputVisualSentence {
+  font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
+  font-size: 14px;
+}
+
 .visual-token-btn {
   padding: 3px 8px;
-  font-size: 12px;
+  font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
+  font-size: 14px;
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 5px;
   background: var(--bg-card);
   color: var(--text-main);
   cursor: pointer;
@@ -1002,14 +1008,6 @@ onMounted(() => {
 .token-placeholder {
   color: var(--text-light);
   font-size: 11.5px;
-}
-
-.visual-cloze-preview {
-  padding: 8px 10px;
-  background: var(--bg-app);
-  border: 1px dashed var(--border-color);
-  border-radius: 6px;
-  min-height: 38px;
 }
 
 .alphabet-type-tabs {

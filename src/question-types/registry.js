@@ -376,7 +376,7 @@ export const questionTypeRegistry = {
         : (context.fontSizePx || 18.67);
       const measured = calculateWritingGridWidth({
         text: cleanEn,
-        fontFamily: context.fontFamilyEn || 'Arial, sans-serif',
+        fontFamily: context.fontFamilyEn || "'Times New Roman', Times, serif",
         fontSize,
         availableWidth: context.availableWidthPx || 340,
         minWidth: 48,
@@ -576,7 +576,7 @@ export function shouldUseFullRow(item, settings = {}, availableWidthMm = 180) {
     const text = item.answer || item.en || '';
     const measured = measureAnswerText({
       text,
-      fontFamily: settings.fontFamilyEn || 'Arial, sans-serif',
+      fontFamily: settings.fontFamilyEn || "'Times New Roman', Times, serif",
       fontSize: (Number(settings.promptFontSize) || 14) * 1.333333,
       letterSpacing: parseFloat(settings.letterSpacing) || 0
     });

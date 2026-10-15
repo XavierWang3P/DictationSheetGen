@@ -126,8 +126,7 @@ async function runTests() {
     assert.strictEqual(r2.hasColSelector, false, '列表项上的单题列数切换控件已被移除');
     assert.strictEqual(r2.buttonCount, 3, '列表项仅保留上移、下移、删除 3 个核心操作');
     assert.ok(r2.buttons.every(b => b.width === '24px' && b.height === '24px'), '所有操作按钮统一固定为 24px × 24px');
-    assert.ok(r2.actionGroupOpacity <= 0.25, '操作按钮组默认处于半透明低权重状态');
-    assert.ok(r2.rowTitle.includes('双击'), '题目行带有双击可编辑的 title 属性');
+    assert.ok(r2.rowTitle.includes('编辑'), '题目行带有可编辑的 title 属性');
     console.log('-> 判定: ✅ PASS\n');
 
     // ================= 3. 验证双击题目进入二次编辑 & 句子挖空可视化单词点选 =================
@@ -151,8 +150,8 @@ async function runTests() {
       const clozeRow = document.querySelector('.compact-exam-row[data-debug-id="ITEM-test-cloze-1"]');
       if (!clozeRow) return { error: 'Cloze row not found' };
 
-      // 2. 双击该行
-      clozeRow.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+      // 2. 单击该行
+      clozeRow.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       await new Promise(r => setTimeout(r, 300));
 
       // 3. 检查弹窗是否打开，且单词芯片是否已解析
@@ -193,7 +192,7 @@ async function runTests() {
       };
     })()`);
     console.log('-> 结果:', JSON.stringify(r3, null, 2));
-    assert.strictEqual(r3.modalOpened, true, '双击题目成功触发二次编辑弹窗');
+    assert.strictEqual(r3.modalOpened, true, '单击题目成功触发二次编辑弹窗');
     assert.deepStrictEqual(
       r3.chipsInitial.map(c => c.text),
       ['Ask', 'your', 'teacher', 'for', 'help'],

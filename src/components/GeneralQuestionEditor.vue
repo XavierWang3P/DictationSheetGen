@@ -63,10 +63,10 @@
                 <label
                   class="answer-toggle clean-answer-badge"
                   :class="{ 'is-selected-answer': choice.answers.includes(option.id) }"
-                  :title="choice.selectionMode === 'single' ? '点击设为正确答案' : '点击切换正确答案'"
+                  title="点击设为正确答案"
                 >
                   <input
-                    :type="choice.selectionMode === 'single' ? 'radio' : 'checkbox'"
+                    type="radio"
                     name="choice-answer"
                     :checked="choice.answers.includes(option.id)"
                     @change="toggleChoiceAnswer(option.id)"
@@ -118,17 +118,8 @@
             </button>
           </div>
 
-          <!-- 精简二级设置（选择方式与排列方式） -->
+          <!-- 精简二级设置（仅保留排列方式，彻底移除多选） -->
           <div class="compact-config-row">
-            <div class="compact-config-item">
-              <span class="config-label">选择方式:</span>
-              <div class="compact-segmented">
-                <input type="radio" id="choiceSingle" value="single" v-model="choice.selectionMode" />
-                <label for="choiceSingle">单选</label>
-                <input type="radio" id="choiceMultiple" value="multiple" v-model="choice.selectionMode" />
-                <label for="choiceMultiple">多选</label>
-              </div>
-            </div>
             <div class="compact-config-item">
               <span class="config-label">选项排版:</span>
               <select id="choiceOptionLayout" v-model="choice.optionLayout" class="compact-select">
@@ -164,38 +155,28 @@
             </button>
           </div>
 
-          <!-- 模式 A: 句子可视化切词挖空（与句子挖空体验一致，生成下划线横线） -->
+          <!-- 模式 A: 句子可视化切词挖空（先输入原句，再点选单词生成填空） -->
           <div v-if="fillMode === 'visual'" class="fill-visual-container">
             <div class="form-item-block">
-              <label class="item-label">英文句子（题干）</label>
+              <label class="item-label">第一步：输入完整语句（在此输入完整的英文原句）</label>
               <input
                 type="text"
                 v-model="fillVisualSentence"
                 id="inlineFillStemInput"
-                placeholder="例如：He is a [teacher] in our school. 或输入句子点击下方设空"
+                placeholder="例如：He is a teacher in our school."
                 class="native-search-input"
                 @input="onFillVisualSentenceInput"
-              />
-            </div>
-
-            <div class="form-item-block">
-              <label class="item-label">中文翻译 / 语法提示（可选）</label>
-              <input
-                type="text"
-                v-model="fillVisualZh"
-                placeholder="例如：他是我们学校的一名老师。 或 语法提示 (teach)"
-                class="native-search-input"
               />
             </div>
 
             <!-- 可视化单词胶囊 -->
             <div class="visual-token-section">
               <label class="item-label" style="display:block; margin-bottom: 6px;">
-                点击单词设为横线填空（高亮绿色为填空下划线）：
+                第二步：在完整语句中点击选中需要挖空的单词（绿色高亮即生成填空位置，再次点击取消）：
               </label>
               <div class="visual-token-wrap" id="inlineFillVisualTokenWrap">
                 <template v-if="fillVisualWordTokens.length === 0">
-                  <span class="token-placeholder">请输入上方英文句子以生成可点击单词</span>
+                  <span class="token-placeholder">请在上方输入完整语句，系统将自动切词生成可点选单词</span>
                 </template>
                 <template v-else>
                   <button
@@ -212,16 +193,34 @@
               </div>
             </div>
 
-            <!-- 实时横线效果预览 -->
+            <div class="form-item-block">
+              <label class="item-label">中文解释 / 语法提示（可选，默认显示在题目正文上方；留空不显示）</label>
+              <input
+                type="text"
+                v-model="fillVisualZh"
+                placeholder="例如：他是我们学校的一名老师。 或 语法提示 (teach)（留空则不显示占位区域）"
+                class="native-search-input"
+              />
+            </div>
+
+            <!-- 填空生成效果（无虚线边框，纯净实线容器） -->
             <div class="visual-preview-section">
               <label class="item-label" style="display:block; margin-bottom: 6px;">
-                实时横线填空效果预览：
+                填空生成效果（中文解释居于正文上方）：
               </label>
               <div class="visual-cloze-preview">
                 <template v-if="fillVisualSegments.length === 0">
-                  <span class="token-placeholder">暂无预览内容</span>
+                  <span class="token-placeholder">暂无生成内容</span>
                 </template>
                 <template v-else>
+                  <!-- 中文解释默认显示在题目正文上方，没有中文解释时不显示空白占位区域 -->
+                  <div
+                    v-if="fillVisualZh && fillVisualZh.trim()"
+                    class="preview-zh-above-line"
+                    style="font-family:var(--font-zh, 'KaiTi', '楷体', STKaiti, serif); color:#64748b; font-size:12px; margin-bottom:4px;"
+                  >
+                    （{{ fillVisualZh.trim() }}）
+                  </div>
                   <div class="preview-sentence-line" style="font-family:'Times New Roman', Times, serif; font-size:14px; line-height:1.7;">
                     <template v-for="(seg, sIdx) in fillVisualSegments" :key="sIdx">
                       <span
@@ -233,9 +232,6 @@
                       </span>
                       <span v-else>{{ seg.text }}</span>
                     </template>
-                    <span v-if="fillVisualZh" class="preview-zh-inline" style="font-family:var(--font-zh, inherit); color:#64748b; font-size:12px; margin-left:6px;">
-                      （{{ fillVisualZh }}）
-                    </span>
                   </div>
                 </template>
               </div>
@@ -419,7 +415,7 @@ function resetChoice(source = null) {
   choice.labelStyle = item?.labelStyle || 'alpha-upper';
   choice.optionLayout = item?.optionLayout || 'auto';
   choice.options = item?.options?.map((option) => ({ ...option })) || [newOption(), newOption(), newOption()];
-  choice.answers = [...(item?.answers || [])];
+  choice.answers = [...(item?.answers?.slice(0, 1) || [])];
   choicePasteText.value = '';
 }
 
@@ -480,13 +476,7 @@ function moveOption(index, direction) {
 }
 
 function toggleChoiceAnswer(id) {
-  if (choice.selectionMode === 'single') {
-    choice.answers = choice.answers.includes(id) ? [] : [id];
-  } else if (choice.answers.includes(id)) {
-    choice.answers = choice.answers.filter((answer) => answer !== id);
-  } else {
-    choice.answers.push(id);
-  }
+  choice.answers = choice.answers.includes(id) ? [] : [id];
 }
 
 // 智能识别粘贴整道选择题
@@ -745,7 +735,7 @@ async function submitQuestion() {
 /* 智能整题识别粘贴卡片 */
 .choice-smart-card {
   background: var(--bg-hover, #f8fafc);
-  border: 1px dashed var(--border-color, #cbd5e1);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 6px;
   padding: 8px 10px;
   display: flex;
@@ -764,19 +754,25 @@ async function submitQuestion() {
   background: var(--primary, #2f6659);
   color: white;
   border: none;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 11px;
+  border-radius: 5px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  transition: all 0.15s ease;
+}
+.smart-parse-btn:hover {
+  opacity: 0.9;
 }
 .smart-paste-input {
   width: 100%;
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 4px;
-  padding: 6px;
+  border-radius: 5px;
+  padding: 6px 8px;
   font-size: 12px;
   background: white;
   resize: vertical;
@@ -834,9 +830,10 @@ async function submitQuestion() {
 .clean-option-input {
   flex: 1;
   min-width: 0;
+  height: 28px;
   border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 5px;
-  padding: 6px 10px;
+  padding: 0 10px;
   font-size: 13px;
   background: white;
 }
@@ -849,11 +846,13 @@ async function submitQuestion() {
   border: none;
   color: #94a3b8;
   cursor: pointer;
-  padding: 5px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 5px;
   transition: all 0.15s ease;
 }
 .clean-delete-btn:hover:not(:disabled) {
@@ -867,12 +866,14 @@ async function submitQuestion() {
 .clean-add-option-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   align-self: flex-start;
-  padding: 4px 10px;
-  background: transparent;
-  border: 1px dashed var(--border-color, #cbd5e1);
-  border-radius: 4px;
+  height: 28px;
+  padding: 0 12px;
+  background: white;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 5px;
   font-size: 12px;
   color: var(--primary, #2f6659);
   cursor: pointer;
@@ -889,7 +890,7 @@ async function submitQuestion() {
   align-items: center;
   gap: 16px;
   padding-top: 6px;
-  border-top: 1px dashed var(--border-color, #e2e8f0);
+  border-top: 1px solid var(--border-color, #f1f5f9);
 }
 .compact-config-item {
   display: flex;
@@ -903,9 +904,10 @@ async function submitQuestion() {
 }
 .compact-select {
   border: 1px solid var(--border-color, #cbd5e1);
-  border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 11.5px;
+  border-radius: 5px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
   background: white;
 }
 
@@ -919,8 +921,9 @@ async function submitQuestion() {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  border-radius: 4px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 5px;
   border: 1px solid var(--border-color, #cbd5e1);
   background: white;
   font-size: 12px;
@@ -980,14 +983,18 @@ async function submitQuestion() {
   font-size: 12px;
 }
 .visual-token-btn {
-  padding: 3px 8px;
-  border-radius: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 5px;
   border: 1px solid #cbd5e1;
   background: white;
   font-size: 12.5px;
   cursor: pointer;
   color: #334155;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .visual-token-btn.is-blank {
   background: var(--primary, #2f6659);
@@ -999,7 +1006,7 @@ async function submitQuestion() {
 .visual-cloze-preview {
   padding: 8px 10px;
   background: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
   min-height: 38px;
 }

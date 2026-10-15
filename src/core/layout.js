@@ -169,7 +169,7 @@ export const DEFAULT_SETTINGS = {
   clozeZhPosition: 'above',   // 'above' (固定在句子上方)
   clozeBlankWidth: 'auto',    // 默认按答案实际字体宽度的 150% 计算
   fontFamilyZh: "'KaiTi', '楷体', STKaiti, serif",
-  fontFamilyEn: 'Arial, sans-serif',
+  fontFamilyEn: "'Times New Roman', Times, serif",
   alphabetGuideFont: DEFAULT_ALPHABET_GUIDE_FONT,
   alphabetLayout: 'bottom-5col', // 字母左右邻居默认每行5题
   alphabetNeighborLayout: 'bottom-5col',
@@ -422,7 +422,7 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
     clozeBlankWidth = 'auto',
     strokeWidth = 0.85,
     lineColor = '#cbd5e1',
-    fontFamily = 'Arial, sans-serif',
+    fontFamily = "'Times New Roman', Times, serif",
     fontSize = 18,
     letterSpacing = 0,
     availableWidth = 280,
@@ -658,7 +658,7 @@ export function estimateQuestionHeightMm(item, s, copies = 3) {
     copies,
     settings: s,
     effectiveGridHeight: effectiveGridH,
-    fontFamilyEn: s.fontFamilyEn || 'Arial, sans-serif',
+    fontFamilyEn: s.fontFamilyEn || "'Times New Roman', Times, serif",
     fontSizePx: (Number(s.promptFontSize) || 14) * 1.333333,
     availableWidthPx: availableWidthMm * 3.7795275591
   });
@@ -1214,7 +1214,7 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         clozeBlankWidth: s.clozeBlankWidth || 'auto',
         strokeWidth: s.gridStroke || 0.85,
         lineColor: s.gridColor || '#cbd5e1',
-        fontFamily: s.fontFamilyEn || 'Arial, sans-serif',
+        fontFamily: "'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif",
         fontSize: fontSizePx,
         letterSpacing: parseFloat(s.letterSpacing) || 0,
         availableWidth: Math.max(48, availableWidthPx * 0.72),
@@ -1319,13 +1319,16 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
     },
     renderInlineFill(item) {
       const blankMap = new Map(item.blanks.map((blank) => [blank.id, blank]));
+      const zhAboveHtml = (item.zh && item.zh.trim())
+        ? `<div class="inline-fill-zh-above"><span class="inline-fill-zh-hint">（${escapeHtml(item.zh.trim())}）</span></div>`
+        : '';
       if (teacherMode) {
         const questionSegments = item.stemSegments.map((segment) => segment.type === 'text'
           ? escapeHtml(segment.text)
           : '<span class="teacher-inline-blank">______</span>').join('');
         const answerText = item.blanks.map((blank, index) => `${index + 1}. ${blank.answer || '未设置'}`).join('；');
         return {
-          promptHtml: createTeacherQuestionAnswerHtml(`<span class="teacher-question-english">${questionSegments}</span>`, answerText),
+          promptHtml: createTeacherQuestionAnswerHtml(`${zhAboveHtml}<span class="teacher-question-english">${questionSegments}</span>`, answerText),
           practiceHtml: '',
           classes: ['is-inline-fill-card', 'is-teacher-answer-card']
         };
@@ -1340,8 +1343,11 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         if (blank.lineStyle === 'four-line') return createInlineGridHtml(measurement.width, s, '', effectiveGridHeight);
         return `<span class="inline-fill-blank" style="width:${Math.round(measurement.width)}px;"></span>`;
       }).join('');
-      const zhHtml = item.zh ? `<span class="inline-fill-zh-hint" style="margin-left:6px;">（${escapeHtml(item.zh)}）</span>` : '';
-      return { promptHtml: `<span class="inline-fill-stem question-english-content">${segments}</span>${zhHtml}`, practiceHtml: '', classes: ['is-inline-fill-card'] };
+      return {
+        promptHtml: `${zhAboveHtml}<span class="inline-fill-stem question-english-content">${segments}</span>`,
+        practiceHtml: '',
+        classes: ['is-inline-fill-card']
+      };
     },
     renderComposition(item) {
       const fragment = item.compositionFragment;
@@ -1598,7 +1604,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   const titleSize = (typeof rawTitleSize === 'number' || !String(rawTitleSize).endsWith('pt')) ? `${rawTitleSize}pt` : rawTitleSize;
   const safeTitleSize = escapeHtml(String(titleSize).replace(/[^0-9a-zA-Z.]/g, ''));
   const safeFontFamily = escapeHtml(s.fontFamilyZh || "'KaiTi', '楷体', STKaiti, serif");
-  const safeFontFamilyEn = escapeHtml(s.fontFamilyEn || 'Arial, sans-serif');
+  const safeFontFamilyEn = escapeHtml(s.fontFamilyEn || "'Times New Roman', Times, serif");
   const safeTitleAlign = escapeHtml(s.titleAlign || 'center');
 
   let headerHtml = '';
@@ -1677,7 +1683,7 @@ export function renderPracticeSheetHtml(layout, settings) {
   s.layoutDefaults = normalizeLayoutDefaults(settings?.layoutDefaults, settings || {});
   const { copiesPerPage, isLandscape, pageWidthMm, pageHeightMm } = layout;
   const curPromptSize = Number(s.promptFontSize) || 14;
-  const safePageFontEn = escapeHtml(s.fontFamilyEn || 'Arial, sans-serif');
+  const safePageFontEn = escapeHtml(s.fontFamilyEn || "'Times New Roman', Times, serif");
   const effectivePromptSize = curPromptSize;
 
   let pagesHtml = '';

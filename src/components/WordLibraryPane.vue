@@ -1,278 +1,290 @@
 <template>
   <div class="word-library-pane" data-debug-id="L-001" data-debug-name="题库区">
+    <!-- 头部区：标题、词汇统计与高频操作 -->
     <div class="pane-header">
       <div class="pane-header-title">
         <span class="title-with-icon">
           <AppIcon name="book" :size="16" />
           题库
         </span>
+        <span class="quick-stat-badge" id="libStatBadge">共 {{ state.library.words.length }} 词</span>
       </div>
-      <span class="quick-stat-badge" id="libStatBadge">共 {{ state.library.words.length }} 词</span>
+
+      <div class="header-action-group">
+        <n-button
+          size="small"
+          type="primary"
+          ghost
+          id="btnLibImport"
+          data-debug-id="L-005"
+          data-debug-name="词库导入按钮"
+          @click="openImportModal"
+          title="从 Excel / CSV / 剪贴板批量导入"
+        >
+          <template #icon><AppIcon name="upload" :size="14" /></template>
+          导入
+        </n-button>
+        <n-button
+          size="small"
+          id="btnLibExport"
+          data-debug-id="L-006"
+          data-debug-name="词库导出按钮"
+          @click="handleExportLib"
+          title="导出题库备份文件"
+        >
+          <template #icon><AppIcon name="download" :size="14" /></template>
+          导出
+        </n-button>
+        <n-button
+          size="small"
+          id="btnPresetUnits"
+          @click="showPresetModal = true"
+          title="载入课标经典单元题库"
+        >
+          <template #icon><AppIcon name="book" :size="13" /></template>
+          课标
+        </n-button>
+        <n-popconfirm
+          @positive-click="handleClearLib"
+          positive-text="确定"
+          negative-text="取消"
+        >
+          <template #trigger>
+            <n-button size="small" type="error" ghost id="btnLibClear" title="清空本地题库">
+              <template #icon><AppIcon name="trash" :size="14" /></template>
+            </n-button>
+          </template>
+          确定要清空本地词库中的所有词汇吗？当前试卷中的内容不受影响。
+        </n-popconfirm>
+      </div>
     </div>
 
-    <p class="form-desc">
-      独立离线题库，存储于浏览器 IndexedDB。支持按年级/单元分组管理，从题库加入试卷后修改释义不影响题库。
-    </p>
-
-      <!-- 词库单元 / 分组管理栏 -->
-      <div class="lib-group-section" id="libGroupSection" data-debug-id="L-002" data-debug-name="词库分组导航">
-        <div class="lib-group-header">
-          <div style="display:flex; align-items:center; gap:5px;">
-            <span style="font-size:12px; font-weight:600; color:var(--text-main); display:inline-flex; align-items:center; gap:4px;">
-              <AppIcon name="tag" :size="13" />
-              词库分组 / 单元
-            </span>
-            <span style="font-size:11px; color:var(--text-light);">({{ groupStats.length }} 组)</span>
-          </div>
-
-          <div style="display:flex; gap:6px;">
-            <button
-              type="button"
-              class="lib-group-action-btn"
-              id="btnNewGroup"
-              @click="openNewGroupModal"
-              title="新建单词分组，如 X年级UnitX"
-            >
-              <AppIcon name="plus" :size="12" />
-              新建组
-            </button>
-            <button
-              type="button"
-              class="lib-group-action-btn"
-              id="btnPresetUnits"
-              @click="showPresetModal = true"
-              title="载入人教PEP小学英语经典单元词库"
-            >
-              <AppIcon name="book" :size="12" />
-              课标单元
-            </button>
-          </div>
+    <!-- 单元分组导航 -->
+    <div class="lib-group-section" id="libGroupSection" data-debug-id="L-002" data-debug-name="词库分组导航">
+      <div class="lib-group-header">
+        <div class="group-title-wrap">
+          <span class="group-header-label">
+            <AppIcon name="tag" :size="13" />
+            单元分类
+          </span>
+          <span class="group-header-count">({{ groupStats.length }})</span>
         </div>
-
-        <!-- 分组胶囊横向滚动选择列表 -->
-        <div class="group-pills-bar" id="groupPillsBar">
-          <button
-            type="button"
-            class="group-pill-btn"
-            :class="{ active: activeGroup === 'all' }"
-            id="pillGroupAll"
-            @click="activeGroup = 'all'"
-          >
-            全部 ({{ state.library.words.length }})
-          </button>
-          <div
-            v-for="grp in groupStats"
-            :key="grp.name"
-            class="group-pill-btn"
-            :class="{ active: activeGroup === grp.name }"
-            :id="'pillGroup_' + cleanId(grp.name)"
-            role="button"
-            tabindex="0"
-            @click="activeGroup = grp.name"
-            @keydown.enter.space.prevent="activeGroup = grp.name"
-          >
-            <span>{{ grp.name }} ({{ grp.count }})</span>
-            <IconActionButton
-              v-if="grp.name !== '通用词汇'"
-              class="pill-del-icon"
-              :id="'btnDelPill_' + cleanId(grp.name)"
-              label="删除此分组"
-              icon="x"
-              :icon-size="10"
-              @click.stop="promptDeleteGroup(grp.name)"
-            />
-          </div>
-        </div>
+        <button
+          type="button"
+          class="btn-new-group-pill"
+          id="btnNewGroup"
+          @click="openNewGroupModal"
+          title="新建单词分组，如 X年级UnitX"
+        >
+          <AppIcon name="plus" :size="12" /> 新建组
+        </button>
       </div>
 
-      <!-- 搜索框 -->
-      <div style="margin-bottom: 10px;">
-        <input
-          type="text"
-          v-model="searchQuery"
-          id="inputSearchLib"
-          data-debug-id="L-003"
-          data-debug-name="词库搜索输入框"
-          placeholder="搜索词库 (英文、中文或单元分组)..."
-          class="native-search-input"
-        />
-      </div>
-
-      <!-- 操作工具栏 -->
-      <div class="toolbar-row">
-        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-          <n-button size="small" id="btnLibSelectAll" @click="handleToggleSelectAll">
-            {{ isAllSelected ? '取消全选' : '全选 / 反选' }}
-          </n-button>
-          <n-button
-            type="primary"
-            size="small"
-            id="btnLibBatchAddToDraft"
-            data-debug-id="L-004"
-            data-debug-name="词库批量加入试卷按钮"
-            @click="handleBatchAdd"
-          >
-            <template #icon><AppIcon name="plus" :size="14" /></template>
-            批量加入试卷
-          </n-button>
-          <n-button
-            v-if="selectedIds.size > 0"
-            size="small"
-            id="btnBatchSetGroup"
-            @click="openBatchSetGroupModal"
-            title="为已选中的单词统一设置/移动分组"
-          >
-            <template #icon><AppIcon name="tag" :size="14" /></template>
-            设为分组
-          </n-button>
-        </div>
-
-        <div style="display:flex; gap:6px; align-items:center;">
-          <n-button
-            size="small"
-            type="primary"
-            ghost
-            id="btnLibImport"
-            data-debug-id="L-005"
-            data-debug-name="词库导入按钮"
-            @click="openImportModal"
-            title="从 Excel / CSV / 剪贴板批量导入单词到词库"
-          >
-            <template #icon><AppIcon name="upload" :size="14" /></template>
-            导入
-          </n-button>
-          <n-button
-            size="small"
-            id="btnLibExport"
-            data-debug-id="L-006"
-            data-debug-name="词库导出按钮"
-            @click="handleExportLib"
-          >
-            <template #icon><AppIcon name="download" :size="14" /></template>
-            导出
-          </n-button>
-          <n-popconfirm
-            @positive-click="handleClearLib"
-            positive-text="确定"
-            negative-text="取消"
-          >
-            <template #trigger>
-              <n-button size="small" type="error" ghost id="btnLibClear">
-                <template #icon><AppIcon name="trash" :size="14" /></template>
-                清空
-              </n-button>
-            </template>
-            确定要清空本地词库中的所有词汇吗？当前试卷中的内容不受影响。
-          </n-popconfirm>
+      <!-- 分组胶囊横向滚动选择列表 -->
+      <div class="group-pills-bar" id="groupPillsBar">
+        <button
+          type="button"
+          class="group-pill-btn"
+          :class="{ active: activeGroup === 'all' }"
+          id="pillGroupAll"
+          @click="activeGroup = 'all'"
+        >
+          全部 ({{ state.library.words.length }})
+        </button>
+        <div
+          v-for="grp in groupStats"
+          :key="grp.name"
+          class="group-pill-btn"
+          :class="{ active: activeGroup === grp.name }"
+          :id="'pillGroup_' + cleanId(grp.name)"
+          role="button"
+          tabindex="0"
+          @click="activeGroup = grp.name"
+          @keydown.enter.space.prevent="activeGroup = grp.name"
+        >
+          <span>{{ grp.name }} ({{ grp.count }})</span>
+          <IconActionButton
+            v-if="grp.name !== '通用词汇'"
+            class="pill-del-icon"
+            :id="'btnDelPill_' + cleanId(grp.name)"
+            label="删除此分组"
+            icon="x"
+            :icon-size="10"
+            @click.stop="promptDeleteGroup(grp.name)"
+          />
         </div>
       </div>
+    </div>
 
-      <!-- 选中状态信息 -->
-      <div id="libSelectedInfo" class="selected-info-text">
-        当前展示 <strong>{{ filteredWords.length }}</strong> 词 · 已选中 <strong id="libSelectedCount" style="color:var(--primary);">{{ selectedIds.size }}</strong> 词
-        <span v-if="activeGroup !== 'all'" style="margin-left:6px; color:var(--primary); font-weight:500;">
-          [当前单元: {{ activeGroup }}]
-          <button
-            v-if="activeGroup !== '通用词汇'"
-            type="button"
-            class="btn-delete-group-inline"
-            id="btnDeleteCurrentGroup"
-            @click="promptDeleteGroup(activeGroup)"
-            title="删除当前分组"
-          >
-            <AppIcon name="trash" :size="12" />
-            删除该组
-          </button>
-        </span>
+    <!-- 搜索输入框 -->
+    <div class="search-input-wrap">
+      <input
+        type="text"
+        v-model="searchQuery"
+        id="inputSearchLib"
+        data-debug-id="L-003"
+        data-debug-name="词库搜索输入框"
+        placeholder="搜索英文单词、中文释义或分组..."
+        class="native-search-input"
+      />
+    </div>
+
+    <!-- 批量操作与统计状态栏 -->
+    <div class="toolbar-row">
+      <div class="toolbar-left">
+        <n-button size="small" id="btnLibSelectAll" @click="handleToggleSelectAll">
+          {{ isAllSelected ? '取消全选' : '全选' }}
+        </n-button>
+        <n-button
+          type="primary"
+          size="small"
+          id="btnLibBatchAddToDraft"
+          data-debug-id="L-004"
+          data-debug-name="词库批量加入试卷按钮"
+          :disabled="selectedIds.size === 0"
+          @click="handleBatchAdd"
+        >
+          <template #icon><AppIcon name="plus" :size="14" /></template>
+          批量加入试卷
+        </n-button>
+        <n-button
+          v-if="selectedIds.size > 0"
+          size="small"
+          id="btnBatchSetGroup"
+          @click="openBatchSetGroupModal"
+          title="为已选中的单词统一设置/移动分组"
+        >
+          <template #icon><AppIcon name="tag" :size="13" /></template>
+          设为分组
+        </n-button>
       </div>
 
-      <!-- 词库条目列表 (由 Vue 响应式 v-for 驱动，无 innerHTML 干扰) -->
-      <div
-        class="words-list-container"
-        id="libWordsContainer"
-        data-debug-id="L-007"
-        data-debug-name="词库条目列表"
-      >
-        <template v-if="filteredWords.length === 0">
-          <div class="empty-list-tip">
-            {{ searchQuery ? '未检索到符合条件的词汇' : (activeGroup !== 'all' ? `「${activeGroup}」分组暂无单词，可勾选单词后设置分组移入` : '本地词库为空，可从左侧试卷保存或点击下方导入') }}
-            <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;" v-if="!searchQuery">
-              <n-button size="small" type="primary" ghost @click="openImportModal" id="btnEmptyTipImport">
-                <template #icon><AppIcon name="upload" :size="14" /></template>
-                批量导入单词 (支持 Excel / 剪贴板 / CSV)
-              </n-button>
+      <div class="toolbar-right" id="libSelectedInfo">
+        <span>已选 <strong id="libSelectedCount" style="color:var(--primary);">{{ selectedIds.size }}</strong> / {{ filteredWords.length }} 词</span>
+        <button
+          v-if="activeGroup !== 'all' && activeGroup !== '通用词汇'"
+          type="button"
+          class="btn-delete-group-inline"
+          id="btnDeleteCurrentGroup"
+          @click="promptDeleteGroup(activeGroup)"
+          title="删除当前单元分组"
+        >
+          <AppIcon name="trash" :size="11" />
+          删除本组
+        </button>
+      </div>
+    </div>
+
+    <!-- 词库条目列表 -->
+    <div
+      class="words-list-container"
+      id="libWordsContainer"
+      data-debug-id="L-007"
+      data-debug-name="词库条目列表"
+    >
+      <template v-if="filteredWords.length === 0">
+        <div class="empty-list-tip">
+          <template v-if="searchQuery">
+            <AppIcon name="search" :size="24" style="color:var(--text-light); margin-bottom:6px;" />
+            <div>未找到与「{{ searchQuery }}」匹配的词汇</div>
+            <n-button size="small" style="margin-top:8px;" @click="searchQuery = ''">
+              清空搜索条件
+            </n-button>
+          </template>
+          <template v-else-if="activeGroup !== 'all'">
+            <AppIcon name="folder" :size="24" style="color:var(--text-light); margin-bottom:6px;" />
+            <div>「{{ activeGroup }}」分组暂无单词</div>
+            <div style="margin-top:8px; display:flex; gap:6px; justify-content:center;">
               <n-button
-                v-if="activeGroup !== 'all' && activeGroup !== '通用词汇'"
+                v-if="activeGroup !== '通用词汇'"
                 size="small"
                 type="error"
                 ghost
-                @click="promptDeleteGroup(activeGroup)"
                 id="btnDeleteEmptyGroup"
+                @click="promptDeleteGroup(activeGroup)"
               >
-                <template #icon><AppIcon name="trash" :size="14" /></template>
+                <template #icon><AppIcon name="trash" :size="13" /></template>
                 删除此空分组
               </n-button>
             </div>
-          </div>
-        </template>
+          </template>
+          <template v-else>
+            <AppIcon name="book" :size="28" style="color:var(--text-light); margin-bottom:6px;" />
+            <div style="font-size:13px; font-weight:600; color:var(--text-main); margin-bottom:4px;">本地题库为空</div>
+            <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px;">可导入 Excel/CSV 文件或载入经典课标单元词库</div>
+            <div style="display:flex; gap:8px; justify-content:center;">
+              <n-button size="small" type="primary" ghost id="btnEmptyTipImport" @click="openImportModal">
+                <template #icon><AppIcon name="upload" :size="14" /></template>
+                批量导入
+              </n-button>
+              <n-button size="small" @click="showPresetModal = true">
+                <template #icon><AppIcon name="book" :size="14" /></template>
+                课标单元
+              </n-button>
+            </div>
+          </template>
+        </div>
+      </template>
 
-        <template v-else>
-          <div
-            v-for="w in filteredWords"
-            :key="w.id"
-            class="lib-item-row"
+      <template v-else>
+        <div
+          v-for="(w, idx) in filteredWords"
+          :key="w.id"
+          class="lib-item-row"
+          :class="{ 'is-selected': selectedIds.has(w.id) }"
+          :data-id="w.id"
+        >
+          <input
+            type="checkbox"
+            class="lib-item-check"
             :data-id="w.id"
-          >
-            <input
-              type="checkbox"
-              class="lib-item-check"
-              :data-id="w.id"
-              :checked="selectedIds.has(w.id)"
-              @change.stop="toggleItemSelect(w.id)"
-              style="cursor:pointer;"
-            />
+            :checked="selectedIds.has(w.id)"
+            @change.stop="toggleItemSelect(w.id)"
+          />
 
-            <div class="lib-item-text">
-              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                <strong style="color:var(--text-main); font-size:12.5px;">{{ w.en }}</strong>
-                <span v-if="w.phonetic" style="color:var(--accent); font-size:11px;">[{{ w.phonetic }}]</span>
-                <span
-                  class="word-group-tag"
-                  :title="'点击更改分组（当前：' + (w.group || '通用词汇') + '）'"
-                  @click.stop="openEditSingleGroup(w)"
-                >
-                  <AppIcon name="tag" :size="11" />
-                  {{ w.group || '通用词汇' }}
-                </span>
-              </div>
-              <div style="color:var(--text-muted); font-size:11.5px; margin-top:2px;">
-                {{ w.zh || '' }}
-              </div>
-            </div>
+          <span class="lib-item-num">{{ idx + 1 }}.</span>
 
-            <div class="lib-item-actions">
-              <button
-                type="button"
-                class="btn-lib-add btn-act"
-                :data-id="w.id"
-                title="添加到当前试卷"
-                @click.stop="handleAddSingle(w)"
+          <div class="lib-item-text">
+            <div class="lib-item-primary">
+              <strong class="lib-item-word">{{ w.en }}</strong>
+              <span v-if="w.phonetic" class="lib-item-phonetic">[{{ w.phonetic }}]</span>
+              <span
+                class="word-group-tag"
+                :title="'点击更改分组（当前：' + (w.group || '通用词汇') + '）'"
+                @click.stop="openEditSingleGroup(w)"
               >
-                <AppIcon name="plus" :size="11" />
-                试卷
-              </button>
-              <IconActionButton
-                class="btn-lib-del btn-act del"
-                :data-id="w.id"
-                label="从词库中删除"
-                icon="trash"
-                :icon-size="11"
-                @click.stop="handleDelete(w.id)"
-              />
+                <AppIcon name="tag" :size="10" />
+                {{ w.group || '通用词汇' }}
+              </span>
+            </div>
+            <div v-if="w.zh" class="lib-item-zh">
+              {{ w.zh }}
             </div>
           </div>
-        </template>
-      </div>
+
+          <div class="lib-item-actions">
+            <button
+              type="button"
+              class="btn-lib-add btn-act"
+              :data-id="w.id"
+              title="添加到试卷"
+              @click.stop="handleAddSingle(w)"
+            >
+              <AppIcon name="plus" :size="11" />
+              试卷
+            </button>
+            <IconActionButton
+              class="btn-lib-del btn-act del"
+              :data-id="w.id"
+              label="从题库中删除"
+              icon="trash"
+              :icon-size="11"
+              @click.stop="handleDelete(w.id)"
+            />
+          </div>
+        </div>
+      </template>
+    </div>
 
     <!-- 弹窗 1: 新建词库分组 -->
     <n-modal
@@ -1191,7 +1203,7 @@ function handleDownloadCsvTemplate() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   user-select: none;
   width: 100%;
 }
@@ -1211,19 +1223,27 @@ function handleDownloadCsvTemplate() {
   color: var(--text-main);
 }
 
-.form-desc {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  line-height: 1.45;
-  margin: 0 0 10px 0;
+.quick-stat-badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--bg-hover, #f1f5f9);
+  color: var(--text-muted, #64748b);
+  border: 1px solid var(--border-light, #e2e8f0);
+}
+
+.header-action-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* 分组导航区域 */
 .lib-group-section {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   background: transparent;
-  border-bottom: 1px solid var(--border-light);
-  padding: 0 0 10px 0;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+  padding: 0 0 8px 0;
 }
 
 .lib-group-header {
@@ -1233,21 +1253,45 @@ function handleDownloadCsvTemplate() {
   margin-bottom: 6px;
 }
 
-.lib-group-action-btn {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
+.group-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.group-header-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.group-header-count {
+  font-size: 11px;
+  color: var(--text-light);
+}
+
+.btn-new-group-pill {
+  background: white;
+  border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 4px;
   font-size: 11px;
-  padding: 2px 7px;
-  color: var(--primary);
+  height: 22px;
+  padding: 0 8px;
+  color: var(--primary, #2f6659);
   font-weight: 500;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   transition: all 0.15s ease;
 }
 
-.lib-group-action-btn:hover {
-  background: var(--primary-light);
-  border-color: var(--primary);
+.btn-new-group-pill:hover {
+  background: var(--bg-hover, #f1f5f9);
+  border-color: var(--primary, #2f6659);
 }
 
 .group-pills-bar {
@@ -1263,26 +1307,27 @@ function handleDownloadCsvTemplate() {
   align-items: center;
   gap: 4px;
   white-space: nowrap;
-  font-size: 11px;
-  padding: 3px 8px;
+  font-size: 11.5px;
+  height: 24px;
+  padding: 0 9px;
   border-radius: 12px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-color, #cbd5e1);
   background: #ffffff;
-  color: var(--text-muted);
+  color: var(--text-muted, #64748b);
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
 
 .group-pill-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--primary, #2f6659);
+  color: var(--primary, #2f6659);
 }
 
 .group-pill-btn.active {
-  background: var(--primary);
+  background: var(--primary, #2f6659);
   color: #ffffff;
-  border-color: var(--primary);
+  border-color: var(--primary, #2f6659);
   font-weight: 600;
 }
 
@@ -1290,10 +1335,8 @@ function handleDownloadCsvTemplate() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
-  font-size: 12px;
-  line-height: 1;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   color: var(--text-light);
   margin-left: 2px;
@@ -1301,9 +1344,8 @@ function handleDownloadCsvTemplate() {
 }
 
 .pill-del-icon:hover {
-  background: #faeceb;
-  color: var(--danger);
-  font-weight: bold;
+  background: #fee2e2;
+  color: #ef4444;
 }
 
 .group-pill-btn.active .pill-del-icon {
@@ -1315,39 +1357,28 @@ function handleDownloadCsvTemplate() {
   color: #ffffff;
 }
 
-.btn-delete-group-inline {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--danger);
-  font-size: 10.5px;
-  padding: 1px 6px;
-  cursor: pointer;
-  margin-left: 6px;
-  transition: all 0.15s ease;
-}
-
-.btn-delete-group-inline:hover {
-  background: #faeceb;
-  border-color: var(--danger);
+.search-input-wrap {
+  position: relative;
+  margin-bottom: 8px;
 }
 
 .native-search-input {
   width: 100%;
-  padding: 7px 10px;
-  font-size: 13px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  background: white;
   color: var(--text-main);
-  border-radius: 6px;
+  border-radius: 5px;
   outline: none;
   font-family: inherit;
   transition: all 0.15s ease;
 }
 
 .native-search-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary-light);
+  border-color: var(--primary, #2f6659);
+  box-shadow: 0 0 0 2px rgba(47, 102, 89, 0.12);
 }
 
 .toolbar-row {
@@ -1359,96 +1390,186 @@ function handleDownloadCsvTemplate() {
   gap: 6px;
 }
 
-.selected-info-text {
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11.5px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
+  color: var(--text-muted, #64748b);
+}
+
+.btn-delete-group-inline {
+  background: transparent;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 4px;
+  color: #ef4444;
+  font-size: 10.5px;
+  height: 22px;
+  padding: 0 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-group-inline:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
 }
 
 .words-list-container {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 400px;
+  max-height: 480px;
   overflow-y: auto;
 }
 
 .empty-list-tip {
   text-align: center;
-  padding: 30px;
-  color: var(--text-light);
+  padding: 32px 16px;
+  color: var(--text-light, #94a3b8);
   font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .lib-item-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 7px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
+  padding: 6px 10px;
+  background: white;
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 5px;
   font-size: 12px;
   gap: 8px;
   transition: all 0.15s ease;
 }
 
 .lib-item-row:hover {
-  border-color: var(--primary-border, var(--border-color));
-  background: var(--bg-sidebar);
+  border-color: var(--primary, #2f6659);
+  background: var(--bg-hover, #f8fafc);
+}
+
+.lib-item-row.is-selected {
+  background: rgba(47, 102, 89, 0.05);
+  border-color: var(--primary, #2f6659);
+}
+
+.lib-item-check {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  accent-color: var(--primary, #2f6659);
+}
+
+.lib-item-num {
+  font-family: 'Times New Roman', serif;
+  font-size: 11.5px;
+  color: #94a3b8;
+  min-width: 18px;
+  text-align: left;
 }
 
 .lib-item-text {
   flex: 1;
   min-width: 0;
-  margin-left: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lib-item-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.lib-item-word {
+  font-family: 'Times New Roman', serif;
+  font-size: 13px;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.lib-item-phonetic {
+  font-family: 'Times New Roman', serif;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.lib-item-zh {
+  font-family: var(--font-zh, 'KaiTi', '楷体', STKaiti, serif);
+  font-size: 11.5px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .word-group-tag {
-  display: inline-block;
-  font-size: 10.5px;
-  color: var(--primary);
-  background: var(--primary-light);
-  border: 1px solid var(--primary-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--primary, #2f6659);
+  background: rgba(47, 102, 89, 0.08);
+  border: 1px solid rgba(47, 102, 89, 0.2);
   border-radius: 4px;
-  padding: 1px 5px;
+  padding: 0 5px;
+  height: 18px;
   cursor: pointer;
-  line-height: 1.25;
   transition: all 0.15s ease;
 }
 
 .word-group-tag:hover {
-  background: var(--primary);
+  background: var(--primary, #2f6659);
   color: #ffffff;
 }
 
 .lib-item-actions {
   display: flex;
   gap: 4px;
+  align-items: center;
   flex-shrink: 0;
 }
 
 .btn-act {
-  background: transparent;
-  border: 1px solid var(--border-color);
+  background: white;
+  border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 4px;
-  padding: 2px 7px;
+  height: 24px;
+  padding: 0 7px;
   font-size: 11px;
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--text-muted, #64748b);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   transition: all 0.15s ease;
 }
 
 .btn-act:hover {
-  background: var(--primary-light);
-  color: var(--primary);
-  border-color: var(--primary);
+  background: rgba(47, 102, 89, 0.08);
+  color: var(--primary, #2f6659);
+  border-color: var(--primary, #2f6659);
 }
 
 .btn-act.del:hover {
-  background: #faeceb;
-  color: var(--danger);
-  border-color: var(--danger);
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #ef4444;
 }
 
 .group-select-chip {
@@ -1492,8 +1613,8 @@ function handleDownloadCsvTemplate() {
 }
 
 .import-tips-banner {
-  background: var(--bg-sidebar);
-  border: 1px dashed var(--primary-border);
+  background: var(--bg-hover, #f8fafc);
+  border: 1px solid var(--border-light, #e2e8f0);
   border-radius: 8px;
   padding: 10px 12px;
 }

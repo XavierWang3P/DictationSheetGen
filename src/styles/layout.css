@@ -8,6 +8,11 @@
   overflow: hidden;
 }
 
+/* 移动端访问拦截与防闪烁隔离规则 */
+html.is-mobile-device .app-layout {
+  display: none !important;
+}
+
 .app-workspace {
   display: flex;
   flex: 1;

@@ -7,7 +7,7 @@ function getBrowserMeasureText(fontFamily, fontSize, fontWeight, letterSpacing) 
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   if (!context) return null;
-  context.font = `${fontWeight || 400} ${fontSize}px ${fontFamily || 'Arial, sans-serif'}`;
+  context.font = `${fontWeight || 400} ${fontSize}px ${fontFamily || "'Times New Roman', Times, serif"}`;
   return (text) => {
     const base = context.measureText(text).width;
     const spacing = Math.max(0, Number(letterSpacing) || 0) * Math.max(0, text.length - 1);
@@ -27,7 +27,7 @@ function fallbackMeasure(text, fontSize) {
 
 export function measureAnswerText({
   text = '',
-  fontFamily = 'Arial, sans-serif',
+  fontFamily = "'Times New Roman', Times, serif",
   fontSize = 16,
   fontWeight = 400,
   letterSpacing = 0,
@@ -56,7 +56,7 @@ export function measureAnswerText({
  */
 export function calculateWritingGridWidth({
   text = '',
-  fontFamily = 'Arial, sans-serif',
+  fontFamily = "'Times New Roman', Times, serif",
   fontSize = 16,
   fontWeight = 400,
   letterSpacing = 0,

@@ -385,20 +385,14 @@
           <select class="form-select" id="selectFontZh" v-model="state.draft.settings.fontFamilyZh">
             <option value="'KaiTi', '楷体', STKaiti, serif">楷体</option>
             <option value="'OPPO Sans', 'OPPOSans', sans-serif">OPPO Sans</option>
-            <option value="'Noto Sans SC', 'Source Han Sans SC', '思源黑体', sans-serif">思源黑体</option>
-            <option value="'SimSun', '宋体', serif">宋体</option>
-            <option value="'SimHei', '黑体', sans-serif">黑体</option>
-            <option value="'FangSong', '仿宋', serif">仿宋</option>
           </select>
         </div>
 
-        <!-- 英文字体 (句子挖空 / 练习示范) -->
+        <!-- 英文字体 -->
         <div class="form-row">
           <label>英文字体</label>
           <select class="form-select" id="selectFontEn" v-model="state.draft.settings.fontFamilyEn">
-            <option value="Arial, sans-serif">Arial</option>
             <option value="'Times New Roman', Times, serif">Times New Roman</option>
-            <option value="'Georgia', serif">Georgia</option>
             <option
               v-for="font in EMBEDDED_HANDWRITING_FONTS"
               :key="font.id"
@@ -409,7 +403,7 @@
           </select>
         </div>
         <p class="field-note">
-          说明：除“句子挖空”跟随所选英文字体外，填空题、选择题、作文题等常规题型均默认强制使用 Times New Roman 规范印刷体；字母专项固定使用 xumin 字体。
+          说明：中文全局默认使用楷体；英文全局默认使用 Times New Roman；句子挖空与字母专项等四线三格内容默认使用 XuMin 规范手写体。
         </p>
 
         <!-- 字母范字字体 -->
