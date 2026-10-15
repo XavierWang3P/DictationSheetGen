@@ -29,7 +29,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "=== 3. Deploying to Target Directory ($DeployPath) ===" -ForegroundColor Cyan
-$cmd = "sudo mkdir -p $DeployPath; sudo cp /tmp/index.html $DeployPath/index.html; sudo chmod 644 $DeployPath/index.html; sudo rm -f /tmp/index.html; sudo ln -sfn $DeployPath /www/sites/run.i2c.icu/index/DictationSheetGen"
+$cmd = "sudo mkdir -p $DeployPath; sudo cp /tmp/index.html $DeployPath/index.html; sudo chmod 644 $DeployPath/index.html; sudo rm -f /tmp/index.html"
 ssh $RemoteHost $cmd
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Remote deployment command failed." -ForegroundColor Red
@@ -42,4 +42,3 @@ ssh $RemoteHost "curl -sI $PublicUrl | head -n 5"
 Write-Host ""
 Write-Host "Deployment Successful!" -ForegroundColor Green
 Write-Host "URL: $PublicUrl" -ForegroundColor Yellow
-Write-Host "Alternative URL: https://run.i2c.icu/DictationSheetGen/" -ForegroundColor Yellow
