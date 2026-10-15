@@ -44,7 +44,7 @@ import AppIcon from './AppIcon.vue';
 
 <style scoped>
 .layout-inspector {
-  width: 410px;
+  width: 450px;
   background: var(--bg-sidebar);
   border-left: 1px solid var(--border-color);
   display: flex;
@@ -129,9 +129,15 @@ import AppIcon from './AppIcon.vue';
   width: 100%;
 }
 
-@media (max-width: 1366px) {
+@media (max-width: 1440px) {
   .layout-inspector {
-    width: 380px;
+    width: 420px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .layout-inspector {
+    width: 390px;
   }
 }
 </style>

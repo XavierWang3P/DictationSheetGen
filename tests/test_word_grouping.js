@@ -49,6 +49,13 @@ async function testWordGrouping() {
 
     await new Promise(r => ws.onopen = r);
 
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!document.querySelector('.sidebar-tab-btn[data-tab="paneWordLib"]') && !!window.__appStoreState`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // 切换到本地词库 Tab
     console.log('切换到“本地词库”标签页...');
     await evalExpr(`(async () => {

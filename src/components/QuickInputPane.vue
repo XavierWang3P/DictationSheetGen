@@ -1,103 +1,102 @@
 <template>
   <div class="quick-input-pane" data-debug-id="Q-001" data-debug-name="题目录入区">
-    <n-card size="small" :bordered="false" class="pane-card">
-      <template #header>
-        <div class="pane-header-title">
-          <span class="title-with-icon">
-            <AppIcon name="edit" :size="16" />
-            题目录入与试卷结构
-          </span>
-          <span class="quick-stat-badge" id="badgeWordCount" @click="switchToTab('paneList')" title="点击切换到试卷题目清单" style="cursor:pointer;">
-            已添加 {{ state.draft.items.length }} 题 <AppIcon name="arrow-right" :size="12" />
-          </span>
-        </div>
-      </template>
-
-      <!-- 录入题型切换 (单词默写 / 句子挖空 / 句子默写 / 字母专项 / 选择题 / 填空题 / 英语作文) -->
-      <div class="form-row" style="margin-bottom: 12px;">
-        <label class="row-label">录入题型</label>
-        <div class="segmented-control question-type-segmented" data-debug-id="Q-002" data-debug-name="题型切换器">
-          <input
-            type="radio"
-            name="inputType"
-            id="modeWriting"
-            value="word-dictation"
-            :checked="currentInputType === 'word-dictation'"
-            @change="onInputTypeChange('word-dictation')"
-          />
-          <label for="modeWriting" class="qtype-btn qtype-span-3">单词默写</label>
-
-          <input
-            type="radio"
-            name="inputType"
-            id="modeCloze"
-            value="sentence-cloze"
-            :checked="currentInputType === 'sentence-cloze'"
-            @change="onInputTypeChange('sentence-cloze')"
-          />
-          <label for="modeCloze" class="qtype-btn qtype-span-3">句子挖空</label>
-
-          <input
-            type="radio"
-            name="inputType"
-            id="typeSentence"
-            value="sentence-dictation"
-            :checked="currentInputType === 'sentence-dictation'"
-            @change="onInputTypeChange('sentence-dictation')"
-          />
-          <label for="typeSentence" class="qtype-btn qtype-span-3">句子默写</label>
-
-          <input
-            type="radio"
-            name="inputType"
-            id="modeAlphabet"
-            value="alphabet"
-            :checked="currentInputType === 'alphabet'"
-            @change="onInputTypeChange('alphabet')"
-          />
-          <label for="modeAlphabet" class="qtype-btn qtype-span-3">字母专项</label>
-
-          <input
-            type="radio"
-            name="inputType"
-            id="modeChoice"
-            value="choice"
-            :checked="currentInputType === 'choice'"
-            @change="onInputTypeChange('choice')"
-          />
-          <label for="modeChoice" class="qtype-btn qtype-span-3">选择题</label>
-
-          <input
-            type="radio"
-            name="inputType"
-            id="modeInlineFill"
-            value="inline-fill"
-            :checked="currentInputType === 'inline-fill'"
-            @change="onInputTypeChange('inline-fill')"
-          />
-          <label for="modeInlineFill" class="qtype-btn qtype-span-3">填空题</label>
-
-          <input
-            type="radio"
-            name="inputType"
-            id="modeComposition"
-            value="english-composition"
-            :checked="currentInputType === 'english-composition'"
-            @change="onInputTypeChange('english-composition')"
-          />
-          <label for="modeComposition" class="qtype-btn qtype-span-3">英语作文</label>
-
-          <input
-            type="radio"
-            name="inputType"
-            id="modeSeparator"
-            value="separator"
-            :checked="currentInputType === 'separator'"
-            @change="onInputTypeChange('separator')"
-          />
-          <label for="modeSeparator" class="qtype-btn qtype-span-3">分栏隔断</label>
-        </div>
+    <div class="pane-header">
+      <div class="pane-header-title">
+        <span class="title-with-icon">
+          <AppIcon name="edit" :size="16" />
+          题目录入与试卷结构
+        </span>
       </div>
+      <span class="quick-stat-badge" id="badgeWordCount" @click="switchToTab('paneList')" title="点击切换到试卷题目清单" style="cursor:pointer;">
+        已添加 {{ state.draft.items.length }} 题 <AppIcon name="arrow-right" :size="12" />
+      </span>
+    </div>
+
+    <!-- 录入题型切换 (单词默写 / 句子挖空 / 句子默写 / 字母专项 / 选择题 / 填空题 / 英语作文 / 分栏隔断) -->
+    <div class="form-row" style="margin-bottom: 12px;">
+      <label class="row-label">录入题型</label>
+      <div class="grid-button-group question-type-grid" data-debug-id="Q-002" data-debug-name="题型切换器">
+        <input
+          type="radio"
+          name="inputType"
+          id="modeWriting"
+          value="word-dictation"
+          :checked="currentInputType === 'word-dictation'"
+          @change="onInputTypeChange('word-dictation')"
+        />
+        <label for="modeWriting" class="grid-btn">单词默写</label>
+
+        <input
+          type="radio"
+          name="inputType"
+          id="modeCloze"
+          value="sentence-cloze"
+          :checked="currentInputType === 'sentence-cloze'"
+          @change="onInputTypeChange('sentence-cloze')"
+        />
+        <label for="modeCloze" class="grid-btn">句子挖空</label>
+
+        <input
+          type="radio"
+          name="inputType"
+          id="typeSentence"
+          value="sentence-dictation"
+          :checked="currentInputType === 'sentence-dictation'"
+          @change="onInputTypeChange('sentence-dictation')"
+        />
+        <label for="typeSentence" class="grid-btn">句子默写</label>
+
+        <input
+          type="radio"
+          name="inputType"
+          id="modeAlphabet"
+          value="alphabet"
+          :checked="currentInputType === 'alphabet'"
+          @change="onInputTypeChange('alphabet')"
+        />
+        <label for="modeAlphabet" class="grid-btn">字母专项</label>
+
+        <input
+          type="radio"
+          name="inputType"
+          id="modeChoice"
+          value="choice"
+          :checked="currentInputType === 'choice'"
+          @change="onInputTypeChange('choice')"
+        />
+        <label for="modeChoice" class="grid-btn">选择题</label>
+
+        <input
+          type="radio"
+          name="inputType"
+          id="modeInlineFill"
+          value="inline-fill"
+          :checked="currentInputType === 'inline-fill'"
+          @change="onInputTypeChange('inline-fill')"
+        />
+        <label for="modeInlineFill" class="grid-btn">填空题</label>
+
+        <input
+          type="radio"
+          name="inputType"
+          id="modeComposition"
+          value="english-composition"
+          :checked="currentInputType === 'english-composition'"
+          @change="onInputTypeChange('english-composition')"
+        />
+        <label for="modeComposition" class="grid-btn">英语作文</label>
+
+        <input
+          type="radio"
+          name="inputType"
+          id="modeSeparator"
+          value="separator"
+          :checked="currentInputType === 'separator'"
+          @change="onInputTypeChange('separator')"
+        />
+        <label for="modeSeparator" class="grid-btn">分栏隔断</label>
+      </div>
+    </div>
 
       <!-- 题型 1: 句子挖空 (可视化切词胶囊 + 批量文本混合双模) -->
       <div v-if="currentInputType === 'sentence-cloze'" class="cloze-unified-editor">
@@ -201,7 +200,7 @@
           <template #advanced>
             <div class="form-row-compact">
               <span class="sub-label">四线格长:</span>
-              <div class="segmented-control mini">
+              <div class="compact-segmented">
                 <input type="radio" name="clozeBlankWidth" id="blankWidthAuto" value="auto" :checked="state.draft.settings.clozeBlankWidth === 'auto'" @change="state.draft.settings.clozeBlankWidth = 'auto'" />
                 <label for="blankWidthAuto">按词自适应</label>
                 <input type="radio" name="clozeBlankWidth" id="blankWidth1Word" value="1word" :checked="state.draft.settings.clozeBlankWidth === '1word'" @change="state.draft.settings.clozeBlankWidth = '1word'" />
@@ -238,10 +237,10 @@
               size="small"
               id="btnSaveVisualToLib"
               @click="handleSaveVisualClozeToLib"
-              title="将该句保存到备课句库"
+              title="将该句保存到题库"
             >
               <template #icon><AppIcon name="download" :size="14" /></template>
-              存入句库
+              存入题库
             </n-button>
 
             <n-button size="small" id="btnClearVisualCloze" @click="handleResetVisualCloze">
@@ -259,10 +258,10 @@
           tip="规范书写与前后邻居"
           tooltip="支持 26 字母规范书写、前后左右邻居填空与大小写互换练习"
         >
-          <div class="alphabet-type-tabs" id="alphabetTypeTabs">
+          <div class="grid-button-group alpha-type-grid" id="alphabetTypeTabs">
             <button
               type="button"
-              class="alpha-type-btn"
+              class="grid-btn"
               :class="{ active: alphabetActiveType === 'sequence' }"
               id="tabAlphaSeq"
               @click="alphabetActiveType = 'sequence'"
@@ -272,7 +271,7 @@
             </button>
             <button
               type="button"
-              class="alpha-type-btn"
+              class="grid-btn"
               :class="{ active: alphabetActiveType === 'neighbors' }"
               id="tabAlphaNeighbors"
               @click="alphabetActiveType = 'neighbors'"
@@ -282,7 +281,7 @@
             </button>
             <button
               type="button"
-              class="alpha-type-btn"
+              class="grid-btn"
               :class="{ active: alphabetActiveType === 'case' }"
               id="tabAlphaCase"
               @click="alphabetActiveType = 'case'"
@@ -296,7 +295,7 @@
           <div v-if="alphabetActiveType === 'sequence'" class="alpha-sub-config" id="paneAlphaSeq">
             <div class="form-row-compact">
               <span class="sub-label">排版行数:</span>
-              <div class="segmented-control mini">
+              <div class="compact-segmented">
                 <input type="radio" id="alphaRows3" :value="3" v-model="alphaSeqConfig.rowMode" />
                 <label for="alphaRows3">3 行 (3×9)</label>
                 <input type="radio" id="alphaRows4" :value="4" v-model="alphaSeqConfig.rowMode" />
@@ -306,7 +305,7 @@
 
             <div class="form-row-compact">
               <span class="sub-label">大小写样式:</span>
-              <div class="segmented-control mini">
+              <div class="compact-segmented">
                 <input type="radio" id="alphaCasePair" value="pair" v-model="alphaSeqConfig.caseStyle" />
                 <label for="alphaCasePair">大小写 (Aa)</label>
                 <input type="radio" id="alphaCaseUpper" value="upper" v-model="alphaSeqConfig.caseStyle" />
@@ -315,49 +314,35 @@
                 <label for="alphaCaseLower">小写 (a-z)</label>
               </div>
             </div>
-
-            <div class="form-row-compact">
-              <span class="sub-label">默写形式:</span>
-              <div class="segmented-control mini">
-                <input type="radio" id="alphaSubFull" value="full" v-model="alphaSeqConfig.subMode" />
-                <label for="alphaSubFull">完整四线格 (全默写)</label>
-                <input type="radio" id="alphaSubGap" value="gap" v-model="alphaSeqConfig.subMode" />
-                <label for="alphaSubGap">字母表接龙填空</label>
-                <input type="radio" id="alphaSubShuffle" value="shuffle" v-model="alphaSeqConfig.subMode" />
-                <label for="alphaSubShuffle">乱序听写</label>
-              </div>
-            </div>
           </div>
 
           <!-- 子面板 2: 字母左右邻居 -->
           <div v-if="alphabetActiveType === 'neighbors'" class="alpha-sub-config" id="paneAlphaNeighbors">
             <div class="form-row-compact">
               <span class="sub-label">排版样式:</span>
-              <div class="segmented-control mini">
-                <input type="radio" id="neighLayoutBottom" value="bottom-4col" v-model="alphaNeighConfig.layoutStyle" />
-                <label for="neighLayoutBottom">下方四线格 (每行4题，推荐)</label>
+              <div class="compact-segmented">
                 <input type="radio" id="neighLayoutBottom5" value="bottom-5col" v-model="alphaNeighConfig.layoutStyle" />
-                <label for="neighLayoutBottom5">每行5题</label>
-                <input type="radio" id="neighLayoutRight" value="right-2col" v-model="alphaNeighConfig.layoutStyle" />
-                <label for="neighLayoutRight">右侧四线格 (每行2题)</label>
+                <label for="neighLayoutBottom5">每行 5 题</label>
               </div>
             </div>
 
             <div class="form-row-compact">
               <span class="sub-label">题目数量:</span>
-              <div class="segmented-control mini">
-                <input type="radio" id="neighCount6" :value="6" v-model="alphaNeighConfig.count" />
-                <label for="neighCount6">6 题</label>
-                <input type="radio" id="neighCount8" :value="8" v-model="alphaNeighConfig.count" />
-                <label for="neighCount8">8 题 (推荐)</label>
-                <input type="radio" id="neighCount12" :value="12" v-model="alphaNeighConfig.count" />
-                <label for="neighCount12">12 题</label>
+              <div class="compact-segmented">
+                <input type="radio" id="neighCount5" :value="5" v-model="alphaNeighConfig.count" />
+                <label for="neighCount5">5 题</label>
+                <input type="radio" id="neighCount10" :value="10" v-model="alphaNeighConfig.count" />
+                <label for="neighCount10">10 题</label>
+                <input type="radio" id="neighCount15" :value="15" v-model="alphaNeighConfig.count" />
+                <label for="neighCount15">15 题</label>
+                <input type="radio" id="neighCount20" :value="20" v-model="alphaNeighConfig.count" />
+                <label for="neighCount20">20 题</label>
               </div>
             </div>
 
             <div class="form-row-compact">
               <span class="sub-label">字母大小写:</span>
-              <div class="segmented-control mini">
+              <div class="compact-segmented">
                 <input type="radio" id="neighCaseUpper" value="upper" v-model="alphaNeighConfig.caseStyle" />
                 <label for="neighCaseUpper">大写 (B)</label>
                 <input type="radio" id="neighCaseLower" value="lower" v-model="alphaNeighConfig.caseStyle" />
@@ -372,39 +357,37 @@
           <div v-if="alphabetActiveType === 'case'" class="alpha-sub-config" id="paneAlphaCase">
             <div class="form-row-compact">
               <span class="sub-label">排版样式:</span>
-              <div class="segmented-control mini">
-                <input type="radio" id="caseLayoutBottom" value="bottom-4col" v-model="alphaCaseConfig.layoutStyle" />
-                <label for="caseLayoutBottom">下方四线格 (每行4题，推荐)</label>
-                <input type="radio" id="caseLayoutBottom5" value="bottom-5col" v-model="alphaCaseConfig.layoutStyle" />
-                <label for="caseLayoutBottom5">每行5题</label>
-                <input type="radio" id="caseLayoutRight" value="right-2col" v-model="alphaCaseConfig.layoutStyle" />
-                <label for="caseLayoutRight">右侧四线格 (每行2题)</label>
+              <div class="compact-segmented">
+                <input type="radio" id="caseLayoutRight4" value="right-4col" v-model="alphaCaseConfig.layoutStyle" />
+                <label for="caseLayoutRight4">左右结构 (每行 4 题)</label>
               </div>
             </div>
 
             <div class="form-row-compact">
               <span class="sub-label">题目数量:</span>
-              <div class="segmented-control mini">
-                <input type="radio" id="caseCount6" :value="6" v-model="alphaCaseConfig.count" />
-                <label for="caseCount6">6 题</label>
+              <div class="compact-segmented">
+                <input type="radio" id="caseCount4" :value="4" v-model="alphaCaseConfig.count" />
+                <label for="caseCount4">4 题</label>
                 <input type="radio" id="caseCount8" :value="8" v-model="alphaCaseConfig.count" />
                 <label for="caseCount8">8 题 (推荐)</label>
-                <input type="radio" id="caseCount10" :value="10" v-model="alphaCaseConfig.count" />
-                <label for="caseCount10">10 题</label>
                 <input type="radio" id="caseCount12" :value="12" v-model="alphaCaseConfig.count" />
                 <label for="caseCount12">12 题</label>
+                <input type="radio" id="caseCount16" :value="16" v-model="alphaCaseConfig.count" />
+                <label for="caseCount16">16 题</label>
+                <input type="radio" id="caseCount20" :value="20" v-model="alphaCaseConfig.count" />
+                <label for="caseCount20">20 题</label>
               </div>
             </div>
 
             <div class="form-row-compact">
               <span class="sub-label">转换形式:</span>
-              <div class="segmented-control mini">
-                <input type="radio" id="caseToU" value="lower_to_upper" v-model="alphaCaseConfig.direction" />
-                <label for="caseToU">看小写写大写</label>
+              <div class="compact-segmented">
+                <input type="radio" id="caseRand" value="random_switch" v-model="alphaCaseConfig.direction" />
+                <label for="caseRand">混合 (推荐)</label>
                 <input type="radio" id="caseToL" value="upper_to_lower" v-model="alphaCaseConfig.direction" />
                 <label for="caseToL">看大写写小写</label>
-                <input type="radio" id="caseRand" value="random_switch" v-model="alphaCaseConfig.direction" />
-                <label for="caseRand">随机互换</label>
+                <input type="radio" id="caseToU" value="lower_to_upper" v-model="alphaCaseConfig.direction" />
+                <label for="caseToU">看小写写大写</label>
               </div>
             </div>
           </div>
@@ -447,19 +430,19 @@
 
           <div class="form-item-block">
             <label class="item-label">后续题数列数</label>
-            <div class="segmented-control separator-cols-segmented">
+            <div class="grid-button-group separator-cols-grid">
               <input type="radio" id="sepColInherit" :value="null" v-model="separatorForm.sectionColumns" />
-              <label for="sepColInherit">继承默认</label>
+              <label for="sepColInherit" class="grid-btn">默认</label>
               <input type="radio" id="sepCol1" :value="1" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol1">1 列</label>
+              <label for="sepCol1" class="grid-btn">1列</label>
               <input type="radio" id="sepCol2" :value="2" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol2">2 列</label>
+              <label for="sepCol2" class="grid-btn">2列</label>
               <input type="radio" id="sepCol3" :value="3" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol3">3 列</label>
+              <label for="sepCol3" class="grid-btn">3列</label>
               <input type="radio" id="sepCol4" :value="4" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol4">4 列</label>
+              <label for="sepCol4" class="grid-btn">4列</label>
               <input type="radio" id="sepCol5" :value="5" v-model="separatorForm.sectionColumns" />
-              <label for="sepCol5">5 列</label>
+              <label for="sepCol5" class="grid-btn">5列</label>
             </div>
           </div>
 
@@ -553,13 +536,12 @@
           查看与调整题目清单 <AppIcon name="arrow-right" :size="14" />
         </button>
       </div>
-    </n-card>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { NCard, NButton, NPopconfirm, useMessage } from 'naive-ui';
+import { NButton, NPopconfirm, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
 import {
   parseCustomText,
@@ -748,8 +730,8 @@ function cancelEditing() {
 // 字母专项配置
 const alphabetActiveType = ref('sequence');
 const alphaSeqConfig = ref({ caseStyle: 'pair', subMode: 'full', rowMode: 3 });
-const alphaNeighConfig = ref({ count: 8, caseStyle: 'upper', layoutStyle: 'bottom-4col' });
-const alphaCaseConfig = ref({ count: 8, direction: 'random_switch', layoutStyle: 'bottom-4col' });
+const alphaNeighConfig = ref({ count: 10, caseStyle: 'upper', layoutStyle: 'bottom-5col' });
+const alphaCaseConfig = ref({ count: 8, direction: 'random_switch', layoutStyle: 'right-4col' });
 
 // 分栏隔断设置
 const separatorForm = ref({
@@ -771,20 +753,23 @@ function handleAppendSeparator() {
 function handleGenerateAlphabet() {
   let newItems = [];
   if (alphabetActiveType.value === 'sequence') {
-    newItems = generateAlphabetSequenceItems(alphaSeqConfig.value);
+    newItems = generateAlphabetSequenceItems({
+      caseStyle: alphaSeqConfig.value.caseStyle,
+      rowMode: alphaSeqConfig.value.rowMode
+    });
     state.draft.settings.alphabet26Rows = Number(alphaSeqConfig.value.rowMode) === 4 ? 4 : 3;
   } else if (alphabetActiveType.value === 'neighbors') {
     newItems = generateLetterNeighborsItems({
-      count: alphaNeighConfig.value.count,
+      count: alphaNeighConfig.value.count || 10,
       caseStyle: alphaNeighConfig.value.caseStyle,
       neighborType: 'both',
-      layoutStyle: alphaNeighConfig.value.layoutStyle
+      layoutStyle: 'bottom-5col'
     });
   } else if (alphabetActiveType.value === 'case') {
     newItems = generateCaseConversionItems({
       count: alphaCaseConfig.value.count || 8,
-      direction: alphaCaseConfig.value.direction,
-      layoutStyle: alphaCaseConfig.value.layoutStyle
+      direction: alphaCaseConfig.value.direction || 'random_switch',
+      layoutStyle: 'right-4col'
     });
   }
 
@@ -858,18 +843,23 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: transparent;
+  width: 100%;
 }
 
-.pane-card {
-  background: var(--bg-card);
-  border-radius: 8px;
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  user-select: none;
+  width: 100%;
 }
 
 .pane-header-title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
+  gap: 8px;
 }
 
 .title-with-icon {
@@ -909,95 +899,19 @@ onMounted(() => {
   color: var(--text-muted);
 }
 
-.segmented-control {
-  display: flex;
-  flex-wrap: wrap;
-  background: var(--bg-app);
-  padding: 3px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  gap: 2px;
+.question-type-grid {
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 5px !important;
 }
 
-.segmented-control input[type="radio"] {
-  display: none;
+.alpha-type-grid {
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 6px !important;
 }
 
-.segmented-control label {
-  flex: 1 0 auto;
-  text-align: center;
-  padding: 5px 8px;
-  font-size: 11.5px;
-  border-radius: 4px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
-}
-
-.segmented-control input[type="radio"]:checked + label {
-  background: var(--bg-card);
-  color: var(--primary);
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.segmented-control.mini label {
-  padding: 3px 6px;
-  font-size: 11px;
-}
-
-/* 录入题型切换器专用 12 列两行均分布局 (前4题占3/12，后3题占4/12，两行均整齐撑满且按钮尺寸规整一致) */
-.question-type-segmented {
-  display: grid !important;
-  grid-template-columns: repeat(12, 1fr) !important;
-  gap: 3px !important;
-  padding: 3px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-.question-type-segmented .qtype-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
-  padding: 6px 2px !important;
-  font-size: 11.5px !important;
-  line-height: 1.2 !important;
-  border-radius: 4px !important;
-  box-sizing: border-box !important;
-  width: 100% !important;
-  min-height: 29px !important;
-  flex: none !important;
-}
-
-.question-type-segmented .qtype-span-3 {
-  grid-column: span 3 !important;
-}
-
-.question-type-segmented .qtype-span-4 {
-  grid-column: span 4 !important;
-}
-
-.separator-cols-segmented {
-  display: grid !important;
+.separator-cols-grid {
   grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-  width: 100%;
-  padding: 2px;
-  gap: 2px;
-  box-sizing: border-box;
-}
-
-.separator-cols-segmented label {
-  white-space: nowrap !important;
-  padding: 5px 2px !important;
-  font-size: 11px !important;
-  text-align: center !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  flex: none !important;
+  gap: 4px !important;
 }
 
 .form-row-compact {

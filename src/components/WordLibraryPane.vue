@@ -1,19 +1,18 @@
 <template>
-  <div class="word-library-pane" data-debug-id="L-001" data-debug-name="本地词库区">
-    <n-card size="small" :bordered="false" class="pane-card">
-      <template #header>
-        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <span style="font-size:14px; font-weight:700; color:var(--text-main); display:inline-flex; align-items:center; gap:6px;">
-            <AppIcon name="book" :size="16" />
-            本地离线词汇库
-          </span>
-          <span class="quick-stat-badge" id="libStatBadge">共 {{ state.library.words.length }} 词</span>
-        </div>
-      </template>
+  <div class="word-library-pane" data-debug-id="L-001" data-debug-name="题库区">
+    <div class="pane-header">
+      <div class="pane-header-title">
+        <span class="title-with-icon">
+          <AppIcon name="book" :size="16" />
+          题库
+        </span>
+      </div>
+      <span class="quick-stat-badge" id="libStatBadge">共 {{ state.library.words.length }} 词</span>
+    </div>
 
-      <p class="form-desc">
-        独立离线词汇库，存储于浏览器 IndexedDB。支持按年级/单元分组管理，从词库加入试卷后修改释义不影响词库。
-      </p>
+    <p class="form-desc">
+      独立离线题库，存储于浏览器 IndexedDB。支持按年级/单元分组管理，从题库加入试卷后修改释义不影响题库。
+    </p>
 
       <!-- 词库单元 / 分组管理栏 -->
       <div class="lib-group-section" id="libGroupSection" data-debug-id="L-002" data-debug-name="词库分组导航">
@@ -274,7 +273,6 @@
           </div>
         </template>
       </div>
-    </n-card>
 
     <!-- 弹窗 1: 新建词库分组 -->
     <n-modal
@@ -670,7 +668,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { NCard, NButton, NPopconfirm, NModal, NInput, useMessage } from 'naive-ui';
+import { NButton, NPopconfirm, NModal, NInput, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
 import { createDraftItem, PRESET_UNIT_LIBRARIES } from '../core/layout.js';
 import { detectDuplicates } from '../core/storage.js';
@@ -1185,11 +1183,32 @@ function handleDownloadCsvTemplate() {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: transparent;
+  width: 100%;
 }
 
-.pane-card {
-  border-radius: 8px;
-  background: #ffffff;
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  user-select: none;
+  width: 100%;
+}
+
+.pane-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .form-desc {
@@ -1201,11 +1220,10 @@ function handleDownloadCsvTemplate() {
 
 /* 分组导航区域 */
 .lib-group-section {
-  margin-bottom: 10px;
-  background: var(--bg-sidebar);
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
-  padding: 8px 10px;
+  margin-bottom: 12px;
+  background: transparent;
+  border-bottom: 1px solid var(--border-light);
+  padding: 0 0 10px 0;
 }
 
 .lib-group-header {

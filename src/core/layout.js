@@ -23,6 +23,37 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+export function stripOuterBrackets(str) {
+  if (!str) return '';
+  let s = String(str).trim();
+  while ((s.startsWith('（') && s.endsWith('）')) || (s.startsWith('(') && s.endsWith(')'))) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
+export function getEffectiveGridHeight(s, copies = 1) {
+  const baseH = Number(s?.gridHeight) || 12;
+  if (copies > 1) {
+    return Math.round((baseH * (11 / 12)) * 100) / 100;
+  }
+  return baseH;
+}
+
+export function getEffectiveRowGap(s, copies = 1, teacherMode = false) {
+  const baseGap = Number(s?.rowGap) || 3.5;
+  if (teacherMode) {
+    return Math.round((baseGap * (1.2 / 3.5)) * 100) / 100;
+  }
+  if (copies >= 3) {
+    return Math.round((baseGap * (2.0 / 3.5)) * 100) / 100;
+  }
+  if (copies === 2) {
+    return Math.round((baseGap * (2.5 / 3.5)) * 100) / 100;
+  }
+  return baseGap;
+}
+
 export const DEFAULT_WORDS_RAW = [
   { en: 'beautiful', zh: '美丽的；优美的', group: '五年级上册 Unit 1' },
   { en: 'hard-working', zh: '工作努力的；辛勤的', group: '五年级上册 Unit 1' },
@@ -140,7 +171,9 @@ export const DEFAULT_SETTINGS = {
   fontFamilyZh: "'KaiTi', '楷体', STKaiti, serif",
   fontFamilyEn: 'Arial, sans-serif',
   alphabetGuideFont: DEFAULT_ALPHABET_GUIDE_FONT,
-  alphabetLayout: 'bottom-4col', // 字母左右邻居与大小写转换默认每行4题
+  alphabetLayout: 'bottom-5col', // 字母左右邻居默认每行5题
+  alphabetNeighborLayout: 'bottom-5col',
+  alphabetCaseLayout: 'right-4col',
   alphabet26Rows: 3,
   autoOptimizeCopies: true,
   letterSpacing: '0.8px',
@@ -210,7 +243,8 @@ function createAlphabetGridShell({
   gridHeightMm,
   lineMarkup,
   guides = [],
-  alphabetGuideFont = DEFAULT_ALPHABET_GUIDE_FONT
+  alphabetGuideFont = DEFAULT_ALPHABET_GUIDE_FONT,
+  extraClass = ''
 }) {
   const font = resolveAlphabetGuideFont(alphabetGuideFont);
   const fontSizeMm = Math.max(3.8, Number(gridHeightMm || 11) * font.guideScale);
@@ -230,16 +264,15 @@ function createAlphabetGridShell({
     `)
     .join('');
 
+  const shellCls = `alphabet-grid-shell ${extraClass}`.trim();
   return `
-    <div class="alphabet-grid-shell" style="height:${gridHeightMm}mm;">
+    <div class="${shellCls}" style="height:${gridHeightMm}mm;">
       <svg class="four-line-svg alphabet-grid-lines" viewBox="0 0 ${viewBoxWidth} 25" preserveAspectRatio="none" aria-hidden="true">
         ${lineMarkup}
       </svg>
-      ${guideMarkup ? `
-        <svg class="alphabet-guide-layer" width="100%" height="100%" aria-hidden="true">
-          ${guideMarkup}
-        </svg>
-      ` : ''}
+      <svg class="alphabet-guide-layer" width="100%" height="100%" aria-hidden="true" font-family="${escapeHtml(font.cssFamily)}" style="font-family:${escapeHtml(font.cssFamily)};">
+        ${guideMarkup}
+      </svg>
     </div>
   `;
 }
@@ -323,7 +356,7 @@ export function createNeighborPracticeGridSvg(item, options = {}) {
   });
 }
 
-// 字母大小写转换书写格
+// 字母大小写转换书写格 (四线三格在右侧，紧凑 100 宽度)
 export function createCasePracticeGridSvg(item, options = {}) {
   const {
     gridHeightMm = 11,
@@ -335,58 +368,24 @@ export function createCasePracticeGridSvg(item, options = {}) {
   const dir = cData.dir || 'upper_to_lower';
   const u = cData.upper || '';
   const l = cData.lower || '';
-  const sourceChar = (dir === 'lower_to_upper') ? l : u;
   const targetChar = (dir === 'lower_to_upper') ? u : l;
-  const isRightOrBottom = cData.layoutStyle === 'bottom-4col' ||
-    cData.layoutStyle === 'bottom-5col' ||
-    cData.layoutStyle === 'right-2col' ||
-    item?.layout?.gridPosition === 'right' ||
-    item?.layout?.gridPosition === 'below';
-
-  if (isRightOrBottom) {
-    const lineMarkup = `
-      <line x1="0" y1="2.0" x2="100" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="0" y1="8.5" x2="100" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="0" y1="16.5" x2="100" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
-      <line x1="0" y1="23.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="100" y1="2.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-    `;
-    const guideText = options.isTeacher ? (cData.targetChar || targetChar) : '';
-    return createAlphabetGridShell({
-      viewBoxWidth: 100,
-      gridHeightMm,
-      lineMarkup,
-      alphabetGuideFont,
-      guides: guideText ? [{ xPercent: 50, text: guideText }] : []
-    });
-  }
 
   const lineMarkup = `
-      <line x1="0" y1="2.0" x2="95" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="0" y1="8.5" x2="95" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="0" y1="16.5" x2="95" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
-      <line x1="0" y1="23.0" x2="95" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="95" y1="2.0" x2="95" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-
-      <line x1="102" y1="12.5" x2="118" y2="12.5" stroke="#94a3b8" stroke-width="1.1" />
-      <polyline points="113,8.5 118,12.5 113,16.5" fill="none" stroke="#94a3b8" stroke-width="1.1" />
-
-      <line x1="125" y1="2.0" x2="220" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="125" y1="8.5" x2="220" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="125" y1="16.5" x2="220" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
-      <line x1="125" y1="23.0" x2="220" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="125" y1="2.0" x2="125" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
-      <line x1="220" y1="2.0" x2="220" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+    <line x1="0" y1="2.0" x2="100" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+    <line x1="0" y1="8.5" x2="100" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+    <line x1="0" y1="16.5" x2="100" y2="16.5" stroke="#94a3b8" stroke-width="${strokeWidth * 1.1}" />
+    <line x1="0" y1="23.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+    <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
+    <line x1="100" y1="2.0" x2="100" y2="23.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
   `;
-
+  const guideText = options.isTeacher ? (cData.targetChar || targetChar) : '';
   return createAlphabetGridShell({
-    viewBoxWidth: 220,
+    viewBoxWidth: 100,
     gridHeightMm,
     lineMarkup,
     alphabetGuideFont,
-    guides: [{ xPercent: 21.591, text: sourceChar }]
+    extraClass: 'case-svg-grid',
+    guides: guideText ? [{ xPercent: 50, text: guideText }] : []
   });
 }
 
@@ -401,13 +400,13 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
   if (typeof itemOrEn === 'object' && itemOrEn !== null) {
     const item = itemOrEn;
     en = item.en || '';
-    zh = item.overrideZh || item.zh || item.translation || '';
+    zh = stripOuterBrackets(item.overrideZh || item.zh || item.translation || '');
     mode = (typeof modeOrZh === 'string') ? modeOrZh : 'writing';
     opts = maybeModeOrOpts || {};
     segments = item.segments || null;
   } else {
     en = itemOrEn || '';
-    zh = modeOrZh || '';
+    zh = stripOuterBrackets(modeOrZh || '');
     mode = maybeModeOrOpts || 'writing';
   }
 
@@ -426,7 +425,8 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
     fontFamily = 'Arial, sans-serif',
     fontSize = 18,
     letterSpacing = 0,
-    availableWidth = 280
+    availableWidth = 280,
+    gridHeightMm = null
   } = opts;
 
   function renderBlankHtml(wordText, trailingPunct = '') {
@@ -479,7 +479,8 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
     const punctMargin = trailingPunct ? 'margin-right: 1px;' : 'margin-right: 3px;';
 
     if (clozeStyle === 'inline' && gridStyle === 'four-line') {
-      return `<span class="cloze-blank-line cloze-inline-grid" style="width:${widthPx}px; ${punctMargin}">
+      const heightStyle = gridHeightMm ? `height:${gridHeightMm}mm;` : 'height:var(--grid-height, 1.75em);';
+      return `<span class="cloze-blank-line cloze-inline-grid" style="width:${widthPx}px; ${heightStyle} ${punctMargin}">
         <svg viewBox="0 0 100 25" preserveAspectRatio="none">
           <line x1="0" y1="2.0" x2="100" y2="2.0" stroke="${lineColor}" stroke-width="${strokeWidth}" />
           <line x1="0" y1="8.5" x2="100" y2="8.5" stroke="${lineColor}" stroke-width="${strokeWidth}" />
@@ -495,7 +496,7 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
   }
 
   function assembleClozeHtml(formattedEn, rawZh) {
-    const zhText = (rawZh || '').trim();
+    const zhText = stripOuterBrackets(rawZh);
     if (clozeStyle === 'inline') {
       const englishHtml = `<span class="meaning-text cloze-sentence cloze-english-column">${formattedEn}</span>`;
       if (!zhText || clozeZhPosition === 'hide') {
@@ -651,9 +652,7 @@ export function autoAdaptCopiesAndCapacity(items, settings) {
 }
 
 export function estimateQuestionHeightMm(item, s, copies = 3) {
-  const isAlphabet = item?.questionType === 'alphabet' || item?.alphaData || item?.neighborData || item?.caseData;
-  const multiCopyGridLimit = isAlphabet ? 11 : 7.5;
-  const effectiveGridH = (copies > 1) ? Math.min(multiCopyGridLimit, s.gridHeight || 12) : (s.gridHeight || 12);
+  const effectiveGridH = getEffectiveGridHeight(s, copies);
   const availableWidthMm = Number(s._availableItemWidthMm) || 180;
   return estimateQuestionHeight(item, {
     copies,
@@ -663,6 +662,34 @@ export function estimateQuestionHeightMm(item, s, copies = 3) {
     fontSizePx: (Number(s.promptFontSize) || 14) * 1.333333,
     availableWidthPx: availableWidthMm * 3.7795275591
   });
+}
+
+/**
+ * 拼版规整网格计算 (支持 2联、3联、4联、6联规整铺开)
+ * @param {number|string} copies 联数 (份数)
+ * @param {boolean} isLandscape 纸张是否横向
+ * @returns {{ rows: number, cols: number }}
+ */
+export function getImpositionGrid(copies, isLandscape) {
+  const c = Math.max(1, parseInt(copies, 10) || 1);
+  if (c === 1) return { rows: 1, cols: 1 };
+  if (c === 2) {
+    // 2 联：横向大纸默认左右铺开 (1行2列)；纵向默认上下铺开 (2行1列)
+    return isLandscape ? { rows: 1, cols: 2 } : { rows: 2, cols: 1 };
+  }
+  if (c === 3) {
+    // 3 联：横向默认左右 3 列 (1行3列)；纵向默认上下 3 行 (3行1列)
+    return isLandscape ? { rows: 1, cols: 3 } : { rows: 3, cols: 1 };
+  }
+  if (c === 4) {
+    // 4 联：2行2列四宫格
+    return { rows: 2, cols: 2 };
+  }
+  if (c === 6) {
+    // 6 联：横向 2行3列；纵向 3行2列
+    return isLandscape ? { rows: 2, cols: 3 } : { rows: 3, cols: 2 };
+  }
+  return isLandscape ? { rows: 1, cols: c } : { rows: c, cols: 1 };
 }
 
 // 纯函数：计算多页排版切片 (支持混合题型智能高度与自然分页)
@@ -677,25 +704,27 @@ export function computePageLayout(items, settings) {
   const pageWidthMm = isLand ? pDim.height : pDim.width;
   const pageHeightMm = isLand ? pDim.width : pDim.height;
   const copiesPerPage = isSplitFold ? 1 : Math.max(1, parseInt(s.copiesPerPage, 10) || 3);
+  const { rows: impRows, cols: impCols } = isSplitFold
+    ? { rows: 1, cols: 2 }
+    : getImpositionGrid(copiesPerPage, isLand);
 
   // 迁移所有题目为规范格式
   const migratedItems = rawWords.map(w => migrateDraftItem(w, s.dictMode));
 
   // 检查是否首部包含完整的 26 字母默写组 (严格基于 subType/alphaData，杜绝 dictMode 全局状态污染)
-  const isSeqItem = (it) => it && (it.subType === 'sequence' || it.alphabetType === 'sequence' || it.alphaData);
-  let seqBlockStart = -1;
-  for (let i = 0; i <= migratedItems.length - 26; i++) {
-    if (migratedItems.slice(i, i + 26).every(isSeqItem)) {
-      seqBlockStart = i;
-      break;
-    }
-  }
+  // 严格基于 subType/alphaData 识别字母全默写题目
+  const isSeqItem = (it) => Boolean(it && (it.subType === 'sequence' || it.alphabetType === 'sequence' || it.alphaData));
 
-  if (migratedItems.length === 26 && seqBlockStart === 0) {
+  // 若整份试卷仅由 26 个字母全默写构成，直接返回单页完整排版
+  if (migratedItems.length === 26 && migratedItems.every(isSeqItem)) {
     return {
       paperDim: pDim,
       isLandscape: isLand,
       isSplitFold: false,
+      impRows: 1,
+      impCols: 1,
+      copyWidthMm: pageWidthMm - (Number(s.pageMarginHorizontal ?? 12) * 2),
+      copyHeightMm: pageHeightMm - (Number(s.pageMargin || 8) * 2),
       pageWidthMm,
       pageHeightMm,
       wordsPerPage: 26,
@@ -708,230 +737,284 @@ export function computePageLayout(items, settings) {
     };
   }
 
-  const initialChunks = [];
-  let remainingMigratedItems = migratedItems;
-  let offsetIndex = 0;
-  if (seqBlockStart === 0) {
-    initialChunks.push({
-      pageIndex: 0,
-      items: migratedItems.slice(0, 26).map((item, i) => ({ overallIndex: i + 1, item, isFullWidth: true, gridSpan: 60 }))
-    });
-    remainingMigratedItems = migratedItems.slice(26);
-    offsetIndex = 26;
+  // 将题目流切分为“普通流式区段”与“26 字母全默写独立区段”
+  const segments = [];
+  let curIndex = 0;
+  while (curIndex < migratedItems.length) {
+    if (
+      curIndex <= migratedItems.length - 26 &&
+      migratedItems.slice(curIndex, curIndex + 26).every(isSeqItem)
+    ) {
+      segments.push({
+        type: 'sequence26',
+        items: migratedItems.slice(curIndex, curIndex + 26)
+      });
+      curIndex += 26;
+    } else {
+      const flowItems = [];
+      while (curIndex < migratedItems.length) {
+        if (
+          curIndex <= migratedItems.length - 26 &&
+          migratedItems.slice(curIndex, curIndex + 26).every(isSeqItem)
+        ) {
+          break;
+        }
+        flowItems.push(migratedItems[curIndex]);
+        curIndex++;
+      }
+      if (flowItems.length > 0) {
+        segments.push({
+          type: 'flow',
+          items: flowItems
+        });
+      }
+    }
   }
 
-  // 计算每份试卷的最大可用物理高度 (mm)
+  // 计算每份试卷的最大可用物理高度与宽度 (mm)
   const pageMargin = Number(s.pageMargin || 8);
   const pageMarginHorizontal = Number(s.pageMarginHorizontal ?? 12);
   const foldSeamMm = isSplitFold ? 16 : 0;
   const netPageHeightMm = pageHeightMm - (pageMargin * 2);
-  const dividerHeightMm = (!isSplitFold && copiesPerPage > 1) ? (copiesPerPage - 1) * 2.5 : 0;
-  const copyHeightMm = isSplitFold ? netPageHeightMm : (netPageHeightMm - dividerHeightMm) / copiesPerPage;
-  const headerHeightMm = isSplitFold ? 16 : ((copiesPerPage > 1) ? 14 : 22);
-  const copyPaddingMm = isSplitFold ? 4 : ((copiesPerPage > 1) ? 3 : 8);
-  const maxAvailableHeightMm = Math.max(30, copyHeightMm - headerHeightMm - copyPaddingMm + 1.5);
+  const netPageWidthMm = pageWidthMm - (pageMarginHorizontal * 2);
+
+  const dividerHeightMm = (!isSplitFold && impRows > 1) ? (impRows - 1) * 2.5 : 0;
+  const dividerWidthMm = (!isSplitFold && impCols > 1) ? (impCols - 1) * 2.5 : 0;
+
+  const copyHeightMm = isSplitFold
+    ? netPageHeightMm
+    : (netPageHeightMm - dividerHeightMm) / impRows;
+  const copyWidthMm = isSplitFold
+    ? Math.max(40, (netPageWidthMm - foldSeamMm) / 2)
+    : Math.max(40, (netPageWidthMm - dividerWidthMm) / impCols);
+
+  const isMiniCopy = (copiesPerPage >= 4) || (copyHeightMm < 110);
+  const headerHeightMm = isSplitFold ? 16 : (isMiniCopy ? 11 : ((copiesPerPage > 1) ? 14 : 22));
+  const copyPaddingMm = isSplitFold ? 4 : (isMiniCopy ? 2 : ((copiesPerPage > 1) ? 3 : 8));
+  const maxAvailableHeightMm = Math.max(25, copyHeightMm - headerHeightMm - copyPaddingMm + 1.5);
 
   const effectiveRowGap = (!isSplitFold && copiesPerPage > 1)
-    ? Math.min(copiesPerPage >= 3 ? 2.0 : 2.5, Number(s.rowGap) || 3.5)
+    ? getEffectiveRowGap(s, copiesPerPage, !!s._teacherMode)
     : (Number(s.rowGap) || 3.5);
 
   const gridUnits = 60;
-  const contentWidthMm = isSplitFold
-    ? Math.max(40, (pageWidthMm - (pageMarginHorizontal * 2) - foldSeamMm) / 2)
-    : Math.max(40, pageWidthMm - (pageMarginHorizontal * 2));
-  const expandedItems = [];
-  let displaySeq = offsetIndex;
-  remainingMigratedItems.forEach((item, idx) => {
-    const originalIndex = offsetIndex + idx;
-    const isSep = item.questionType === 'separator';
-    const displayIndex = isSep ? null : ++displaySeq;
-    if (item.questionType !== 'english-composition') {
-      expandedItems.push({ item, originalIndex, displayIndex });
-      return;
-    }
-    const perLineMm = item.lineHeight + 1.2;
-    const maxLinesPerPage = Math.max(3, Math.floor((maxAvailableHeightMm - 14) / perLineMm));
-    if (item.lineCount <= maxLinesPerPage) {
-      expandedItems.push({ item, originalIndex, displayIndex });
-      return;
-    }
-    let remaining = item.lineCount;
-    let startLine = 1;
-    let part = 1;
-    while (remaining > 0) {
-      const fragmentLineCount = Math.min(maxLinesPerPage, remaining);
-      expandedItems.push({
-        originalIndex,
-        displayIndex,
-        item: migrateDraftItem({
-          ...item,
-          id: `${item.id}-part-${part}`,
-          compositionFragment: {
-            sourceId: item.id,
-            part,
-            startLine,
-            lineCount: fragmentLineCount,
-            isContinuation: part > 1
-          }
-        })
-      });
-      remaining -= fragmentLineCount;
-      startLine += fragmentLineCount;
-      part += 1;
-    }
-  });
-
-  // 智能行进流式分页算法
-  const pageChunks = [...initialChunks];
-  let currentPageItems = [];
-  let currentUsedHeightMm = 0;
-  let currentGridOccupied = 0;
-  let currentRowMaxHeightMm = 0;
-
-  // 用户设置的单页题量上限作为硬约束之一 (兼容单选题量参数)
+  const contentWidthMm = copyWidthMm;
+  const pageChunks = [];
+  let displaySeq = 0;
+  let activeSectionColumns = null;
   const userCapacity = Math.max(3, parseInt(s.wordsPerPage, 10) || 9);
 
-  function simulatePlacement(span, itemHeightMm) {
-    let used = currentUsedHeightMm;
-    let occupied = currentGridOccupied;
-    let rowMax = currentRowMaxHeightMm;
-    if (occupied > 0 && occupied + span > gridUnits) {
-      used += rowMax + effectiveRowGap;
-      occupied = 0;
-      rowMax = 0;
+  for (const segment of segments) {
+    if (segment.type === 'sequence26') {
+      const chunkItems = segment.items.map((item) => {
+        const isSep = item.questionType === 'separator';
+        const displayIndex = isSep ? null : ++displaySeq;
+        return {
+          overallIndex: displayIndex ?? (displaySeq + 1),
+          displayIndex,
+          item,
+          isFullWidth: true,
+          gridSpan: gridUnits
+        };
+      });
+      pageChunks.push({
+        pageIndex: pageChunks.length,
+        items: chunkItems,
+        isAlpha26: true
+      });
+    } else if (segment.type === 'flow') {
+      const expandedItems = [];
+      segment.items.forEach((item, idx) => {
+        const isSep = item.questionType === 'separator';
+        const displayIndex = isSep ? null : ++displaySeq;
+        if (item.questionType !== 'english-composition') {
+          expandedItems.push({ item, originalIndex: idx, displayIndex });
+          return;
+        }
+        const perLineMm = item.lineHeight + 1.2;
+        const maxLinesPerPage = Math.max(3, Math.floor((maxAvailableHeightMm - 14) / perLineMm));
+        if (item.lineCount <= maxLinesPerPage) {
+          expandedItems.push({ item, originalIndex: idx, displayIndex });
+          return;
+        }
+        let remaining = item.lineCount;
+        let startLine = 1;
+        let part = 1;
+        while (remaining > 0) {
+          const fragmentLineCount = Math.min(maxLinesPerPage, remaining);
+          expandedItems.push({
+            originalIndex: idx,
+            displayIndex,
+            item: migrateDraftItem({
+              ...item,
+              id: `${item.id}-part-${part}`,
+              compositionFragment: {
+                sourceId: item.id,
+                part,
+                startLine,
+                lineCount: fragmentLineCount,
+                isContinuation: part > 1
+              }
+            })
+          });
+          remaining -= fragmentLineCount;
+          startLine += fragmentLineCount;
+          part += 1;
+        }
+      });
+
+      let currentPageItems = [];
+      let currentUsedHeightMm = 0;
+      let currentGridOccupied = 0;
+      let currentRowMaxHeightMm = 0;
+
+      function simulatePlacement(span, itemHeightMm) {
+        let used = currentUsedHeightMm;
+        let occupied = currentGridOccupied;
+        let rowMax = currentRowMaxHeightMm;
+        if (occupied > 0 && occupied + span > gridUnits) {
+          used += rowMax + effectiveRowGap;
+          occupied = 0;
+          rowMax = 0;
+        }
+        occupied += span;
+        rowMax = Math.max(rowMax, itemHeightMm);
+        const total = used + rowMax;
+        let nextUsed = used;
+        let nextOccupied = occupied;
+        let nextRowMax = rowMax;
+        if (occupied >= gridUnits) {
+          nextUsed = used + rowMax + effectiveRowGap;
+          nextOccupied = 0;
+          nextRowMax = 0;
+        }
+        return {
+          used: nextUsed,
+          occupied: nextOccupied,
+          rowMax: nextRowMax,
+          total
+        };
+      }
+
+      const canFitAllInSinglePage = (() => {
+        let testUsed = 0;
+        let testOccupied = 0;
+        let testRowMax = 0;
+        let secCols = activeSectionColumns;
+        for (const { item } of expandedItems) {
+          if (item.questionType === 'separator' && item.sectionColumns) {
+            secCols = Number(item.sectionColumns);
+          }
+          const isSep = item.questionType === 'separator';
+          const isComp = item.questionType === 'english-composition';
+          const isExplicitFull = item.layoutHint === 'full-width';
+          let cols = 1;
+          if (isSep || isComp || isExplicitFull) {
+            cols = 1;
+          } else {
+            const override = Number(item?.layout?.columns);
+            if ([1, 2, 3, 4, 5].includes(override)) {
+              cols = override;
+            } else if (secCols) {
+              cols = secCols;
+            } else {
+              cols = resolveQuestionColumns(item, s);
+            }
+          }
+          const isFull = (cols <= 1) || isSep || isComp || isExplicitFull || shouldUseFullRow(item, s, contentWidthMm);
+          const span = isFull ? gridUnits : Math.max(1, Math.round(gridUnits / cols));
+          const itemW = isFull ? contentWidthMm : Math.max(30, (contentWidthMm - (cols - 1) * (s.colGap || 6)) / cols);
+          const itemH = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: itemW }, copiesPerPage);
+
+          if (testOccupied > 0 && testOccupied + span > gridUnits) {
+            testUsed += testRowMax + effectiveRowGap;
+            testOccupied = 0;
+            testRowMax = 0;
+          }
+          testOccupied += span;
+          testRowMax = Math.max(testRowMax, itemH);
+          if (testUsed + testRowMax > maxAvailableHeightMm) return false;
+          if (testOccupied >= gridUnits) {
+            testUsed += testRowMax + effectiveRowGap;
+            testOccupied = 0;
+            testRowMax = 0;
+          }
+        }
+        return true;
+      })();
+
+      expandedItems.forEach(({ item, originalIndex, displayIndex }) => {
+        if (item.questionType === 'separator') {
+          if (item.sectionColumns) {
+            activeSectionColumns = Number(item.sectionColumns);
+          }
+        }
+
+        const isSep = item.questionType === 'separator';
+        const isComposition = item.questionType === 'english-composition';
+        const isExplicitFullWidth = item.layoutHint === 'full-width';
+
+        let requestedColumns = 1;
+        if (isSep || isComposition || isExplicitFullWidth) {
+          requestedColumns = 1;
+        } else {
+          const override = Number(item?.layout?.columns);
+          if ([1, 2, 3, 4, 5].includes(override)) {
+            requestedColumns = override;
+          } else if (activeSectionColumns) {
+            requestedColumns = activeSectionColumns;
+          } else {
+            requestedColumns = resolveQuestionColumns(item, s);
+          }
+        }
+
+        const isFullWidth = (requestedColumns <= 1) || isSep || isComposition || isExplicitFullWidth || shouldUseFullRow(item, s, contentWidthMm);
+        const gridSpan = isFullWidth ? gridUnits : Math.max(1, Math.round(gridUnits / requestedColumns));
+        const availableItemWidthMm = isFullWidth
+          ? contentWidthMm
+          : Math.max(30, (contentWidthMm - (requestedColumns - 1) * (s.colGap || 6)) / requestedColumns);
+        const itemHeightMm = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: availableItemWidthMm }, copiesPerPage);
+        let placement = simulatePlacement(gridSpan, itemHeightMm);
+        const exceedsHeight = currentPageItems.length > 0 && placement.total > maxAvailableHeightMm;
+        const exceedsCapacity = !canFitAllInSinglePage && (currentPageItems.length >= userCapacity);
+
+        if (exceedsHeight || exceedsCapacity) {
+          pageChunks.push({ pageIndex: pageChunks.length, items: currentPageItems });
+          currentPageItems = [];
+          currentUsedHeightMm = 0;
+          currentGridOccupied = 0;
+          currentRowMaxHeightMm = 0;
+          placement = simulatePlacement(gridSpan, itemHeightMm);
+        }
+
+        currentPageItems.push({
+          overallIndex: displayIndex ?? (originalIndex + 1),
+          displayIndex,
+          item,
+          isFullWidth,
+          gridSpan,
+          resolvedColumns: isFullWidth ? 1 : requestedColumns,
+          availableWidthMm: availableItemWidthMm,
+          estimatedHeightMm: itemHeightMm
+        });
+        currentUsedHeightMm = placement.used;
+        currentGridOccupied = placement.occupied;
+        currentRowMaxHeightMm = placement.rowMax;
+      });
+
+      if (currentPageItems.length > 0) {
+        pageChunks.push({
+          pageIndex: pageChunks.length,
+          items: currentPageItems
+        });
+      }
     }
-    occupied += span;
-    rowMax = Math.max(rowMax, itemHeightMm);
-    const total = used + rowMax;
-    let nextUsed = used;
-    let nextOccupied = occupied;
-    let nextRowMax = rowMax;
-    if (occupied >= gridUnits) {
-      nextUsed = used + rowMax + effectiveRowGap;
-      nextOccupied = 0;
-      nextRowMax = 0;
-    }
-    return {
-      used: nextUsed,
-      occupied: nextOccupied,
-      rowMax: nextRowMax,
-      total
-    };
   }
 
-  // 检查是否所有题目在物理高度上完全可以容纳在单页内
-  // 若能够容纳在单页内，则整张试卷保持单页排版，避免因默认题量阈值导致强制分页并在页面下方留出大片空白
-  const canFitAllInSinglePage = (() => {
-    let testUsed = 0;
-    let testOccupied = 0;
-    let testRowMax = 0;
-    let secCols = null;
-    for (const { item } of expandedItems) {
-      if (item.questionType === 'separator' && item.sectionColumns) {
-        secCols = Number(item.sectionColumns);
-      }
-      const isSep = item.questionType === 'separator';
-      const isComp = item.questionType === 'english-composition';
-      const isExplicitFull = item.layoutHint === 'full-width';
-      let cols = 1;
-      if (isSep || isComp || isExplicitFull) {
-        cols = 1;
-      } else {
-        const override = Number(item?.layout?.columns);
-        if ([1, 2, 3, 4, 5].includes(override)) {
-          cols = override;
-        } else if (secCols) {
-          cols = secCols;
-        } else {
-          cols = resolveQuestionColumns(item, s);
-        }
-      }
-      const isFull = (cols <= 1) || isSep || isComp || isExplicitFull || shouldUseFullRow(item, s, contentWidthMm);
-      const span = isFull ? gridUnits : Math.max(1, Math.round(gridUnits / cols));
-      const itemW = isFull ? contentWidthMm : Math.max(30, (contentWidthMm - (cols - 1) * (s.colGap || 6)) / cols);
-      const itemH = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: itemW }, copiesPerPage);
-
-      if (testOccupied > 0 && testOccupied + span > gridUnits) {
-        testUsed += testRowMax + effectiveRowGap;
-        testOccupied = 0;
-        testRowMax = 0;
-      }
-      testOccupied += span;
-      testRowMax = Math.max(testRowMax, itemH);
-      if (testUsed + testRowMax > maxAvailableHeightMm) return false;
-      if (testOccupied >= gridUnits) {
-        testUsed += testRowMax + effectiveRowGap;
-        testOccupied = 0;
-        testRowMax = 0;
-      }
-    }
-    return true;
-  })();
-
-  let activeSectionColumns = null;
-  expandedItems.forEach(({ item, originalIndex, displayIndex }) => {
-    if (item.questionType === 'separator') {
-      if (item.sectionColumns) {
-        activeSectionColumns = Number(item.sectionColumns);
-      }
-    }
-
-    const isSep = item.questionType === 'separator';
-    const isComposition = item.questionType === 'english-composition';
-    const isExplicitFullWidth = item.layoutHint === 'full-width';
-
-    let requestedColumns = 1;
-    if (isSep || isComposition || isExplicitFullWidth) {
-      requestedColumns = 1;
-    } else {
-      const override = Number(item?.layout?.columns);
-      if ([1, 2, 3, 4, 5].includes(override)) {
-        requestedColumns = override;
-      } else if (activeSectionColumns) {
-        requestedColumns = activeSectionColumns;
-      } else {
-        requestedColumns = resolveQuestionColumns(item, s);
-      }
-    }
-
-    const isFullWidth = (requestedColumns <= 1) || isSep || isComposition || isExplicitFullWidth || shouldUseFullRow(item, s, contentWidthMm);
-    const gridSpan = isFullWidth ? gridUnits : Math.max(1, Math.round(gridUnits / requestedColumns));
-    const availableItemWidthMm = isFullWidth
-      ? contentWidthMm
-      : Math.max(30, (contentWidthMm - (requestedColumns - 1) * (s.colGap || 6)) / requestedColumns);
-    const itemHeightMm = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: availableItemWidthMm }, copiesPerPage);
-    let placement = simulatePlacement(gridSpan, itemHeightMm);
-    const exceedsHeight = currentPageItems.length > 0 && placement.total > maxAvailableHeightMm;
-    const exceedsCapacity = !canFitAllInSinglePage && (currentPageItems.length >= userCapacity);
-
-    if (exceedsHeight || exceedsCapacity) {
-      pageChunks.push({ pageIndex: pageChunks.length, items: currentPageItems });
-      currentPageItems = [];
-      currentUsedHeightMm = 0;
-      currentGridOccupied = 0;
-      currentRowMaxHeightMm = 0;
-      placement = simulatePlacement(gridSpan, itemHeightMm);
-    }
-
-    currentPageItems.push({
-      overallIndex: displayIndex ?? (originalIndex + 1),
-      displayIndex,
-      item,
-      isFullWidth,
-      gridSpan,
-      resolvedColumns: isFullWidth ? 1 : requestedColumns,
-      availableWidthMm: availableItemWidthMm,
-      estimatedHeightMm: itemHeightMm
-    });
-    currentUsedHeightMm = placement.used;
-    currentGridOccupied = placement.occupied;
-    currentRowMaxHeightMm = placement.rowMax;
-  });
-
-  if (currentPageItems.length > 0 || pageChunks.length === 0) {
+  if (pageChunks.length === 0) {
     pageChunks.push({
-      pageIndex: pageChunks.length,
-      items: currentPageItems
+      pageIndex: 0,
+      items: []
     });
   }
 
@@ -941,6 +1024,10 @@ export function computePageLayout(items, settings) {
     paperDim: pDim,
     isLandscape: isLand,
     isSplitFold,
+    impRows,
+    impCols,
+    copyWidthMm,
+    copyHeightMm,
     pageWidthMm,
     pageHeightMm,
     wordsPerPage: userCapacity,
@@ -958,16 +1045,19 @@ export function computePageLayout(items, settings) {
   };
 }
 
-function createInlineGridHtml(widthPx, s, answerText = '') {
+function createInlineGridHtml(widthPx, s, answerText = '', gridHeightMm = null) {
   const teacherAnswer = answerText
     ? `<span class="teacher-inline-answer">${escapeHtml(answerText)}</span>`
     : '';
-  return `<span class="cloze-blank-line cloze-inline-grid" style="width:${Math.round(widthPx)}px;">
+  const heightStyle = gridHeightMm ? `height:${gridHeightMm}mm;` : 'height:var(--grid-height, 1.75em);';
+  return `<span class="cloze-blank-line cloze-inline-grid" style="width:${Math.round(widthPx)}px; ${heightStyle}">
     <svg viewBox="0 0 100 25" preserveAspectRatio="none" aria-hidden="true">
       <line x1="0" y1="2.0" x2="100" y2="2.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
       <line x1="0" y1="8.5" x2="100" y2="8.5" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
       <line x1="0" y1="16.5" x2="100" y2="16.5" stroke="#94a3b8" stroke-width="${(s.gridStroke || 0.85) * 1.1}" />
       <line x1="0" y1="23.0" x2="100" y2="23.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+      <line x1="0" y1="2.0" x2="0" y2="23.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
+      <line x1="100" y1="2.0" x2="100" y2="23.0" stroke="${s.gridColor || '#cbd5e1'}" stroke-width="${s.gridStroke || 0.85}" />
     </svg>${teacherAnswer}
   </span>`;
 }
@@ -980,9 +1070,7 @@ function createTeacherQuestionAnswerHtml(questionHtml, answerText) {
 }
 
 function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teacherMode) {
-  const isAlphabet = entry?.item?.questionType === 'alphabet' || entry?.item?.alphaData || entry?.item?.neighborData || entry?.item?.caseData;
-  const multiCopyGridLimit = isAlphabet ? 11 : 8.5;
-  const effectiveGridHeight = copies > 1 ? Math.min(multiCopyGridLimit, s.gridHeight || 12) : (s.gridHeight || 12);
+  const effectiveGridHeight = getEffectiveGridHeight(s, copies);
   const availableWidthPx = Math.max(48, (entry.availableWidthMm || 180) * 3.7795275591);
   const fontSizePx = (Number(effectivePromptSize) || 14) * 1.333333;
   const standardEnglishFont = "'Times New Roman', Times, serif";
@@ -1004,7 +1092,7 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
     availableWidthPx,
     teacherMode,
     renderWordDictation(item) {
-      const promptText = item.overrideZh || item.zh || ((item.prompt && item.prompt !== (item.answer || item.en)) ? item.prompt : '听写');
+      const promptText = stripOuterBrackets(item.overrideZh || item.zh || ((item.prompt && item.prompt !== (item.answer || item.en)) ? item.prompt : '听写'));
       if (teacherMode) {
         return {
           promptHtml: createTeacherQuestionAnswerHtml(escapeHtml(promptText), item.answer || item.en || ''),
@@ -1021,7 +1109,7 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
       };
     },
     renderSentenceDictation(item) {
-      const promptText = item.overrideZh || item.zh || ((item.prompt && item.prompt !== (item.answer || item.en)) ? item.prompt : '请写出英文句子');
+      const promptText = stripOuterBrackets(item.overrideZh || item.zh || ((item.prompt && item.prompt !== (item.answer || item.en)) ? item.prompt : '请写出英文句子'));
       if (teacherMode) {
         return {
           promptHtml: createTeacherQuestionAnswerHtml(escapeHtml(promptText), item.answer || item.en || ''),
@@ -1038,9 +1126,9 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
       };
     },
     renderSentenceCloze(item) {
+      const zhText = stripOuterBrackets(item.overrideZh || item.zh || item.translation || '');
       if (teacherMode) {
         const questionText = (item.en || '').replace(/\[[^\]]+\]|\{[^}]+\}/g, '_____');
-        const zhText = item.overrideZh || item.zh || item.translation || '';
         const questionHtml = `<span class="teacher-question-english">${escapeHtml(questionText)}</span>${zhText ? `<span class="teacher-question-zh"> ${escapeHtml(zhText)}</span>` : ''}`;
         return {
           promptHtml: createTeacherQuestionAnswerHtml(questionHtml, (item.en || '').replace(/[\[\]{}]/g, '')),
@@ -1058,7 +1146,8 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         fontFamily: s.fontFamilyEn || 'Arial, sans-serif',
         fontSize: fontSizePx,
         letterSpacing: parseFloat(s.letterSpacing) || 0,
-        availableWidth: Math.max(48, availableWidthPx * 0.72)
+        availableWidth: Math.max(48, availableWidthPx * 0.72),
+        gridHeightMm: effectiveGridHeight
       });
       const isInline = (s.clozeStyle || 'inline') !== 'below';
       return {
@@ -1084,24 +1173,24 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         gridHtml = createCasePracticeGridSvg(item, { gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', alphabetGuideFont: s.alphabetGuideFont, isTeacher: !!s._teacherMode });
       } else if (subType === 'sequence' || item.alphaData) {
         const aData = item.alphaData || {};
-        const isPreprinted = !aData.isBlank && aData.subMode === 'gap';
         const guideChar = aData.targetEn || item.en || '';
         gridHtml = createSingleAlphabetGridSvg({
           gridHeightMm: effectiveGridHeight,
           strokeWidth: s.gridStroke || 0.85,
           lineColor: s.gridColor || '#cbd5e1',
-          guideText: (isPreprinted || s._teacherMode) ? guideChar : '',
+          guideText: s._teacherMode ? guideChar : '',
           alphabetGuideFont: s.alphabetGuideFont
         });
       } else {
         gridHtml = createPracticeGridSvg({ gridStyle: s.gridStyle, gridLines: s.gridLinesPerWord || 1, gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: s.showVerticalBorder });
       }
-      const isHorizontalGrid = (subType !== 'sequence') && (
+      const isHorizontalGrid = (subType === 'case') || ((subType !== 'sequence') && (
         (item.layout?.gridPosition === 'right') ||
         (item.caseData?.layoutStyle === 'right-2col') ||
+        (item.caseData?.layoutStyle === 'right-4col') ||
         (item.neighborData?.layoutStyle === 'right-2col') ||
         (!item.layout?.gridPosition && s.alphabetLayout === 'right-2col' && item.layout?.gridPosition !== 'below')
-      );
+      ));
       return {
         promptHtml: `<span class="meaning-text entry-zh-hint alphabet-prompt-text" style="font-family:'Xumin Regular', 'xumin', cursive;">${escapeHtml(promptText)}</span>`,
         practiceHtml: gridHtml,
@@ -1112,23 +1201,23 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
       const maxOptLen = Math.max(0, ...item.options.map((option) => (option.text || '').length));
       let optionLayout = item.optionLayout;
       if (optionLayout === 'auto') {
-        if (maxOptLen > 18) {
-          optionLayout = 'single';
-        } else if (item.options.length === 3 && maxOptLen <= 14) {
-          optionLayout = 'three';
-        } else if (item.options.length <= 3) {
-          optionLayout = maxOptLen <= 14 ? 'three' : 'double';
+        if (item.options.length === 3) {
+          // ABC 三个选项，字数较少时无论单行排 1 题还是 2 题，均在 1 行内分 3 列显示
+          optionLayout = maxOptLen <= 18 ? 'three' : 'single';
         } else if (item.options.length === 4) {
-          optionLayout = maxOptLen > 12 ? 'single' : 'double';
+          optionLayout = maxOptLen > 14 ? 'single' : 'double';
+        } else if (item.options.length === 2) {
+          optionLayout = maxOptLen <= 18 ? 'double' : 'single';
         } else {
-          optionLayout = 'double';
+          optionLayout = maxOptLen > 16 ? 'single' : 'double';
         }
       } else if (optionLayout === 'inline' && item.options.length === 3) {
         optionLayout = 'three';
       }
 
-      const hasLeadingBracket = /^\s*[\(（]/.test(item.stem || '');
-      const bracketHtml = hasLeadingBracket ? '' : '<span class="choice-bracket">（&nbsp;&nbsp;&nbsp;）</span>';
+      // 去除题干开头可能已有的空括号，统一在题号后呈现标准填写答案括号
+      const cleanStem = (item.stem || '').replace(/^\s*[\(（]\s*[\)）]\s*/, '').trim();
+      const bracketHtml = '<span class="choice-bracket">（&nbsp;&nbsp;&nbsp;）</span>';
 
       if (teacherMode) {
         const answerText = item.options
@@ -1139,11 +1228,11 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
           .filter((option) => item.answers.includes(option.id))
           .map((option) => option.label)
           .join('');
-        const teacherBracketHtml = hasLeadingBracket ? '' : (answerLabels
+        const teacherBracketHtml = answerLabels
           ? `<span class="choice-bracket teacher-bracket">（ <strong style="color:var(--primary, #2f6659);">${escapeHtml(answerLabels)}</strong> ）</span>`
-          : '<span class="choice-bracket">（&nbsp;&nbsp;&nbsp;）</span>');
+          : '<span class="choice-bracket">（&nbsp;&nbsp;&nbsp;）</span>';
         return {
-          promptHtml: createTeacherQuestionAnswerHtml(`<span class="teacher-question-english">${teacherBracketHtml}${escapeHtml(item.stem)}</span>`, answerText),
+          promptHtml: createTeacherQuestionAnswerHtml(`<span class="teacher-question-english">${teacherBracketHtml}${escapeHtml(cleanStem)}</span>`, answerText),
           practiceHtml: '',
           classes: ['is-choice-card', 'is-teacher-answer-card']
         };
@@ -1152,7 +1241,7 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         return `<span class="choice-option"><span class="choice-label">${escapeHtml(option.label)}.</span><span>${escapeHtml(option.text)}</span></span>`;
       }).join('');
       return {
-        promptHtml: `${bracketHtml}<span class="meaning-text choice-stem">${escapeHtml(item.stem)}</span>`,
+        promptHtml: `${bracketHtml}<span class="meaning-text choice-stem">${escapeHtml(cleanStem)}</span>`,
         practiceHtml: `<div class="choice-options layout-${optionLayout}">${options}</div>`,
         classes: ['is-choice-card']
       };
@@ -1177,7 +1266,7 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         const measurement = blank.widthMode === 'manual'
           ? { width: Math.min(availableWidthPx, blank.width) }
           : calculateWritingGridWidth({ ...measurementOptions, text: blank.answer || '' });
-        if (blank.lineStyle === 'four-line') return createInlineGridHtml(measurement.width, s);
+        if (blank.lineStyle === 'four-line') return createInlineGridHtml(measurement.width, s, '', effectiveGridHeight);
         return `<span class="inline-fill-blank" style="width:${Math.round(measurement.width)}px;"></span>`;
       }).join('');
       return { promptHtml: `<span class="meaning-text inline-fill-stem">${segments}</span>`, practiceHtml: '', classes: ['is-inline-fill-card'] };
@@ -1222,19 +1311,21 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
 // 单联 HTML 生成 (纯函数，支持混合题型精准渲染)
 export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSize) {
   const copies = Math.max(1, parseInt(s.copiesPerPage, 10) || 1);
-  const isAlpha26 = (chunk.items.length === 26 && chunk.items.every(entry => {
+  const isSeqEntry = (entry) => {
     const it = entry?.item;
-    return it?.subType === 'sequence' || it?.alphabetType === 'sequence' || it?.alphaData;
-  })) || (s.dictMode === 'alphabet' && chunk.items.length === 26 && chunk.items[0]?.item?.alphaData);
+    return Boolean(it && (it.subType === 'sequence' || it.alphabetType === 'sequence' || it.alphaData));
+  };
+  const isAlpha26 = chunk.isAlpha26 || (chunk.items.length === 26 && (chunk.items.every(isSeqEntry) || Boolean(chunk.items[0]?.item?.alphaData)));
 
   let cardsHtml = '';
   let alpha26RowsHtml = '';
 
   if (isAlpha26) {
     const rowMode = (chunk.items[0]?.item?.alphaData?.rowMode === 4 || s.alphabet26Rows === 4) ? 4 : 3;
+    const alphaBaseH = getEffectiveGridHeight(s, copies);
     const effectiveGridHeight = (rowMode === 4)
-      ? ((copies > 1) ? 9.5 : 14)
-      : ((copies > 1) ? 11 : 18);
+      ? ((copies > 1) ? Math.round(alphaBaseH * (9.5 / 11) * 10) / 10 : Math.round(alphaBaseH * (14 / 12) * 10) / 10)
+      : ((copies > 1) ? alphaBaseH : Math.round(alphaBaseH * (18 / 12) * 10) / 10);
 
     const rows = (rowMode === 4)
       ? [
@@ -1254,7 +1345,6 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
       rowItems.forEach(({ overallIndex, item }) => {
         const safeCardId = escapeHtml(item.id);
         const aData = item.alphaData || {};
-        const isPreprinted = !aData.isBlank && aData.subMode === 'gap';
         const guideChar = aData.targetEn || item.en || '';
         const cellLabel = (aData.caseStyle === 'upper')
           ? (aData.upper || '')
@@ -1270,7 +1360,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
                 gridHeightMm: effectiveGridHeight,
                 strokeWidth: s.gridStroke || 0.85,
                 lineColor: s.gridColor || '#cbd5e1',
-                guideText: (isPreprinted || s._teacherMode) ? guideChar : '',
+                guideText: s._teacherMode ? guideChar : '',
                 alphabetGuideFont: s.alphabetGuideFont
               })}
             </div>
@@ -1339,7 +1429,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
 
       const isAlphabetHorizontal = (isNeighbor || isCase || isAlphabet) &&
         (subType !== 'sequence') &&
-        (item.layout?.gridPosition === 'right' || item.caseData?.layoutStyle === 'right-2col' || item.neighborData?.layoutStyle === 'right-2col' || (!item.layout?.gridPosition && s.alphabetLayout === 'right-2col' && item.layout?.gridPosition !== 'below'));
+        (isCase || item.layout?.gridPosition === 'right' || item.caseData?.layoutStyle === 'right-4col' || item.caseData?.layoutStyle === 'right-2col' || item.neighborData?.layoutStyle === 'right-2col' || (!item.layout?.gridPosition && s.alphabetLayout === 'right-2col' && item.layout?.gridPosition !== 'below'));
 
       const cardClasses = [
         'word-card',
@@ -1363,9 +1453,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
         return;
       }
 
-      const cardPromptSize = (qType === 'alphabet' && gridSpan <= 15)
-        ? Math.min(9.5, effectivePromptSize)
-        : effectivePromptSize;
+      const cardPromptSize = effectivePromptSize;
 
       cardsHtml += `
         <div class="${cardClasses}" data-id="${safeCardId}" data-debug-id="ITEM-${safeCardId}" data-debug-name="题目 #${overallIndex} (${qType})" data-debug-component="PracticeGrid" data-debug-file="src/core/layout.js" style="letter-spacing:${safeLetterSpacing};grid-column:span ${gridSpan};">
@@ -1444,13 +1532,12 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   }
 
   // 网格主体
-  const effectiveRowGap = s._teacherMode
-    ? Math.min(1.2, s.rowGap || 3.5)
-    : ((copies > 1) ? Math.min(copies >= 3 ? 2.0 : 2.5, s.rowGap || 3.5) : (s.rowGap || 3.5));
+  const effectiveGridHeight = getEffectiveGridHeight(s, copies);
+  const effectiveRowGap = getEffectiveRowGap(s, copies, !!s._teacherMode);
   const effectiveColGap = s._teacherMode ? Math.min(4, s.colGap || 6) : s.colGap;
 
   const bodyHtml = isAlpha26 ? `
-    <div class="alphabet-26-sheet-container">
+    <div class="alphabet-26-sheet-container" style="gap: ${effectiveRowGap * 1.5}mm;">
       ${alpha26RowsHtml}
     </div>
   ` : `
@@ -1466,7 +1553,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
 
   const sectionCls = `${(copies > 1) ? 'multi-copy' : 'single-copy'}${s._teacherMode ? ' teacher-answer-copy' : ''}`;
   return `
-    <div class="sheet-copy-section ${sectionCls}" style="--font-en:${safeFontFamilyEn};">
+    <div class="sheet-copy-section ${sectionCls}" style="--font-en:${safeFontFamilyEn}; --grid-height:${effectiveGridHeight}mm; --row-gap:${effectiveRowGap}mm;">
       ${headerHtml}
       ${bodyHtml}
     </div>
@@ -1487,11 +1574,9 @@ export function renderPracticeSheetHtml(layout, settings) {
   const s = Object.assign({}, DEFAULT_SETTINGS, settings);
   s.layoutDefaults = normalizeLayoutDefaults(settings?.layoutDefaults, settings || {});
   const { copiesPerPage, isLandscape, pageWidthMm, pageHeightMm } = layout;
-  const curPromptSize = s.promptFontSize || 14;
+  const curPromptSize = Number(s.promptFontSize) || 14;
   const safePageFontEn = escapeHtml(s.fontFamilyEn || 'Arial, sans-serif');
-  const effectivePromptSize = (copiesPerPage > 1 && s.dictMode === 'cloze')
-    ? Math.min(12, curPromptSize)
-    : curPromptSize;
+  const effectivePromptSize = curPromptSize;
 
   let pagesHtml = '';
   const pageSets = [{ teacherMode: false, className: 'student-sheet-page' }];
@@ -1535,6 +1620,7 @@ export function renderPracticeSheetHtml(layout, settings) {
             min-height: ${pageHeightMm}mm;
             max-height: ${pageHeightMm}mm;
             font-family: ${s.fontFamilyZh};
+            --font-zh: ${s.fontFamilyZh};
             --font-en: ${safePageFontEn};
             padding: ${Number(s.pageMargin || 8)}mm ${Number(s.pageMarginHorizontal ?? 12)}mm;
           ">
@@ -1561,7 +1647,6 @@ export function renderPracticeSheetHtml(layout, settings) {
 
   pageSets.forEach((pageSet, setIndex) => {
     layout.pageChunks.forEach((chunk, pageIdx) => {
-      let copySlipsHtml = '';
       const isLastPage = setIndex === pageSets.length - 1 && pageIdx === layout.pageChunks.length - 1;
       const renderSettings = {
         ...s,
@@ -1569,24 +1654,65 @@ export function renderPracticeSheetHtml(layout, settings) {
         title: pageSet.teacherMode ? `${s.title || '英语练习'}（教师答案）` : s.title
       };
 
-      for (let c = 0; c < copiesPerPage; c++) {
-        if (c > 0) {
-          const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">沿虚线裁切分发</span>` : '';
-          copySlipsHtml += `<div class="section-cut-divider ${s.dividerStyle}">${guideTag}</div>`;
+      const impGrid = getImpositionGrid(copiesPerPage, isLandscape);
+      const impRows = impGrid.rows;
+      const impCols = impGrid.cols;
+      let innerHtml = '';
+
+      if (copiesPerPage === 1) {
+        innerHtml = renderCopySlipHtml(chunk, pageIdx, 0, renderSettings, effectivePromptSize);
+      } else if (impCols === 1 && impRows > 1) {
+        let copySlipsHtml = '';
+        for (let c = 0; c < copiesPerPage; c++) {
+          if (c > 0) {
+            const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">沿虚线裁切分发</span>` : '';
+            copySlipsHtml += `<div class="section-cut-divider ${s.dividerStyle}">${guideTag}</div>`;
+          }
+          copySlipsHtml += renderCopySlipHtml(chunk, pageIdx, c, renderSettings, effectivePromptSize);
         }
-        copySlipsHtml += renderCopySlipHtml(chunk, pageIdx, c, renderSettings, effectivePromptSize);
+        innerHtml = copySlipsHtml;
+      } else if (impCols > 1 && impRows === 1) {
+        let copySlipsHtml = '';
+        for (let c = 0; c < impCols; c++) {
+          if (c > 0) {
+            const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">沿虚线裁切分发</span>` : '';
+            copySlipsHtml += `<div class="section-cut-divider vertical ${s.dividerStyle}">${guideTag}</div>`;
+          }
+          copySlipsHtml += renderCopySlipHtml(chunk, pageIdx, c, renderSettings, effectivePromptSize);
+        }
+        innerHtml = `<div class="sheet-imposition-row">${copySlipsHtml}</div>`;
+      } else {
+        let rowsHtml = '';
+        for (let r = 0; r < impRows; r++) {
+          if (r > 0) {
+            const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">沿虚线裁切分发</span>` : '';
+            rowsHtml += `<div class="section-cut-divider horizontal ${s.dividerStyle}">${guideTag}</div>`;
+          }
+          let colsHtml = '';
+          for (let c = 0; c < impCols; c++) {
+            if (c > 0) {
+              const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">沿虚线裁切分发</span>` : '';
+              colsHtml += `<div class="section-cut-divider vertical ${s.dividerStyle}">${guideTag}</div>`;
+            }
+            const copyIdx = r * impCols + c;
+            colsHtml += renderCopySlipHtml(chunk, pageIdx, copyIdx, renderSettings, effectivePromptSize);
+          }
+          rowsHtml += `<div class="imposition-row">${colsHtml}</div>`;
+        }
+        innerHtml = `<div class="sheet-imposition-grid">${rowsHtml}</div>`;
       }
 
       pagesHtml += `
-        <div class="sheet-page ${isLandscape ? 'landscape' : ''} ${pageSet.className} ${isLastPage ? 'is-last-page' : ''}" style="
+        <div class="sheet-page ${isLandscape ? 'landscape' : ''} ${pageSet.className} ${isLastPage ? 'is-last-page' : ''} ${copiesPerPage > 1 ? 'is-multi-up' : ''}" style="
           width: ${pageWidthMm}mm;
           height: ${pageHeightMm}mm;
           min-height: ${pageHeightMm}mm;
           max-height: ${pageHeightMm}mm;
           font-family: ${s.fontFamilyZh};
+          --font-zh: ${s.fontFamilyZh};
           --font-en: ${safePageFontEn};
           padding: ${Number(s.pageMargin || 8)}mm ${Number(s.pageMarginHorizontal ?? 12)}mm ${Math.max(4, Number(s.pageMargin || 8) - 2)}mm ${Number(s.pageMarginHorizontal ?? 12)}mm;
-        ">${copySlipsHtml}</div>`;
+        ">${innerHtml}</div>`;
     });
   });
 

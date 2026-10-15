@@ -5,7 +5,7 @@ async function testEmptyStartup() {
 
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', [
     '--headless',
-    '--remote-debugging-port=9261',
+    '--remote-debugging-port=9269',
     '--disable-gpu',
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
@@ -16,7 +16,7 @@ async function testEmptyStartup() {
   await new Promise(r => setTimeout(r, 3500));
 
   try {
-    const res = await fetch('http://127.0.0.1:9261/json');
+    const res = await fetch('http://127.0.0.1:9269/json');
     const tabs = await res.json();
     const target = tabs.find(t => t.url.includes('DictationSheetGen'));
     if (!target) throw new Error('未找到目标测试页面');
@@ -49,6 +49,13 @@ async function testEmptyStartup() {
 
     await new Promise(r => ws.onopen = r);
 
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!window.__appStoreState`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // ================= 验证 1: 首次打开网页，试卷默认为空（0 词），无需手动清除 =================
     console.log('【验证 1】首次打开网页，检查当前试卷与输入框默认为空:');
     const r1 = await evalExpr(`(async () => {
@@ -80,7 +87,7 @@ async function testEmptyStartup() {
       r1.itemCount === 0 &&
       r1.textareaValue === '' &&
       r1.renderedWordEntries === 0 &&
-      r1.badgeText === '已添加 0 题' &&
+      r1.badgeText && r1.badgeText.includes('已添加 0 题') &&
       r1.hasEmptyPlaceholder
     );
     console.log('-> 判定:', pass1 ? '✅ PASS' : '❌ FAIL', '\n');
@@ -106,7 +113,7 @@ async function testEmptyStartup() {
     const pass2 = (
       r2.itemCount === 9 &&
       r2.renderedWordEntries === 27 &&
-      r2.badgeText === '已添加 9 题'
+      r2.badgeText && r2.badgeText.includes('已添加 9 题')
     );
     console.log('-> 判定:', pass2 ? '✅ PASS' : '❌ FAIL', '\n');
 

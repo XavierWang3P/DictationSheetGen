@@ -1,6 +1,5 @@
-/* 思源黑体 (Noto Sans SC) 大陆可用的国内字体 CDN (JSDMirror 境内高速节点，不依赖 Google Fonts) */
-@import url('https://cdn.jsdmirror.com/npm/@fontsource/noto-sans-sc@5.1.0/400.css');
-@import url('https://cdn.jsdmirror.com/npm/@fontsource/noto-sans-sc@5.1.0/500.css');
+/* 思源黑体 (Noto Sans SC) 在线 Google Fonts (wght 400;500;700) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
 
 /* OPPO Sans 本地静态字体 (400/500 字重保证印刷清晰度，不发虚) */
 @font-face {

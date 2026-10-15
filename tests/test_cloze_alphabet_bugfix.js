@@ -93,7 +93,7 @@ console.log('【验证 3】修复“左右邻居”网格样式被污染的 Bug�
 
 // 3.1 固化 subType 测试
 const seqItems = generateAlphabetSequenceItems({ subMode: 'full', caseStyle: 'pair' });
-const neighborItems = generateLetterNeighborsItems({ count: 8, caseStyle: 'upper', neighborType: 'both' });
+const neighborItems = generateLetterNeighborsItems({ count: 10, caseStyle: 'upper', neighborType: 'both' });
 const caseItems = generateCaseConversionItems({ count: 8, direction: 'random_switch' });
 
 assert.equal(seqItems[0].subType, 'sequence', '26字母题目 subType 必须为 sequence');
@@ -101,12 +101,13 @@ assert.equal(neighborItems[0].subType, 'neighbor', '左右邻居题目 subType �
 assert.equal(caseItems[0].subType, 'case', '大小写转换题目 subType 必须为 case');
 
 // 3.2 列数解析独立性测试（不受全局 alphabetLayout 污染）
-assert.equal(resolveQuestionColumns(seqItems[0], { ...DEFAULT_SETTINGS, alphabetLayout: 'bottom-4col' }), 1, '26字母默写应始终返回 1 列');
-assert.equal(resolveQuestionColumns(neighborItems[0], { ...DEFAULT_SETTINGS, alphabetLayout: 'bottom-4col' }), 4, '左右邻居默认应返回 4 列');
+assert.equal(resolveQuestionColumns(seqItems[0], { ...DEFAULT_SETTINGS, alphabetLayout: 'bottom-5col' }), 1, '26字母默写应始终返回 1 列');
+assert.equal(resolveQuestionColumns(neighborItems[0], { ...DEFAULT_SETTINGS, alphabetLayout: 'bottom-5col' }), 5, '左右邻居默认应返回 5 列');
+assert.equal(resolveQuestionColumns(caseItems[0], { ...DEFAULT_SETTINGS, alphabetLayout: 'bottom-5col' }), 4, '大小写转换默认应返回 4 列');
 
-// 3.3 混合添加排版测试：添加 26 字母后，再添加左右邻居
+// 3.3 混合添加排版测试：26字母在前，左右邻居在后
 const mixedItems = [...seqItems, ...neighborItems];
-assert.equal(mixedItems.length, 34);
+assert.equal(mixedItems.length, 36);
 
 const mixedLayout = computePageLayout(mixedItems, { ...DEFAULT_SETTINGS, dictMode: 'alphabet', wordsPerPage: 9 });
 // 验证 26 字母独立成 Chunk 0，未被 wordsPerPage=9 拆碎成 9+9+8
@@ -124,7 +125,33 @@ assert.match(chunk1Html, /subtype-neighbor/, '左右邻居卡片必须携带 sub
 assert.match(chunk1Html, /viewBox="0 0 300 25"/, '左右邻居网格必须使用 300 宽度的三连四线格');
 assert.doesNotMatch(chunk1Html, /alpha-26-grid-row/, '左右邻居绝不能受 26 字母影响渲染为 alpha-26-grid-row');
 
-console.log('-> 26字母与左右邻居混合出卷排版互不污染，各自保持 3*9 与三连格');
+// 3.4 混合添加排版测试：前面有其他题型（左右邻居在先，26字母在后，彻底根除位置状态污染 Bug）
+const mixedPreceded = [...neighborItems, ...seqItems];
+const precededLayout = computePageLayout(mixedPreceded, { ...DEFAULT_SETTINGS, wordsPerPage: 10 });
+assert.equal(precededLayout.pageChunks[0].items.length, 10, '前面邻居题应正常排入 Chunk 0');
+assert.equal(precededLayout.pageChunks[1].items.length, 26, '26字母被前置题目夹杂时也必须独立成单页完整网格');
+
+const seqChunkHtml = renderCopySlipHtml(precededLayout.pageChunks[1], 1, 0, { ...DEFAULT_SETTINGS }, 14);
+assert.match(seqChunkHtml, /alpha-26-grid-row/, '被前置题型夹杂的 26 字母必须强制呈现 alpha-26-grid-row 独立网格');
+assert.match(seqChunkHtml, /alpha-26-cell/, '26 字母必须呈现 alpha-26-cell');
+assert.doesNotMatch(seqChunkHtml, /sheet-body-grid/, '26 字母容器严禁被放入 sheet-body-grid');
+
+// 3.5 大小写转换：左右结构（每行 4 题）验证
+const caseLayout = computePageLayout(caseItems, { ...DEFAULT_SETTINGS });
+const caseChunkHtml = renderCopySlipHtml(caseLayout.pageChunks[0], 0, 0, { ...DEFAULT_SETTINGS }, 14);
+assert.match(caseChunkHtml, /is-case-card/, '大小写转换卡片必须携带 is-case-card');
+assert.match(caseChunkHtml, /meaning-left/, '大小写转换卡片必须具有 meaning-left 实现左提示右四线格');
+assert.match(caseChunkHtml, /case-svg-grid/, '大小写转换练习区必须包含 case-svg-grid');
+
+// 3.6 4行独立网格模式验证 (4x7)
+const seq4Items = generateAlphabetSequenceItems({ rowMode: 4, caseStyle: 'upper' });
+const seq4Layout = computePageLayout(seq4Items, { ...DEFAULT_SETTINGS, alphabet26Rows: 4 });
+const seq4Html = renderCopySlipHtml(seq4Layout.pageChunks[0], 0, 0, { ...DEFAULT_SETTINGS, alphabet26Rows: 4 }, 14);
+const rowMatches = seq4Html.match(/class="alpha-26-grid-row"/g);
+assert.equal(rowMatches.length, 4, '4行模式必须严格渲染 4 个 alpha-26-grid-row');
+assert.match(seq4Html, /alpha-dummy-star/, '4行模式第4行必须包含补位 dummy star');
+
+console.log('-> 26字母与左右邻居、大小写转换排版互不污染，前后夹杂均强制独立网格');
 console.log('-> 判定: ✅ PASS\n');
 
 

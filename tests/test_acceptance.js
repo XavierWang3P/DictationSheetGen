@@ -58,11 +58,16 @@ async function runTests() {
     console.log('=== 开始执行自动化测试套件 ===\n');
 
     // 等待 DOM 挂载就绪
-    for (let i = 0; i < 50; i++) {
-      const isReady = await evalExpr(`!!document.getElementById('btnLoadDefaultSample')`).catch(() => false);
+    let isReady = false;
+    for (let i = 0; i < 100; i++) {
+      isReady = await evalExpr(`!!document.getElementById('btnLoadDefaultSample') && !!window.state`).catch(() => false);
       if (isReady) break;
       await new Promise(r => setTimeout(r, 100));
     }
+    if (!isReady) throw new Error('页面挂载超时，未找到 btnLoadDefaultSample 或 window.state');
+
+    // 清理可能污染的本地存储，确保以纯净默认设置开始
+    await evalExpr(`localStorage.clear(); if (window.state) { window.state.settings = {}; }`);
 
     // 载入默认9词以供排版参数验收
     await evalExpr(`document.getElementById('btnLoadDefaultSample').click();`);
@@ -425,10 +430,12 @@ async function runTests() {
     const allPass = pass1 && pass2 && pass3 && pass4 && pass5 && pass6 && pass7;
     console.log('最终测试综述:', allPass ? '🎉 全部 7 大核心标准 100% 完美通过！' : '部分失败');
 
+    try { spawn('taskkill', ['/pid', edge.pid, '/f', '/t']); } catch (e) {}
     edge.kill();
     process.exit(allPass ? 0 : 1);
   } catch (err) {
     console.error('测试异常:', err);
+    try { spawn('taskkill', ['/pid', edge.pid, '/f', '/t']); } catch (e) {}
     edge.kill();
     process.exit(1);
   }

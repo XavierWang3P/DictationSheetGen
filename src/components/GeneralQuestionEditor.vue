@@ -18,12 +18,19 @@
             <n-form-item class="editor-field wide" label="题干" path="stem">
               <n-input v-model:value="choice.stem" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" :input-props="{ id: 'choiceStemInput' }" placeholder="请输入选择题题干" />
             </n-form-item>
-            <label class="editor-field">选择方式
-              <select id="choiceSelectionMode" v-model="choice.selectionMode">
+            <div class="editor-field">
+              <span>选择方式</span>
+              <div class="compact-segmented">
+                <input type="radio" id="choiceSingle" value="single" v-model="choice.selectionMode" />
+                <label for="choiceSingle">单选</label>
+                <input type="radio" id="choiceMultiple" value="multiple" v-model="choice.selectionMode" />
+                <label for="choiceMultiple">多选</label>
+              </div>
+              <select id="choiceSelectionMode" v-model="choice.selectionMode" style="display:none;" aria-hidden="true">
                 <option value="single">单选</option>
                 <option value="multiple">多选</option>
               </select>
-            </label>
+            </div>
             <label class="editor-field">选项编号
               <select id="choiceLabelStyle" v-model="choice.labelStyle">
                 <option value="alpha-upper">A B C D E F</option>
@@ -73,12 +80,15 @@
                 <small>使用 {1}、{2} 标记空格位置；未写入题干的空格会追加到末尾。</small>
               </div>
             </n-form-item>
-            <label class="editor-field">题号
-              <select v-model="fill.autoNumber">
-                <option :value="true">自动编号</option>
-                <option :value="false">不编号</option>
-              </select>
-            </label>
+            <div class="editor-field">
+              <span>题号</span>
+              <div class="compact-segmented">
+                <input type="radio" id="fillAutoNum" :value="true" v-model="fill.autoNumber" />
+                <label for="fillAutoNum">自动编号</label>
+                <input type="radio" id="fillNoNum" :value="false" v-model="fill.autoNumber" />
+                <label for="fillNoNum">不编号</label>
+              </div>
+            </div>
           </div>
 
           <div class="blank-editor-list">
@@ -114,12 +124,15 @@
             <label class="editor-field">书写行数
               <input id="compositionLineCount" v-model.number="composition.lineCount" type="number" min="3" max="40" />
             </label>
-            <label class="editor-field">书写线样式
-              <select v-model="composition.writingStyle">
-                <option value="single-line">单横线</option>
-                <option value="four-line">四线三格</option>
-              </select>
-            </label>
+            <div class="editor-field">
+              <span>书写线样式</span>
+              <div class="compact-segmented">
+                <input type="radio" id="compSingleLine" value="single-line" v-model="composition.writingStyle" />
+                <label for="compSingleLine">单横线</label>
+                <input type="radio" id="compFourLine" value="four-line" v-model="composition.writingStyle" />
+                <label for="compFourLine">四线三格</label>
+              </div>
+            </div>
             <label class="editor-field">每行高度
               <input v-model.number="composition.lineHeight" type="number" min="8" max="18" step="0.5" />
             </label>

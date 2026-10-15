@@ -49,6 +49,13 @@ async function testPopconfirmI18n() {
 
     await new Promise(r => ws.onopen = r);
 
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!document.getElementById('btnClearWords') && !!window.__appStoreState`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // 1. 测试清空试卷确认框
     console.log('【验证 1】检查“清空试卷”提示框按钮文本:');
     const r1 = await evalExpr(`(async () => {

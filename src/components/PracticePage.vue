@@ -104,7 +104,7 @@
                     </template>
                   </span>
                   <span v-if="item.zh || item.translation" class="cloze-zh-hint" :style="{ fontFamily: settings.fontFamilyZh }">
-                    {{ item.zh || item.translation }}
+                    {{ stripOuterBrackets(item.zh || item.translation) }}
                   </span>
                 </div>
               </template>
@@ -128,7 +128,7 @@
                     </template>
                   </span>
                   <span v-if="item.zh || item.translation" style="margin-left:6px; color:#475569;">
-                    {{ item.zh || item.translation }}
+                    {{ stripOuterBrackets(item.zh || item.translation) }}
                   </span>
                 </div>
                 <div class="grid-container" style="margin-top: 2mm;">
@@ -152,6 +152,7 @@
 <script setup>
 import { computed } from 'vue';
 import PracticeGridSvg from './PracticeGridSvg.vue';
+import { stripOuterBrackets } from '../core/layout.js';
 
 const props = defineProps({
   chunk: {
@@ -199,11 +200,7 @@ const effectiveTitleFontSize = computed(() => {
 });
 
 const effectivePromptSize = computed(() => {
-  const cur = props.settings.promptFontSize || 14;
-  if (copiesPerPage.value > 1 && isClozeMode.value) {
-    return Math.min(12, cur);
-  }
-  return cur;
+  return Number(props.settings.promptFontSize) || 14;
 });
 
 const pageStyle = computed(() => ({

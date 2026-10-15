@@ -104,20 +104,20 @@
               :checked="state.draft.settings.splitFold"
               @change="state.draft.settings.splitFold = true"
             />
-            <label for="foldSplit">横向对半折（双页拼版）</label>
+            <label for="foldSplit">横向对半折（左右双页拼版）</label>
           </div>
         </div>
 
-        <!-- 一页份数 (非对半折横向时显示) -->
+        <!-- 一页份数 / 多联拼版 (非对半折横向时显示) -->
         <div class="form-row" v-if="!state.draft.settings.splitFold">
-          <label>一页份数</label>
+          <label>一页联数</label>
           <div class="compact-segmented">
             <input
               type="radio"
               name="copiesPerPage"
               id="copy1"
-              value="1"
-              :checked="state.draft.settings.copiesPerPage === 1"
+              :value="1"
+              :checked="Number(state.draft.settings.copiesPerPage) === 1"
               @change="onCopiesChange(1)"
             />
             <label for="copy1">1 份 (整页)</label>
@@ -125,20 +125,38 @@
               type="radio"
               name="copiesPerPage"
               id="copy2"
-              value="2"
-              :checked="state.draft.settings.copiesPerPage === 2"
+              :value="2"
+              :checked="Number(state.draft.settings.copiesPerPage) === 2"
               @change="onCopiesChange(2)"
             />
-            <label for="copy2">2 份 (对半)</label>
+            <label for="copy2">2 联</label>
             <input
               type="radio"
               name="copiesPerPage"
               id="copy3"
-              value="3"
-              :checked="state.draft.settings.copiesPerPage === 3"
+              :value="3"
+              :checked="Number(state.draft.settings.copiesPerPage) === 3"
               @change="onCopiesChange(3)"
             />
-            <label for="copy3">3 份 (推荐)</label>
+            <label for="copy3">3 联</label>
+            <input
+              type="radio"
+              name="copiesPerPage"
+              id="copy4"
+              :value="4"
+              :checked="Number(state.draft.settings.copiesPerPage) === 4"
+              @change="onCopiesChange(4)"
+            />
+            <label for="copy4">4 联</label>
+            <input
+              type="radio"
+              name="copiesPerPage"
+              id="copy6"
+              :value="6"
+              :checked="Number(state.draft.settings.copiesPerPage) === 6"
+              @change="onCopiesChange(6)"
+            />
+            <label for="copy6">6 联</label>
           </div>
         </div>
 
@@ -365,9 +383,9 @@
         <div class="form-row">
           <label>中文字体</label>
           <select class="form-select" id="selectFontZh" v-model="state.draft.settings.fontFamilyZh">
-            <option value="'KaiTi', '楷体', STKaiti, serif">楷体 (标准范字)</option>
-            <option value="'OPPO Sans', 'OPPOSans', sans-serif">OPPO Sans (本地高清印刷 400/500)</option>
-            <option value="'Noto Sans SC', 'Source Han Sans SC', '思源黑体', sans-serif">思源黑体 (Noto Sans SC)</option>
+            <option value="'KaiTi', '楷体', STKaiti, serif">楷体</option>
+            <option value="'OPPO Sans', 'OPPOSans', sans-serif">OPPO Sans</option>
+            <option value="'Noto Sans SC', 'Source Han Sans SC', '思源黑体', sans-serif">思源黑体</option>
             <option value="'SimSun', '宋体', serif">宋体</option>
             <option value="'SimHei', '黑体', sans-serif">黑体</option>
             <option value="'FangSong', '仿宋', serif">仿宋</option>
@@ -378,8 +396,8 @@
         <div class="form-row">
           <label>英文字体</label>
           <select class="form-select" id="selectFontEn" v-model="state.draft.settings.fontFamilyEn">
-            <option value="Arial, sans-serif">Arial (清晰无衬线)</option>
-            <option value="'Times New Roman', Times, serif">Times New Roman (常规题型默认)</option>
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman</option>
             <option value="'Georgia', serif">Georgia</option>
             <option
               v-for="font in EMBEDDED_HANDWRITING_FONTS"
@@ -549,21 +567,22 @@
       </div>
     </section>
 
-    <!-- 【分组三：按题型列数配置】 -->
+    <!-- 【分组三：题型列数】 -->
     <section
       class="settings-group"
       id="groupQuestionColumns"
       data-debug-id="S-003"
-      data-debug-name="按题型列数配置"
+      data-debug-name="题型列数"
     >
       <div class="group-header">
         <div class="group-title-wrap">
           <AppIcon name="settings" :size="15" />
-          <span class="group-title">按题型列数配置</span>
+          <span class="group-title">题型列数</span>
         </div>
         <button
           type="button"
           class="reset-columns-btn"
+          id="btnResetAllColumns"
           title="将所有题型恢复为推荐默认列数"
           @click="restoreDefaultColumns"
         >
@@ -572,8 +591,8 @@
       </div>
 
       <div class="group-body">
-        <p class="field-note" style="margin-top: -4px; margin-bottom: 4px;">
-          一键切换各题型的全局默认列数，试卷题目排版将立即按此规格流式排布：
+        <p class="field-note" style="margin-top: -4px; margin-bottom: 6px;">
+          独立配置各题型的每行列数与排版规格，题目将实时按设定自适应流式排布：
         </p>
 
         <!-- 单词默写 -->
@@ -661,33 +680,55 @@
           </div>
         </div>
 
-        <!-- 字母专项 -->
+        <!-- 字母专项细化拆分：字母左右邻居 -->
         <div class="column-config-row">
-          <span class="column-config-label">字母专项</span>
+          <span class="column-config-label">字母左右邻居</span>
           <div class="grid-button-group col-btn-group">
             <button
               type="button"
               class="grid-btn"
-              :class="{ active: currentColumns.alphabet === 2 }"
-              @click="setQTypeColumns('alphabet', 2)"
+              :class="{ active: currentColumns.alphabetNeighbor === 5 }"
+              @click="setAlphabetSubColumns('neighbor', 5)"
             >
-              2列 (右侧)
+              5列 (固定)
+            </button>
+          </div>
+        </div>
+
+        <!-- 字母专项细化拆分：大小写转换 -->
+        <div class="column-config-row">
+          <span class="column-config-label">大小写转换</span>
+          <div class="grid-button-group col-btn-group">
+            <button
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.alphabetCase === 4 }"
+              @click="setAlphabetSubColumns('case', 4)"
+            >
+              4列 (左右结构)
+            </button>
+          </div>
+        </div>
+
+        <!-- 字母专项细化拆分：26字母默写 -->
+        <div class="column-config-row">
+          <span class="column-config-label">26个字母默写</span>
+          <div class="grid-button-group col-btn-group">
+            <button
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.alphabet26Rows === 3 }"
+              @click="setAlphabet26Rows(3)"
+            >
+              3行 (3×9)
             </button>
             <button
               type="button"
               class="grid-btn"
-              :class="{ active: currentColumns.alphabet === 4 }"
-              @click="setQTypeColumns('alphabet', 4)"
+              :class="{ active: currentColumns.alphabet26Rows === 4 }"
+              @click="setAlphabet26Rows(4)"
             >
-              4列 (推荐)
-            </button>
-            <button
-              type="button"
-              class="grid-btn"
-              :class="{ active: currentColumns.alphabet === 5 }"
-              @click="setQTypeColumns('alphabet', 5)"
-            >
-              5列 (紧凑)
+              4行 (4×7)
             </button>
           </div>
         </div>
@@ -760,9 +801,16 @@ function onPromptFontSizeInput(e) {
 
 const currentColumns = computed(() => {
   const d = state.draft.settings.layoutDefaults || DEFAULT_LAYOUT_DEFAULTS;
-  let alphaCols = 4;
-  if (state.draft.settings.alphabetLayout === 'right-2col') alphaCols = 2;
-  else if (state.draft.settings.alphabetLayout === 'bottom-5col') alphaCols = 5;
+  
+  let neighborCols = 5;
+  const neighLayout = state.draft.settings.alphabetNeighborLayout || state.draft.settings.alphabetLayout;
+  if (neighLayout === 'bottom-5col') neighborCols = 5;
+
+  let caseCols = 4;
+  const caseLayout = state.draft.settings.alphabetCaseLayout || state.draft.settings.alphabetLayout;
+  if (caseLayout === 'right-4col') caseCols = 4;
+
+  const alpha26Rows = Number(state.draft.settings.alphabet26Rows) === 4 ? 4 : 3;
 
   return {
     wordDictation: Number(d.wordDictationColumns) || 3,
@@ -771,7 +819,10 @@ const currentColumns = computed(() => {
     choice: d.choiceColumns === 'auto' ? 2 : Number(d.choiceColumns) || 2,
     inlineFill: d.inlineFillColumns === 'auto' ? 2 : Number(d.inlineFillColumns) || 2,
     composition: Number(d.englishCompositionColumns) || 1,
-    alphabet: alphaCols
+    alphabetNeighbor: neighborCols,
+    alphabetCase: caseCols,
+    alphabet26Rows: alpha26Rows,
+    alphabet: neighborCols
   };
 });
 
@@ -790,9 +841,8 @@ function setQTypeColumns(type, cols) {
   } else if (type === 'inline-fill') {
     state.draft.settings.layoutDefaults.inlineFillColumns = cols;
   } else if (type === 'alphabet') {
-    if (cols === 2) state.draft.settings.alphabetLayout = 'right-2col';
-    else if (cols === 5) state.draft.settings.alphabetLayout = 'bottom-5col';
-    else state.draft.settings.alphabetLayout = 'bottom-4col';
+    setAlphabetSubColumns('neighbor', cols);
+    setAlphabetSubColumns('case', cols);
   } else if (type === 'english-composition') {
     state.draft.settings.layoutDefaults.englishCompositionColumns = cols;
   }
@@ -806,13 +856,60 @@ function setQTypeColumns(type, cols) {
   });
 }
 
+function setAlphabetSubColumns(subType, cols) {
+  if (subType === 'neighbor') {
+    const layoutStyle = 'bottom-5col';
+    const gridPosition = 'below';
+    state.draft.settings.alphabetNeighborLayout = layoutStyle;
+    state.draft.items.forEach(item => {
+      const isNeigh = item.questionType === 'alphabet' && (item.subType === 'neighbor' || item.alphabetType === 'neighbor' || item.neighborData || (item.zh && item.zh.includes('邻居')));
+      if (isNeigh) {
+        if (!item.layout) item.layout = {};
+        item.layout.columns = 5;
+        item.layout.gridPosition = gridPosition;
+        if (item.neighborData) item.neighborData.layoutStyle = layoutStyle;
+      }
+    });
+  } else if (subType === 'case') {
+    const layoutStyle = 'right-4col';
+    const gridPosition = 'right';
+    state.draft.settings.alphabetCaseLayout = layoutStyle;
+    state.draft.items.forEach(item => {
+      const isCase = item.questionType === 'alphabet' && (item.subType === 'case' || item.alphabetType === 'case' || item.caseData);
+      if (isCase) {
+        if (!item.layout) item.layout = {};
+        item.layout.columns = 4;
+        item.layout.gridPosition = gridPosition;
+        if (item.caseData) item.caseData.layoutStyle = layoutStyle;
+      }
+    });
+  }
+}
+
+function setAlphabet26Rows(rows) {
+  state.draft.settings.alphabet26Rows = rows;
+  state.draft.items.forEach(item => {
+    const isSeq = item.questionType === 'alphabet' && (item.subType === 'sequence' || item.alphabetType === 'sequence' || item.alphaData);
+    if (isSeq) {
+      if (item.alphaData) item.alphaData.rowMode = rows;
+    }
+  });
+}
+
 function restoreDefaultColumns() {
   state.draft.settings.layoutDefaults = { ...DEFAULT_LAYOUT_DEFAULTS };
-  state.draft.settings.alphabetLayout = 'bottom-4col';
+  state.draft.settings.alphabetLayout = 'bottom-5col';
+  state.draft.settings.alphabetNeighborLayout = 'bottom-5col';
+  state.draft.settings.alphabetCaseLayout = 'right-4col';
+  state.draft.settings.alphabet26Rows = 3;
   state.draft.items.forEach(item => {
     if (item.layout) {
       delete item.layout.columns;
+      delete item.layout.gridPosition;
     }
+    if (item.neighborData) item.neighborData.layoutStyle = 'bottom-5col';
+    if (item.caseData) item.caseData.layoutStyle = 'right-4col';
+    if (item.alphaData) item.alphaData.rowMode = 3;
   });
 }
 </script>

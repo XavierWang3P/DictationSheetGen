@@ -1,75 +1,69 @@
 <template>
   <div class="question-list-pane" data-debug-id="Q-007" data-debug-name="试卷题目清单面板">
-    <n-card size="small" :bordered="false" class="pane-card">
-      <template #header>
-        <div class="pane-header-title">
-          <span class="title-with-icon">
-            <AppIcon name="file-text" :size="16" />
-            试卷题目
+    <div class="pane-header">
+      <div class="pane-header-title">
+        <span class="title-with-icon">
+          <AppIcon name="file-text" :size="16" />
+          试卷题目
+        </span>
+      </div>
+
+      <div class="pane-header-actions">
+        <div class="exam-stat-header" id="badgeWordCount" :title="detailedStatusTitle">
+          <span class="stat-main-badge">
+            已添加 {{ state.draft.items.length }} 题
           </span>
-          <span class="header-hint-tag" title="在列表中双击任意题目可快速二次编辑">
-            双击题目可编辑
+          <span class="stat-divider">·</span>
+          <span class="stat-breakdown-text">
+            {{ statBreakdownSummary }}
           </span>
         </div>
-      </template>
 
-      <template #header-extra>
-        <div class="pane-header-actions">
-          <div class="exam-stat-header" id="badgeWordCount" :title="detailedStatusTitle">
-            <span class="stat-main-badge">
-              已添加 {{ state.draft.items.length }} 题
-            </span>
-            <span class="stat-divider">·</span>
-            <span class="stat-breakdown-text">
-              {{ statBreakdownSummary }}
-            </span>
-          </div>
-
-          <!-- 迁移至顶部标题栏最右侧角落的幽灵清空按钮 -->
-          <n-popconfirm
-            :disabled="state.draft.items.length === 0"
-            @positive-click="handleClearAll"
-            positive-text="确定"
-            negative-text="取消"
-          >
-            <template #trigger>
-              <button
-                type="button"
-                class="header-ghost-clear-btn"
-                id="btnClearExamItems"
-                data-debug-id="Q-007-CLEAR"
-                :disabled="state.draft.items.length === 0"
-                :class="{ 'is-disabled': state.draft.items.length === 0 }"
-                title="清空试卷所有题目"
-                aria-label="清空试卷所有题目"
-              >
-                <AppIcon name="trash" :size="12" />
-                <span>清空</span>
-              </button>
-            </template>
-            确定要清空试卷上的全部题目吗？
-          </n-popconfirm>
-        </div>
-      </template>
-
-      <!-- 紧凑试卷题目列表 -->
-      <div
-        class="words-list-container compact-list"
-        id="wordsListContainer"
-        data-debug-id="Q-007-LIST"
-        data-debug-name="试卷题目列表"
-      >
-        <template v-if="state.draft.items.length === 0">
-          <div class="empty-list-card">
-            <AppIcon name="file-text" :size="28" style="color: var(--text-light); margin-bottom: 6px;" />
-            <div class="empty-title">试卷暂无题目</div>
-            <div class="empty-subtitle">请在「题目录入」中录入题目，或从「备课资源库」选题加入</div>
-            <button type="button" class="empty-action-btn" @click="switchToTab('paneQuick')">
-              <AppIcon name="plus" :size="13" />
-              前往录入题目
+        <!-- 迁移至顶部标题栏最右侧角落的幽灵清空按钮 -->
+        <n-popconfirm
+          :disabled="state.draft.items.length === 0"
+          @positive-click="handleClearAll"
+          positive-text="确定"
+          negative-text="取消"
+        >
+          <template #trigger>
+            <button
+              type="button"
+              class="header-ghost-clear-btn"
+              id="btnClearExamItems"
+              data-debug-id="Q-007-CLEAR"
+              :disabled="state.draft.items.length === 0"
+              :class="{ 'is-disabled': state.draft.items.length === 0 }"
+              title="清空试卷所有题目"
+              aria-label="清空试卷所有题目"
+            >
+              <AppIcon name="trash" :size="12" />
+              <span>清空</span>
             </button>
-          </div>
-        </template>
+          </template>
+          确定要清空试卷上的全部题目吗？
+        </n-popconfirm>
+      </div>
+    </div>
+
+    <!-- 紧凑试卷题目列表 -->
+    <div
+      class="words-list-container compact-list"
+      id="wordsListContainer"
+      data-debug-id="Q-007-LIST"
+      data-debug-name="试卷题目列表"
+    >
+      <template v-if="state.draft.items.length === 0">
+        <div class="empty-list-card">
+          <AppIcon name="file-text" :size="28" style="color: var(--text-light); margin-bottom: 6px;" />
+          <div class="empty-title">试卷暂无题目</div>
+          <div class="empty-subtitle">请在「题目录入」中录入题目，或从「题库」选题加入</div>
+          <button type="button" class="empty-action-btn" @click="switchToTab('paneQuick')">
+            <AppIcon name="plus" :size="13" />
+            前往录入题目
+          </button>
+        </div>
+      </template>
 
         <template v-else>
           <div
@@ -158,7 +152,6 @@
           </div>
         </template>
       </div>
-    </n-card>
 
     <!-- 题目内容二次编辑弹窗 -->
     <n-modal
@@ -397,9 +390,9 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { NCard, NPopconfirm, NModal, NInput, NInputNumber, NButton, NSelect, useMessage } from 'naive-ui';
+import { NPopconfirm, NModal, NInput, NInputNumber, NButton, NSelect, useMessage } from 'naive-ui';
 import { state } from '../stores/appStore.js';
-import { computePageLayout } from '../core/layout.js';
+import { computePageLayout, stripOuterBrackets } from '../core/layout.js';
 import { normalizeQuestion } from '../question-types/registry.js';
 import {
   parseSentenceToSegments,
@@ -495,7 +488,10 @@ function openEditModal(index) {
   };
 
   if (item.questionType === 'sentence-cloze') {
-    const rawEn = item.en || '';
+    let rawEn = item.en || '';
+    if (!rawEn.includes('[') && !rawEn.includes('{') && item.segments?.length) {
+      rawEn = segmentsToMarkedText(item.segments);
+    }
     clozeTokens.value = parseSentenceIntoVisualTokens(rawEn);
     // 自动剥离用于标记的括号，供纯净原句输入框展示与编辑
     clozeSentenceInput.value = rawEn.replace(/[[\]{}]/g, '');
@@ -514,7 +510,7 @@ function saveEditModal() {
 
   if (type === 'word-dictation' || type === 'sentence-dictation') {
     updated.en = (editForm.value.en || '').trim();
-    updated.zh = (editForm.value.zh || '').trim();
+    updated.zh = stripOuterBrackets(editForm.value.zh || '');
     if (type === 'word-dictation') updated.phonetic = (editForm.value.phonetic || '').trim();
   } else if (type === 'sentence-cloze') {
     if (!hasClozeBlank.value) {
@@ -524,7 +520,7 @@ function saveEditModal() {
     const finalSegments = getVisualSegments(clozeTokens.value);
     const finalMarked = segmentsToMarkedText(finalSegments);
     updated.en = finalMarked;
-    updated.zh = (editForm.value.zh || '').trim();
+    updated.zh = stripOuterBrackets(editForm.value.zh || '');
     updated.translation = updated.zh;
     updated.segments = finalSegments;
   } else if (type === 'alphabet') {
@@ -692,28 +688,25 @@ function switchToTab(tabKey) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: transparent;
+  width: 100%;
 }
 
-.pane-card {
-  background: var(--bg-card);
-  border-radius: 8px;
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  user-select: none;
+  width: 100%;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .pane-header-title {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.header-hint-tag {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--primary);
-  background: var(--primary-light, #f0fdf4);
-  padding: 1px 7px;
-  border-radius: 4px;
-  border: 1px solid var(--primary-border, #bbf7d0);
-  letter-spacing: 0.01em;
 }
 
 .title-with-icon {
@@ -795,19 +788,24 @@ function switchToTab(tabKey) {
   border-radius: 6px;
   background: var(--bg-card);
   overflow: hidden;
+  width: 100%;
+  min-width: 0;
 }
 
 /* 扁平列表项（无厚重边框、无阴影、单层容器） */
 .compact-exam-row {
   display: flex;
   align-items: center;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-card);
   gap: 8px;
   transition: background 0.15s ease;
   user-select: none;
   cursor: pointer;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .compact-exam-row:last-child {
@@ -873,39 +871,55 @@ function switchToTab(tabKey) {
 .question-type-pill.english-composition { background: #fae8ff; color: #a21caf; }
 
 .word-item-main {
-  flex: 1;
+  flex: 1 1 0%;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  gap: 2px;
+  gap: 3px;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .word-primary-line {
   width: 100%;
+  min-width: 0;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
+  line-height: 1.35;
   text-align: left;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .word-secondary-line {
   width: 100%;
+  min-width: 0;
   font-size: 11px;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+  text-align: left;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  line-height: 1.3;
-  text-align: left;
+}
+
+.word-item-en,
+.word-item-zh,
+.chip-blank-mark,
+.separator-title-text,
+.separator-sec-text {
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .chip-blank-mark {
@@ -922,6 +936,7 @@ function switchToTab(tabKey) {
   background: var(--primary-light);
   border-radius: 3px;
   padding: 0 4px;
+  flex-shrink: 0;
 }
 
 /* 紧凑 1:1 正方形操作按钮组 (24x24px)，默认半透明，悬停浮现 */
@@ -930,6 +945,7 @@ function switchToTab(tabKey) {
   align-items: center;
   gap: 3px;
   flex-shrink: 0;
+  margin-left: auto;
   opacity: 0.15;
   transition: opacity 0.15s ease;
 }

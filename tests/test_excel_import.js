@@ -49,6 +49,13 @@ async function testExcelImport() {
 
     await new Promise(r => ws.onopen = r);
 
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!window.__appStoreState && document.querySelectorAll('.n-tabs-tab').length > 0`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // ================= 步骤 1: 切换到单词库并打开批量导入弹窗 =================
     console.log('【验证 1】切换到单词库，点击「📥 导入」打开 Excel / 表格导入弹窗:');
     const r1 = await evalExpr(`(async () => {

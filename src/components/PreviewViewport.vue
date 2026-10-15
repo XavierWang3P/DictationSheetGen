@@ -158,8 +158,9 @@ const modeLabel = computed(() => {
 });
 
 const copyLabel = computed(() => {
+  if (layout.value.isSplitFold) return '横向对半折';
   const c = layout.value.copiesPerPage;
-  return c === 1 ? '全页 1 份' : (c === 2 ? '一页 2 份' : '一页 3 份');
+  return c === 1 ? '全页 1 份' : (c === 2 ? '一页 2 联' : (c === 3 ? '一页 3 份' : `一页 ${c} 联`));
 });
 
 function updateZoomFit() {

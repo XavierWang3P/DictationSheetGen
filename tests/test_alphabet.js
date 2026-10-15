@@ -48,6 +48,13 @@ async function testAlphabet() {
 
     await new Promise(r => ws.onopen = r);
 
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!document.getElementById('modeAlphabet') && !!window.__appStoreState`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // ================= 测试 1: 模式切换与字母控制卡片展示 =================
     console.log('【测试 1】出卷模式切换为「🔤 三年级字母专项」:');
     const r1 = await evalExpr(`(async () => {

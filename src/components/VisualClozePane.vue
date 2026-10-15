@@ -1,17 +1,16 @@
 <template>
   <div class="visual-cloze-pane" data-debug-id="C-001" data-debug-name="句子挖空编辑区">
     <!-- 句子录入与可视化挖空工作区 -->
-    <n-card size="small" :bordered="false" class="pane-card">
-      <template #header>
-        <span style="font-size:14px; font-weight:700; color:var(--text-main); display:inline-flex; align-items:center; gap:6px;">
-          <AppIcon name="tag" :size="16" />
-          句子录入与可视化挖空
-        </span>
-      </template>
+    <div class="pane-header">
+      <span style="font-size:14px; font-weight:700; color:var(--text-main); display:inline-flex; align-items:center; gap:6px;">
+        <AppIcon name="tag" :size="16" />
+        句子录入与可视化挖空
+      </span>
+    </div>
 
-      <p class="form-desc">
-        输入完整英文句子与中文释义，点击下方对应单词即可将其一键设为挖空或取消挖空。
-      </p>
+    <p class="form-desc">
+      输入完整英文句子与中文释义，点击下方对应单词即可将其一键设为挖空或取消挖空。
+    </p>
 
       <div class="form-item-block">
         <label class="item-label">英文句子</label>
@@ -118,19 +117,17 @@
           重置
         </n-button>
       </div>
-    </n-card>
 
     <!-- 本地句库列表 -->
-    <n-card size="small" :bordered="false" class="pane-card" style="margin-top: 12px;">
-      <template #header>
-        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <span style="font-size:14px; font-weight:700; color:var(--text-main); display:inline-flex; align-items:center; gap:6px;">
-            <AppIcon name="book" :size="16" />
-            本地句库列表
-          </span>
-          <span class="quick-stat-badge" id="libSentenceBadge">共 {{ state.library.sentences.length }} 句</span>
-        </div>
-      </template>
+    <div class="group-header" style="margin-top: 18px; margin-bottom: 8px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+        <span style="font-size:13px; font-weight:700; color:var(--text-main); display:inline-flex; align-items:center; gap:6px;">
+          <AppIcon name="book" :size="15" />
+          本地句库列表
+        </span>
+        <span class="quick-stat-badge" id="libSentenceBadge">共 {{ state.library.sentences.length }} 句</span>
+      </div>
+    </div>
 
       <div
         class="words-list-container"
@@ -186,13 +183,12 @@
           </div>
         </template>
       </div>
-    </n-card>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
-import { NCard, NButton, useMessage } from 'naive-ui';
+import { NButton, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
 import {
   parseSentenceIntoVisualTokens,
@@ -306,11 +302,8 @@ async function handleDeleteSentence(id) {
 .visual-cloze-pane {
   display: flex;
   flex-direction: column;
-}
-
-.pane-card {
-  border-radius: 8px;
-  background: #ffffff;
+  background: transparent;
+  width: 100%;
 }
 
 .form-desc {

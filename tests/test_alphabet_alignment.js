@@ -39,6 +39,13 @@ async function testAlphabetAlignment() {
 
     await new Promise(r => ws.onopen = r);
 
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await call('Runtime.evaluate', { expression: `!!window.__appStoreState && !!document.getElementById('btnLoadAlphabet26')`, returnByValue: true }).then(r => r?.result?.value).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // ================= 测试 1: 3 行模式 (3x9) 最后一格对齐 =================
     console.log('【验证 1】3 行模式 (3*9) 第 26 格与第 27 格四线格线绝对对齐:');
     const r1 = await call('Runtime.evaluate', {

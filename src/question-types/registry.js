@@ -72,17 +72,27 @@ function baseQuestion(data, type) {
   };
 }
 
+export function stripOuterBrackets(str) {
+  if (!str) return '';
+  let s = String(str).trim();
+  while ((s.startsWith('（') && s.endsWith('）')) || (s.startsWith('(') && s.endsWith(')'))) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
 function normalizeLegacyText(data, type) {
   const base = baseQuestion(data, type);
   const en = String(data?.en || '').trim();
-  const zh = String(data?.zh || data?.translation || '').trim();
+  const rawZh = String(data?.zh || data?.translation || '').trim();
+  const zh = stripOuterBrackets(rawZh);
   return {
     ...base,
     subType: data?.subType || data?.alphabetType || null,
     type: data?.type || (type.startsWith('sentence') ? 'sentence' : 'word'),
     en,
     zh,
-    prompt: data?.prompt || zh || en,
+    prompt: data?.prompt ? stripOuterBrackets(data.prompt) : (zh || en),
     answer: data?.answer || en,
     translation: zh,
     phonetic: data?.phonetic || '',
@@ -343,7 +353,7 @@ export const questionTypeRegistry = {
     },
     estimateHeight: (item, context) => {
       const maxOptLen = Math.max(0, ...item.options.map((o) => (o.text || '').length));
-      const cols = (item.options.length === 3 && maxOptLen <= 14) ? 3 : (resolveQuestionColumns(item, context.settings) === 2 ? 2 : 1);
+      const cols = (item.options.length === 3 && maxOptLen <= 18) ? 3 : (resolveQuestionColumns(item, context.settings) === 2 ? 2 : 1);
       return 9 + Math.ceil(item.options.length / cols) * 6;
     },
     defaultLayout: { columns: 'auto' },
@@ -443,21 +453,25 @@ export function resolveQuestionColumns(item, settings = {}) {
   if (type === 'alphabet') {
     const subType = item?.subType || item?.alphabetType || (item?.neighborData ? 'neighbor' : (item?.caseData ? 'case' : 'sequence'));
     if (subType === 'neighbor') {
+      if (item?.layout?.columns) return item.layout.columns;
       if (item?.neighborData?.layoutStyle === 'bottom-5col') return 5;
       if (item?.neighborData?.layoutStyle === 'bottom-4col') return 4;
       if (item?.neighborData?.layoutStyle === 'right-2col') return 2;
-      if (settings.alphabetLayout === 'bottom-5col') return 5;
-      if (settings.alphabetLayout === 'bottom-4col') return 4;
-      if (settings.alphabetLayout === 'right-2col') return 2;
-      return 4;
+      if (settings.alphabetNeighborLayout === 'bottom-5col') return 5;
+      if (settings.alphabetNeighborLayout === 'right-2col') return 2;
+      if (settings.alphabetNeighborLayout === 'bottom-4col') return 4;
+      return 5;
     }
     if (subType === 'case') {
-      if (item?.caseData?.layoutStyle === 'bottom-5col') return 5;
+      if (item?.layout?.columns) return item.layout.columns;
+      if (item?.caseData?.layoutStyle === 'right-4col') return 4;
       if (item?.caseData?.layoutStyle === 'bottom-4col') return 4;
+      if (item?.caseData?.layoutStyle === 'bottom-5col') return 5;
       if (item?.caseData?.layoutStyle === 'right-2col') return 2;
-      if (settings.alphabetLayout === 'bottom-5col') return 5;
-      if (settings.alphabetLayout === 'bottom-4col') return 4;
-      if (settings.alphabetLayout === 'right-2col') return 2;
+      if (settings.alphabetCaseLayout === 'right-4col') return 4;
+      if (settings.alphabetCaseLayout === 'bottom-4col') return 4;
+      if (settings.alphabetCaseLayout === 'bottom-5col') return 5;
+      if (settings.alphabetCaseLayout === 'right-2col') return 2;
       return 4;
     }
     return 1;

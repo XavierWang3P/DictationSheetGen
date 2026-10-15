@@ -30,7 +30,8 @@ async function runPhase3Tests() {
           if (data.id === id) {
             ws.removeEventListener('message', handler);
             if (data.error) reject(data.error);
-            else resolve(data.result.result.value);
+            else if (data.result?.exceptionDetails) reject(new Error(data.result.exceptionDetails.exception?.description || data.result.exceptionDetails.text));
+            else resolve(data.result?.result?.value);
           }
         };
         ws.addEventListener('message', handler);
@@ -43,6 +44,14 @@ async function runPhase3Tests() {
     }
 
     await new Promise(resolve => ws.onopen = resolve);
+
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!document.getElementById('paneQuick') && !!window.__appStoreState`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     await evalExpr(`window.alert = () => {}; window.confirm = () => true; if (window.__appStoreState) window.__appStoreState.draft.items = [];`);
 
     console.log('=== 开始执行 Phase 3 词库与可视化挖空自动化测试 ===\n');

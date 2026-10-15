@@ -51,6 +51,11 @@ async function runTests() {
 
     await new Promise(resolve => ws.onopen = resolve);
 
+    for (let retry = 0; retry < 30; retry++) {
+      if (await evalExpr('Boolean(window.__appStoreState || window.state)')) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // ================= 1. 验证 Q-007 面板清理：移除批量列数，清空按钮迁移至顶部标题栏最右侧 =================
     console.log('【验证 1】检查 Q-007 面板清理：移除批量列数工具栏，清空按钮移至顶部标题栏最右侧:');
     const r1 = await evalExpr(`(async () => {
@@ -74,7 +79,7 @@ async function runTests() {
         hasClearBtn: !!clearBtn,
         isClearInHeader: !!isClearInHeader,
         isGhostBtn: !!isGhost,
-        hintText: hintTag ? hintTag.textContent.trim() : ''
+        hasHintTag: !!hintTag
       };
     })()`);
     console.log('-> 结果:', JSON.stringify(r1, null, 2));
@@ -83,7 +88,7 @@ async function runTests() {
     assert.strictEqual(r1.hasClearBtn, true, '清空按钮存在');
     assert.strictEqual(r1.isClearInHeader, true, '清空按钮位于顶部标题栏右侧区域');
     assert.strictEqual(r1.isGhostBtn, true, '清空按钮采用幽灵文字图标按钮样式');
-    assert.ok(r1.hintText.includes('双击题目可编辑'), '包含双击题目可编辑提示');
+    assert.strictEqual(r1.hasHintTag, false, '题目列表头部带有 header-hint-tag 样式的冗长提示已被彻底移除');
     console.log('-> 判定: ✅ PASS\n');
 
     // ================= 2. 验证 ITEM-* 题目列表项操作按钮精简与 24x24 规范化 =================

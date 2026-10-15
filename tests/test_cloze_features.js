@@ -48,6 +48,13 @@ async function testClozeFeatures() {
 
     await new Promise(r => ws.onopen = r);
 
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!document.getElementById('modeCloze') && !!window.__appStoreState`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // ================= 验证 1: 句子挖空使用独立自动列数且不影响其他题型 =================
     console.log('【验证 1】句子挖空使用独立自动列数，不改写其他题型默认值:');
     const r1 = await evalExpr(`(async () => {

@@ -81,7 +81,7 @@ import AppIcon from './AppIcon.vue';
 const tabs = [
   { key: 'paneQuick', label: '题目录入', icon: 'edit' },
   { key: 'paneList', label: '试卷题目', icon: 'file-text' },
-  { key: 'paneWordLib', label: '备课资源库', icon: 'book' }
+  { key: 'paneWordLib', label: '题库', icon: 'book' }
 ];
 
 function onTabClick(key) {

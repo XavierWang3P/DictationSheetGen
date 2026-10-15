@@ -60,8 +60,9 @@ async function testArchitectureFix() {
 
     await new Promise(r => ws.onopen = r);
 
-    for (let retry = 0; retry < 20; retry++) {
-      if (await evalExpr('Boolean(window.__appStoreState)')) break;
+    for (let retry = 0; retry < 50; retry++) {
+      const isReady = await evalExpr('Boolean(window.__appStoreState && document.getElementById("wordsListContainer"))').catch(() => false);
+      if (isReady) break;
       await new Promise(r => setTimeout(r, 100));
     }
 

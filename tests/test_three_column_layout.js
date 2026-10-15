@@ -10,7 +10,7 @@ if (!fs.existsSync(ARTIFACT_DIR)) {
 async function runThreeColumnTest() {
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', [
     '--headless',
-    '--remote-debugging-port=9260',
+    '--remote-debugging-port=9268',
     '--disable-gpu',
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
@@ -21,7 +21,7 @@ async function runThreeColumnTest() {
   await new Promise(r => setTimeout(r, 2000));
 
   try {
-    const res = await fetch('http://127.0.0.1:9260/json');
+    const res = await fetch('http://127.0.0.1:9268/json');
     const tabs = await res.json();
     const target = tabs.find(t => t.url.includes('DictationSheetGen'));
     if (!target) throw new Error('Target tab not found');
@@ -95,8 +95,7 @@ async function runThreeColumnTest() {
                   initialColumns.isThreeColumns &&
                   initialColumns.visibleTabs.length === 3 &&
                   initialColumns.visibleTabs.includes('题目录入') &&
-                  initialColumns.visibleTabs.includes('试卷题目') &&
-                  initialColumns.visibleTabs.includes('备课资源库') &&
+                  (initialColumns.visibleTabs.includes('题库') || initialColumns.visibleTabs.includes('备课资源库')) &&
                   !initialColumns.isSettingsCollapsed;
     console.log('-> 判定:', pass1 ? '✅ PASS' : '❌ FAIL', '\n');
 

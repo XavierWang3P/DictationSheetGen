@@ -35,7 +35,7 @@ async function testV230Refactor() {
   // 启动 Edge 进行真实页面渲染测试
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', [
     '--headless',
-    '--remote-debugging-port=9260',
+    '--remote-debugging-port=9267',
     '--disable-gpu',
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
@@ -46,13 +46,13 @@ async function testV230Refactor() {
   for (let retry = 0; retry < 5; retry++) {
     try {
       await new Promise(r => setTimeout(r, 600));
-      res = await fetch('http://127.0.0.1:9260/json');
+      res = await fetch('http://127.0.0.1:9267/json');
       if (res.ok) break;
     } catch (e) {}
   }
 
   if (!res) {
-    console.error('无法连接 Edge 端口 9260');
+    console.error('无法连接 Edge 端口 9267');
     edge.kill();
     process.exit(1);
   }
@@ -90,8 +90,12 @@ async function testV230Refactor() {
 
     await new Promise(r => ws.onopen = r);
 
-    // 等待初始化
-    await evalExpr(`new Promise(r => setTimeout(r, 500))`);
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!document.getElementById('btnParseText') && !!window.__appStoreState`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
 
     // ================= 测试 2: 界面精简 (无“生成预览”、无“默认9词”、添加到试卷采用追加语义) =================
     console.log('【验证 2】界面精简与追加语义验收:');

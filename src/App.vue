@@ -55,10 +55,9 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   class="app-footer-link"
-                  title="访问 XavierWang 博客"
+                  title="访问王虾虾博客"
                 >
-                  <AppIcon name="globe" :size="12" />
-                  XavierWang
+                  王虾虾
                 </a>
               </span>
             </div>
@@ -451,15 +450,6 @@ html, body {
   visibility: hidden !important;
   user-select: none !important;
   pointer-events: none !important;
-}
-
-.alpha-cell-top .alpha-cell-hint {
-  font-size: 7.5pt;
-  color: var(--primary, #2f6659);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .alpha-cell-grid {

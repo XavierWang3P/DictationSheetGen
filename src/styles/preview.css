@@ -215,7 +215,7 @@
   display: inline-flex;
   align-items: center;
   position: relative;
-  height: 1.75em;
+  height: var(--grid-height, 1.75em);
   margin: 0 2px;
   max-width: 100%;
 }
@@ -273,7 +273,7 @@
   min-width: 18mm;
   max-width: 44mm;
   color: #475569;
-  font-size: 0.85em;
+  font-size: inherit;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -366,8 +366,9 @@
 
 .choice-options.layout-single { grid-template-columns: 1fr; }
 .choice-options.layout-double { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.choice-options.layout-three { grid-template-columns: repeat(3, 1fr); }
+.choice-options.layout-three { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
 .choice-options.layout-inline { grid-template-columns: repeat(auto-fit, minmax(24mm, max-content)); }
+.choice-options.layout-three .choice-option { white-space: nowrap !important; }
 .choice-option { display: inline-flex; gap: 1.2mm; min-width: 0; overflow-wrap: anywhere; }
 .choice-option.is-correct { color: #2f6659; font-weight: 700; }
 .choice-label { flex-shrink: 0; font-family: Arial, sans-serif; }
@@ -406,7 +407,7 @@
 .is-composition-card { break-inside: avoid; }
 .composition-heading { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
 .composition-part { color: #64748b; font-size: 0.78em; font-weight: 400; }
-.composition-instructions { margin-top: 1mm; color: #475569; font-size: 0.9em; }
+.composition-instructions { margin-top: 1mm; color: #475569; font-size: inherit; }
 .composition-lines { width: 100%; }
 
 /* 教师答案页只保留题目与答案，使用紧凑核对版式。 */
@@ -454,7 +455,7 @@
 }
 
 .cloze-zh {
-  font-size: 0.85em;
+  font-size: inherit;
   color: #64748b;
   margin-top: 1mm;
 }
@@ -488,6 +489,38 @@
   color: #94a3b8;
   position: absolute;
   top: -6px;
+}
+
+.section-cut-divider.vertical {
+  width: 0;
+  height: 100%;
+  margin: 0 1.5mm;
+  border-top: none !important;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+}
+
+.section-cut-divider.vertical.dashed {
+  border-left: 1px dashed #94a3b8;
+}
+
+.section-cut-divider.vertical.solid {
+  border-left: 1px solid #94a3b8;
+}
+
+.section-cut-divider.vertical.none {
+  border-left: none;
+}
+
+.section-cut-divider.vertical .cut-scissors-tag {
+  top: 50%;
+  left: 0;
+  transform: translate(-50%, -50%) rotate(90deg);
+  white-space: nowrap;
 }
 
 /* 26个英文字母 3 行 9 列完整四线格专属排版 */
@@ -588,6 +621,28 @@
 .case-svg-grid {
   width: 100%;
   display: block;
+}
+
+/* 字母大小写转换：题目在左侧，四线三格在右侧，1 行显示，每行严格分布 4 题 */
+.word-card.is-case-card,
+.word-card.subtype-case {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.word-card.is-case-card .meaning.word-prompt-row,
+.word-card.subtype-case .meaning.word-prompt-row {
+  margin-bottom: 0 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.word-card.is-case-card .practice-grid.entry-grid-wrap,
+.word-card.subtype-case .practice-grid.entry-grid-wrap {
+  flex: 1 !important;
+  min-width: 0 !important;
 }
 
 /* 句子挖空中文位置修饰 */
@@ -731,7 +786,7 @@
   text-overflow: ellipsis !important;
 }
 
-/* 常规题型英文字体默认强制使用 'Times New Roman', Times, serif */
+/* 常规题型英文字体默认强制使用 'Times New Roman', Times, serif (除句子挖空外) */
 .type-inline-fill,
 .inline-fill-stem,
 .inline-fill-blank,
@@ -740,14 +795,36 @@
 .choice-option,
 .choice-label,
 .type-english-composition,
-.composition-heading,
-.composition-instructions,
+.composition-lines,
 .is-word-card .teacher-answer-value,
-.is-sentence-dict-card .sentence-dict-prompt,
 .is-sentence-dict-card .teacher-answer-value,
 .teacher-question-english,
 .word-num.entry-index {
   font-family: 'Times New Roman', Times, serif;
+}
+
+/* 试卷中文字体穿透（提示语、释义、作文要求、考生栏、标题等全局生效） */
+.sheet-page,
+.sheet-title-text,
+.sheet-student-info,
+.info-item,
+.meaning-text,
+.entry-zh-hint,
+.sentence-dict-prompt,
+.composition-heading,
+.composition-instructions,
+.cloze-zh,
+.cloze-zh-hint,
+.cloze-zh-above,
+.cloze-zh-below,
+.cloze-zh-pos,
+.separator-title,
+.separator-col-note,
+.cut-scissors-tag,
+.fold-seam-label,
+.half-page-footer,
+.split-half-empty {
+  font-family: var(--font-zh, inherit);
 }
 
 /* 字母专项提示固定使用 xumin 字体 */
@@ -763,8 +840,70 @@
 /* 句子挖空题型遵循英文字体设置 (var(--font-en)) */
 .type-sentence-cloze .cloze-english-column,
 .type-sentence-cloze .cloze-blank-line,
-.cloze-card-inline {
+.cloze-card-inline,
+.cloze-sentence-content {
   font-family: var(--font-en, Arial, sans-serif);
+}
+
+/* 多联拼版 (2联、3联、4联、6联) 容器体系 */
+.sheet-page.is-multi-up {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sheet-imposition-row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.sheet-imposition-grid {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.imposition-row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.sheet-imposition-row > .sheet-copy-section,
+.imposition-row > .sheet-copy-section {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 1.5mm 3mm;
+}
+
+.sheet-header-mini .sheet-title-text {
+  font-size: 11pt !important;
+  margin-bottom: 0.8mm !important;
+}
+
+.sheet-header-mini .sheet-student-info {
+  font-size: 8pt !important;
+  margin-bottom: 0.8mm !important;
 }
 
 /* 横向对半折左右双页拼版样式 */

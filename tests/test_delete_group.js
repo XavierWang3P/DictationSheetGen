@@ -49,6 +49,13 @@ async function testDeleteGroup() {
 
     await new Promise(r => ws.onopen = r);
 
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!window.__appStoreState && document.querySelectorAll('.n-tabs-tab').length > 0`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // ================= 步骤 1: 切换到单词库并新建一个空分组 (复现用户截图) =================
     console.log('【验证 1】切换到单词库，新建空分组「四年级上册 Unit 2」:');
     const r1 = await evalExpr(`(async () => {

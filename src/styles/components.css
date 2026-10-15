@@ -87,46 +87,123 @@
   box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
-/* 分段式单选控件 (Segmented Control) */
-.segmented-control {
+/* ==========================================================
+ * 全站标准控件规范：强制收敛为两大形态
+ * 1. 紧凑型胶囊分段器 (高度 28px，用于 2~4 个互斥短选项，单行不换行)
+ * 2. 自适应等宽网格按钮 (用于列数选择等多选，使用 repeat(auto-fit, minmax(0, 1fr)) 均分单行排布)
+ * ========================================================== */
+
+/* 1. 紧凑型胶囊分段器 (高度 28px) */
+.compact-segmented {
   display: inline-flex;
-  background: var(--color-bg-app);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  height: 28px;
+  box-sizing: border-box;
+  background: var(--color-bg-app, #f3f5f2);
+  border: 1px solid var(--color-border-light, #e2e7e4);
+  border-radius: var(--radius-md, 6px);
   padding: 2px;
   gap: 2px;
-  overflow: hidden;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex-shrink: 0;
 }
 
-.segmented-control input[type="radio"] {
-  display: none;
+.compact-segmented input[type="radio"] {
+  display: none !important;
 }
 
-.segmented-control label {
-  padding: 4px 10px;
-  font-size: 12px;
+.compact-segmented label,
+.compact-segmented button,
+.compact-segmented .segment-btn {
+  height: 22px;
+  line-height: 22px;
+  padding: 0 8px;
+  font-size: 11.5px;
   font-weight: 500;
-  color: var(--color-text-muted);
-  border-radius: var(--radius-sm);
+  color: var(--color-text-muted, #68756f);
+  border-radius: var(--radius-sm, 4px);
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
-.segmented-control input[type="radio"]:checked + label {
-  background: #ffffff;
-  color: var(--color-primary);
+.compact-segmented label:hover,
+.compact-segmented button:hover,
+.compact-segmented .segment-btn:hover {
+  color: var(--color-primary, #2f6659);
+}
+
+.compact-segmented input[type="radio"]:checked + label,
+.compact-segmented button.active,
+.compact-segmented .segment-btn.active {
+  background: #ffffff !important;
+  color: var(--color-primary, #2f6659) !important;
   font-weight: 700;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.segmented-control.mini label {
-  padding: 2px 7px;
-  font-size: 11px;
+/* 2. 自适应等宽网格按钮 (高度 28px) */
+.grid-button-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
 }
+
+.grid-button-group input[type="radio"] {
+  display: none !important;
+}
+
+.grid-btn,
+.grid-button-group input[type="radio"] + label,
+.grid-button-group > button {
+  height: 28px;
+  line-height: 26px;
+  padding: 0 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--color-border, #c9d3ce);
+  background: var(--color-bg-card, #ffffff);
+  color: var(--color-text-main, #26332f);
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.grid-btn:hover,
+.grid-button-group input[type="radio"] + label:hover,
+.grid-button-group > button:hover {
+  border-color: var(--color-primary, #2f6659);
+  color: var(--color-primary, #2f6659);
+}
+
+.grid-btn.active,
+.grid-button-group input[type="radio"]:checked + label,
+.grid-button-group > button.active {
+  background: var(--color-primary, #2f6659) !important;
+  border-color: var(--color-primary, #2f6659) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(47, 102, 89, 0.2);
+}
+
 
 /* 题目列表项卡片 (.question-card / .word-item-row) */
 .question-card,

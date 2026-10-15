@@ -3,6 +3,15 @@ export function generateId(prefix = 'item') {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`;
 }
 
+export function stripOuterBrackets(str) {
+  if (!str) return '';
+  let s = String(str).trim();
+  while ((s.startsWith('（') && s.endsWith('）')) || (s.startsWith('(') && s.endsWith(')'))) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
 // 句子解析为结构化片段 (segments)
 export function parseSentenceToSegments(rawText) {
   const sentence = (rawText || '').trim();
@@ -255,13 +264,14 @@ export function parseCustomText(rawText, currentMode = 'writing') {
     const isSentence = hasBracket || (currentMode === 'cloze' && en && en.split(/\s+/).length > 2);
 
     if (isSentence) {
+      const cleanZh = stripOuterBrackets(zh);
       const segments = parseSentenceToSegments(en);
       results.push({
         id: generateId('s'),
         type: 'sentence',
         en: en,
-        zh: zh,
-        translation: zh,
+        zh: cleanZh,
+        translation: cleanZh,
         segments: segments,
         rawText: trimmed
       });
@@ -270,7 +280,7 @@ export function parseCustomText(rawText, currentMode = 'writing') {
         id: generateId('w'),
         type: 'word',
         en: en,
-        zh: zh,
+        zh: stripOuterBrackets(zh),
         phonetic: phonetic,
         rawText: trimmed
       });

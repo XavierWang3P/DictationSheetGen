@@ -57,13 +57,13 @@ const props = defineProps({
 
 const displayTip = computed(() => {
   if (!props.tip) return '';
-  if (props.tip.length <= 15) return props.tip;
-  return props.tip.slice(0, 15);
+  if (props.tip.length <= 12) return props.tip;
+  return props.tip.slice(0, 12);
 });
 
 const tooltipText = computed(() => {
   if (props.tooltip) return props.tooltip;
-  if (props.tip && props.tip.length > 15) return props.tip;
+  if (props.tip && props.tip.length > 12) return props.tip;
   return '';
 });
 
@@ -87,7 +87,7 @@ const fullTip = computed(() => props.tooltip || props.tip);
   align-items: center;
   justify-content: space-between;
   min-height: 22px;
-  gap: 8px;
+  gap: 6px;
 }
 
 .editor-shell-title-wrap {
@@ -96,23 +96,27 @@ const fullTip = computed(() => props.tooltip || props.tip);
   gap: 6px;
   min-width: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .editor-shell-title {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
-  white-space: nowrap;
+  white-space: nowrap !important;
   flex-shrink: 0;
+  line-height: 1.3;
 }
 
 .editor-shell-tip {
   font-size: 11.5px;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 140px;
   flex-shrink: 1;
+  line-height: 1.3;
 }
 
 .editor-shell-tip-icon {
@@ -175,9 +179,9 @@ const fullTip = computed(() => props.tooltip || props.tip);
 }
 
 .editor-shell-actions {
-  display: flex;
+  display: flex !important;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: nowrap !important;
   gap: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--border-color);
@@ -186,17 +190,23 @@ const fullTip = computed(() => props.tooltip || props.tip);
 }
 
 .editor-shell-actions :deep(button) {
-  white-space: nowrap;
+  white-space: nowrap !important;
   font-size: 12px;
-  padding: 0 8px;
+  padding: 0 8px !important;
   flex: 0 0 auto;
+  box-sizing: border-box;
+}
+
+.editor-shell-actions :deep(button *) {
+  white-space: nowrap !important;
 }
 
 .editor-shell-actions :deep([data-debug-id="Q-004"]),
 .editor-shell-actions :deep(.primary-action-btn),
 .editor-shell-actions :deep(.primary-editor-btn) {
-  flex: 1 1 0% !important;
+  flex: 1 1 auto !important;
   min-width: 0;
-  padding: 0 10px;
+  white-space: nowrap !important;
+  padding: 0 10px !important;
 }
 </style>

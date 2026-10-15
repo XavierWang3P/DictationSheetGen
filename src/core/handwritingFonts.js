@@ -11,7 +11,7 @@ export const EMBEDDED_HANDWRITING_FONTS = Object.freeze([
   },
   {
     id: 'shuyao-italic',
-    label: '舒窈意大利斜体（推荐）',
+    label: '舒窈意大利斜体',
     cssFamily: DEFAULT_ALPHABET_GUIDE_FONT,
     // 82.03% cap height and 43.85% x-height closely match the current 14.5:8 grid ratio.
     guideScale: 0.707,
@@ -19,7 +19,7 @@ export const EMBEDDED_HANDWRITING_FONTS = Object.freeze([
   },
   {
     id: 'shuyao-italic-four-line',
-    label: '舒窈意大利斜体★四线三格（自带格线）',
+    label: '舒窈意大利斜体★四线三格',
     cssFamily: 'Shuyao Italic Four Line, cursive',
     guideScale: 0.707,
     supportsGuideOverlay: false
