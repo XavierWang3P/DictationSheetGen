@@ -431,14 +431,24 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 0 2px 2px 2px;
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  box-sizing: border-box;
   font-size: 8pt;
   line-height: 1.2;
 }
 
 .alpha-cell-top .entry-index {
-  font-weight: normal;
-  color: #94a3b8;
-  font-size: 7.5pt;
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 9.5pt;
+}
+
+.alpha-dummy-cell .dummy-entry-placeholder {
+  visibility: hidden !important;
+  user-select: none !important;
+  pointer-events: none !important;
 }
 
 .alpha-cell-top .alpha-cell-hint {

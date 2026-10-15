@@ -417,7 +417,7 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
   const {
     gridStyle = 'four-line',
     clozeStyle = 'inline',
-    clozeZhPosition = 'below',
+    clozeZhPosition = 'above',
     clozeBlankWidth = 'auto',
     strokeWidth = 0.85,
     lineColor = '#cbd5e1',
@@ -1004,7 +1004,7 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
       const clozeHtml = formatClozePrompt(item, 'cloze', {
         gridStyle: s.gridStyle,
         clozeStyle: s.clozeStyle || 'inline',
-        clozeZhPosition: s.clozeZhPosition || 'below',
+        clozeZhPosition: s.clozeZhPosition || 'above',
         clozeBlankWidth: s.clozeBlankWidth || 'auto',
         strokeWidth: s.gridStroke || 0.85,
         lineColor: s.gridColor || '#cbd5e1',
@@ -1193,7 +1193,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
           cellsHtml += `
             <div class="alpha-26-cell alpha-dummy-cell">
               <div class="alpha-cell-top">
-                <span class="alpha-cell-hint" style="color:#cbd5e1;">★</span>
+                <span class="alpha-cell-hint" style="color:#cbd5e1;margin-left:auto;">★</span>
               </div>
               <div class="alpha-cell-grid">
                 ${createSingleAlphabetGridSvg({
@@ -1210,7 +1210,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
         cellsHtml += `
           <div class="alpha-26-cell alpha-dummy-cell">
             <div class="alpha-cell-top">
-              <span class="alpha-cell-hint" style="color:#cbd5e1;">★</span>
+              <span class="alpha-cell-hint" style="color:#cbd5e1;margin-left:auto;">★</span>
             </div>
             <div class="alpha-cell-grid">
               ${createSingleAlphabetGridSvg({

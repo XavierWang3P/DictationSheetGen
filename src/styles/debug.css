@@ -30,7 +30,8 @@
 }
 
 /* 开启 Debug 模式时，主要组件高亮其边界 */
-body.is-debug-mode [data-debug-id] {
+body.is-debug-mode [data-debug-id],
+body.is-debug-mode .alpha-dummy-cell {
   position: relative;
   outline: 1px dashed rgba(14, 165, 233, 0.45);
   outline-offset: -1px;
