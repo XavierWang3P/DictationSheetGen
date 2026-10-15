@@ -181,7 +181,7 @@
         </div>
 
         <div class="form-row">
-          <label>页边距 (mm)</label>
+          <label>上下页边距 (mm)</label>
           <div class="form-range-wrap">
             <input
               type="range"
@@ -193,6 +193,46 @@
               v-model.number="state.draft.settings.pageMargin"
             />
             <span class="form-range-val" id="valPageMargin">{{ state.draft.settings.pageMargin }}mm</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>左右页边距 (mm)</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="inputPageMarginH"
+              min="4"
+              max="24"
+              step="1"
+              v-model.number="state.draft.settings.pageMarginHorizontal"
+            />
+            <span class="form-range-val" id="valPageMarginH">{{ state.draft.settings.pageMarginHorizontal ?? 12 }}mm</span>
+          </div>
+        </div>
+
+        <div class="form-row preset-btn-row">
+          <span class="sub-label">边距预设:</span>
+          <div class="preset-pill-group">
+            <button
+              type="button"
+              class="preset-pill-btn"
+              :class="{ active: state.draft.settings.pageMarginHorizontal === 6 && state.draft.settings.pageMargin === 6 }"
+              @click="setMarginPreset(6, 6)"
+            >紧凑 (6mm)</button>
+            <button
+              type="button"
+              class="preset-pill-btn"
+              :class="{ active: (state.draft.settings.pageMarginHorizontal === 12 || state.draft.settings.pageMarginHorizontal == null) && state.draft.settings.pageMargin === 8 }"
+              @click="setMarginPreset(12, 8)"
+            >标准 (12mm)</button>
+            <button
+              type="button"
+              class="preset-pill-btn"
+              :class="{ active: state.draft.settings.pageMarginHorizontal === 16 && state.draft.settings.pageMargin === 10 }"
+              @click="setMarginPreset(16, 10)"
+            >宽松 (16mm)</button>
           </div>
         </div>
       </div>
@@ -286,9 +326,9 @@
         <div class="form-row layout-default-row">
           <label for="alphabetLayout">字母邻居与转换默认</label>
           <select id="alphabetLayout" class="form-select" v-model="state.draft.settings.alphabetLayout">
-            <option value="auto">自动（继承页面列数：每行3题）</option>
-            <option value="right-2col">右侧四线格（每行2题，推荐）</option>
-            <option value="bottom-4col">下方四线格（每行4题）</option>
+            <option value="bottom-4col">下方四线格（每行4题，推荐）</option>
+            <option value="bottom-5col">下方四线格（每行5题）</option>
+            <option value="right-2col">右侧四线格（每行2题）</option>
           </select>
         </div>
 
@@ -357,50 +397,8 @@
           </div>
         </div>
 
-        <!-- 句子挖空专属设置 (中文位置与四线格长) -->
+        <!-- 句子挖空专属设置 (四线格长) -->
         <template v-if="state.draft.settings.dictMode === 'cloze'">
-          <div class="form-row">
-            <label>句子中文位置</label>
-            <div class="segmented-control mini">
-              <input
-                type="radio"
-                name="settingsClozeZhPos"
-                id="setClozeZhBelow"
-                value="below"
-                :checked="state.draft.settings.clozeZhPosition === 'below'"
-                @change="state.draft.settings.clozeZhPosition = 'below'"
-              />
-              <label for="setClozeZhBelow">句下独立行 (推荐)</label>
-              <input
-                type="radio"
-                name="settingsClozeZhPos"
-                id="setClozeZhRight"
-                value="right"
-                :checked="state.draft.settings.clozeZhPosition === 'right'"
-                @change="state.draft.settings.clozeZhPosition = 'right'"
-              />
-              <label for="setClozeZhRight">紧随句末</label>
-              <input
-                type="radio"
-                name="settingsClozeZhPos"
-                id="setClozeZhAbove"
-                value="above"
-                :checked="state.draft.settings.clozeZhPosition === 'above'"
-                @change="state.draft.settings.clozeZhPosition = 'above'"
-              />
-              <label for="setClozeZhAbove">句子上方</label>
-              <input
-                type="radio"
-                name="settingsClozeZhPos"
-                id="setClozeZhHide"
-                value="hide"
-                :checked="state.draft.settings.clozeZhPosition === 'hide'"
-                @change="state.draft.settings.clozeZhPosition = 'hide'"
-              />
-              <label for="setClozeZhHide">隐藏中文</label>
-            </div>
-          </div>
-
           <div class="form-row">
             <label>四线格挖空长度</label>
             <div class="segmented-control mini cloze-width-control">
@@ -469,12 +467,36 @@
               type="range"
               class="form-range"
               id="inputColGap"
-              min="3"
-              max="12"
+              min="2"
+              max="16"
               step="0.5"
               v-model.number="state.draft.settings.colGap"
             />
             <span class="form-range-val" id="valColGap">{{ state.draft.settings.colGap }}mm</span>
+          </div>
+        </div>
+
+        <div class="form-row preset-btn-row">
+          <span class="sub-label">列距预设:</span>
+          <div class="preset-pill-group">
+            <button
+              type="button"
+              class="preset-pill-btn"
+              :class="{ active: state.draft.settings.colGap === 3 }"
+              @click="state.draft.settings.colGap = 3"
+            >紧凑 (3mm)</button>
+            <button
+              type="button"
+              class="preset-pill-btn"
+              :class="{ active: state.draft.settings.colGap === 6 }"
+              @click="state.draft.settings.colGap = 6"
+            >标准 (6mm)</button>
+            <button
+              type="button"
+              class="preset-pill-btn"
+              :class="{ active: state.draft.settings.colGap === 8 }"
+              @click="state.draft.settings.colGap = 8"
+            >宽松 (8mm)</button>
           </div>
         </div>
 
@@ -750,6 +772,11 @@ function onPromptFontSizeInput(e) {
   const val = parseFloat(e.target.value);
   state.draft.settings.promptFontSize = val;
 }
+
+function setMarginPreset(h, v) {
+  state.draft.settings.pageMarginHorizontal = h;
+  state.draft.settings.pageMargin = v;
+}
 </script>
 
 <style scoped>
@@ -969,5 +996,40 @@ function onPromptFontSizeInput(e) {
   color: var(--text-light);
   font-size: 11px;
   line-height: 1.45;
+}
+
+.preset-btn-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -4px;
+}
+
+.preset-pill-group {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.preset-pill-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-pill-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.preset-pill-btn.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
 }
 </style>

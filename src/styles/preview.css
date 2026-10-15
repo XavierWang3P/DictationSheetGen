@@ -657,3 +657,56 @@
 .assistant-btn.primary:hover {
   background: #b45309;
 }
+
+/* 分栏隔断专属排版样式 */
+.word-card.is-separator-card {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  padding: 1.5mm 0 !important;
+  margin: 1mm 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.separator-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.separator-line {
+  flex: 1;
+  height: 1px;
+  background: #cbd5e1;
+}
+
+.separator-title {
+  font-weight: 700;
+  font-size: 11pt;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.separator-col-note {
+  font-weight: 400;
+  font-size: 8.5pt;
+  color: #64748b;
+  margin-left: 6px;
+}
+
+/* 字母专项（左右邻居与大小写互换）提示文字防多列折行换行 */
+.word-card.type-alphabet .meaning.word-prompt-row {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  letter-spacing: -0.01em;
+}
+
+.word-card.type-alphabet .meaning-text {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+

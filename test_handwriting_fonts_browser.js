@@ -63,6 +63,10 @@ async function run() {
       awaitPromise: true,
       returnByValue: true,
       expression: `(async () => {
+        let retries = 30;
+        while (!window.__appStoreState && retries-- > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
         document.getElementById('btnLoadAlphabetNeighbors')?.click();
         await new Promise(resolve => setTimeout(resolve, 150));
         const appState = window.__appStoreState;

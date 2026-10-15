@@ -153,8 +153,7 @@
   box-shadow: var(--shadow-sm) !important;
 }
 
-.question-card-main,
-.word-item-main {
+.question-card-main {
   display: flex !important;
   align-items: center !important;
   gap: var(--space-2) !important;
@@ -163,6 +162,17 @@
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
+}
+
+.word-item-main {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  gap: 2px !important;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
 }
 
 .question-card-index,

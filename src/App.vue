@@ -319,13 +319,23 @@ html, body {
 
 .word-item-main {
   display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  flex: 1 !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  gap: 2px !important;
+  flex: 1 1 0% !important;
   min-width: 0 !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
+}
+
+.word-primary-line {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  text-align: left !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .word-item-index {
@@ -340,13 +350,20 @@ html, body {
 .word-chip-en {
   font-weight: 600 !important;
   color: var(--text-main, #26332f) !important;
-  flex-shrink: 0 !important;
+  max-width: 100% !important;
+  text-align: left !important;
+  display: inline-block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .word-item-zh,
 .word-chip-zh {
   color: var(--text-muted, #68756f) !important;
   font-size: 12px !important;
+  max-width: 100% !important;
+  text-align: left !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;

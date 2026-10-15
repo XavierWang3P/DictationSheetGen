@@ -65,7 +65,7 @@
             :checked="currentInputType === 'choice'"
             @change="onInputTypeChange('choice')"
           />
-          <label for="modeChoice" class="qtype-btn qtype-span-4">选择题</label>
+          <label for="modeChoice" class="qtype-btn qtype-span-3">选择题</label>
 
           <input
             type="radio"
@@ -75,7 +75,7 @@
             :checked="currentInputType === 'inline-fill'"
             @change="onInputTypeChange('inline-fill')"
           />
-          <label for="modeInlineFill" class="qtype-btn qtype-span-4">填空题</label>
+          <label for="modeInlineFill" class="qtype-btn qtype-span-3">填空题</label>
 
           <input
             type="radio"
@@ -85,7 +85,17 @@
             :checked="currentInputType === 'english-composition'"
             @change="onInputTypeChange('english-composition')"
           />
-          <label for="modeComposition" class="qtype-btn qtype-span-4">英语作文</label>
+          <label for="modeComposition" class="qtype-btn qtype-span-3">英语作文</label>
+
+          <input
+            type="radio"
+            name="inputType"
+            id="modeSeparator"
+            value="separator"
+            :checked="currentInputType === 'separator'"
+            @change="onInputTypeChange('separator')"
+          />
+          <label for="modeSeparator" class="qtype-btn qtype-span-3">分栏隔断</label>
         </div>
       </div>
 
@@ -185,30 +195,6 @@
 
           <!-- 高级版式选项 (折叠收纳) -->
           <template #advanced>
-            <div class="form-row-compact">
-              <span class="sub-label">挖空形式:</span>
-              <div class="segmented-control mini">
-                <input type="radio" name="clozeStyle" id="clozeInline" value="inline" :checked="state.draft.settings.clozeStyle === 'inline'" @change="state.draft.settings.clozeStyle = 'inline'" />
-                <label for="clozeInline">句中内嵌填空 (推荐)</label>
-                <input type="radio" name="clozeStyle" id="clozeBelow" value="below" :checked="state.draft.settings.clozeStyle === 'below'" @change="state.draft.settings.clozeStyle = 'below'" />
-                <label for="clozeBelow">句下独立书写格</label>
-              </div>
-            </div>
-
-            <div class="form-row-compact">
-              <span class="sub-label">中文位置:</span>
-              <div class="segmented-control mini">
-                <input type="radio" name="clozeZhPos" id="clozeZhBelow" value="below" :checked="state.draft.settings.clozeZhPosition === 'below'" @change="state.draft.settings.clozeZhPosition = 'below'" />
-                <label for="clozeZhBelow">句下独立行</label>
-                <input type="radio" name="clozeZhPos" id="clozeZhRight" value="right" :checked="state.draft.settings.clozeZhPosition === 'right'" @change="state.draft.settings.clozeZhPosition = 'right'" />
-                <label for="clozeZhRight">紧随句末</label>
-                <input type="radio" name="clozeZhPos" id="clozeZhAbove" value="above" :checked="state.draft.settings.clozeZhPosition === 'above'" @change="state.draft.settings.clozeZhPosition = 'above'" />
-                <label for="clozeZhAbove">句子上方</label>
-                <input type="radio" name="clozeZhPos" id="clozeZhHide" value="hide" :checked="state.draft.settings.clozeZhPosition === 'hide'" @change="state.draft.settings.clozeZhPosition = 'hide'" />
-                <label for="clozeZhHide">隐藏中文</label>
-              </div>
-            </div>
-
             <div class="form-row-compact">
               <span class="sub-label">四线格长:</span>
               <div class="segmented-control mini">
@@ -340,10 +326,12 @@
             <div class="form-row-compact">
               <span class="sub-label">排版样式:</span>
               <div class="segmented-control mini">
+                <input type="radio" id="neighLayoutBottom" value="bottom-4col" v-model="alphaNeighConfig.layoutStyle" />
+                <label for="neighLayoutBottom">下方四线格 (每行4题，推荐)</label>
+                <input type="radio" id="neighLayoutBottom5" value="bottom-5col" v-model="alphaNeighConfig.layoutStyle" />
+                <label for="neighLayoutBottom5">每行5题</label>
                 <input type="radio" id="neighLayoutRight" value="right-2col" v-model="alphaNeighConfig.layoutStyle" />
                 <label for="neighLayoutRight">右侧四线格 (每行2题)</label>
-                <input type="radio" id="neighLayoutBottom" value="bottom-4col" v-model="alphaNeighConfig.layoutStyle" />
-                <label for="neighLayoutBottom">下方四线格 (每行4题)</label>
               </div>
             </div>
 
@@ -352,8 +340,8 @@
               <div class="segmented-control mini">
                 <input type="radio" id="neighCount6" :value="6" v-model="alphaNeighConfig.count" />
                 <label for="neighCount6">6 题</label>
-                <input type="radio" id="neighCount9" :value="9" v-model="alphaNeighConfig.count" />
-                <label for="neighCount9">9 题 (推荐)</label>
+                <input type="radio" id="neighCount8" :value="8" v-model="alphaNeighConfig.count" />
+                <label for="neighCount8">8 题 (推荐)</label>
                 <input type="radio" id="neighCount12" :value="12" v-model="alphaNeighConfig.count" />
                 <label for="neighCount12">12 题</label>
               </div>
@@ -377,10 +365,12 @@
             <div class="form-row-compact">
               <span class="sub-label">排版样式:</span>
               <div class="segmented-control mini">
+                <input type="radio" id="caseLayoutBottom" value="bottom-4col" v-model="alphaCaseConfig.layoutStyle" />
+                <label for="caseLayoutBottom">下方四线格 (每行4题，推荐)</label>
+                <input type="radio" id="caseLayoutBottom5" value="bottom-5col" v-model="alphaCaseConfig.layoutStyle" />
+                <label for="caseLayoutBottom5">每行5题</label>
                 <input type="radio" id="caseLayoutRight" value="right-2col" v-model="alphaCaseConfig.layoutStyle" />
                 <label for="caseLayoutRight">右侧四线格 (每行2题)</label>
-                <input type="radio" id="caseLayoutBottom" value="bottom-4col" v-model="alphaCaseConfig.layoutStyle" />
-                <label for="caseLayoutBottom">下方四线格 (每行4题)</label>
               </div>
             </div>
 
@@ -430,7 +420,51 @@
         @error="message.error"
       />
 
-      <!-- 题型 4: 单词默写与整句默写快速文本录入框 -->
+      <!-- 题型 4: 分栏隔断组件 (独立分栏规则与区域隔断) -->
+      <div v-else-if="currentInputType === 'separator'" class="separator-unified-editor">
+        <QuestionEditorShell
+          title="分栏隔断设置"
+          tip="插入隔断后，试卷被划分为独立区域，该隔断之后的所有题目将遵循此区域专属的每行题数列数规则。"
+        >
+          <div class="form-row-compact" style="margin-bottom: 12px;">
+            <span class="sub-label">隔断标题:</span>
+            <input
+              type="text"
+              class="form-control"
+              v-model="separatorForm.title"
+              placeholder="例如：Part 2: 重点句子挖空默写（可留空仅显示线条）"
+              style="flex: 1; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 12px;"
+            />
+          </div>
+
+          <div class="form-row-compact" style="margin-bottom: 12px;">
+            <span class="sub-label">后续题数列数:</span>
+            <div class="segmented-control mini">
+              <input type="radio" id="sepColInherit" :value="null" v-model="separatorForm.sectionColumns" />
+              <label for="sepColInherit">继承默认</label>
+              <input type="radio" id="sepCol1" :value="1" v-model="separatorForm.sectionColumns" />
+              <label for="sepCol1">1 列</label>
+              <input type="radio" id="sepCol2" :value="2" v-model="separatorForm.sectionColumns" />
+              <label for="sepCol2">2 列</label>
+              <input type="radio" id="sepCol3" :value="3" v-model="separatorForm.sectionColumns" />
+              <label for="sepCol3">3 列</label>
+              <input type="radio" id="sepCol4" :value="4" v-model="separatorForm.sectionColumns" />
+              <label for="sepCol4">4 列</label>
+              <input type="radio" id="sepCol5" :value="5" v-model="separatorForm.sectionColumns" />
+              <label for="sepCol5">5 列</label>
+            </div>
+          </div>
+
+          <template #actions>
+            <n-button type="primary" size="small" id="btnAddSeparator" @click="handleAppendSeparator">
+              <template #icon><AppIcon name="plus" :size="14" /></template>
+              插入分栏隔断到试卷
+            </n-button>
+          </template>
+        </QuestionEditorShell>
+      </div>
+
+      <!-- 题型 5: 单词默写与整句默写快速文本录入框 -->
       <div v-else class="text-unified-editor">
         <QuestionEditorShell
           :title="currentInputType === 'word-dictation' ? '单词默写录入' : '句子默写录入'"
@@ -537,7 +571,7 @@ import {
   generateLetterNeighborsItems,
   generateCaseConversionItems
 } from '../core/alphabet.js';
-import { getQuestionTypesByEditor } from '../question-types/registry.js';
+import { getQuestionTypesByEditor, createQuestion } from '../question-types/registry.js';
 import AppIcon from './AppIcon.vue';
 import QuestionEditorShell from './QuestionEditorShell.vue';
 import GeneralQuestionEditor from './GeneralQuestionEditor.vue';
@@ -704,8 +738,24 @@ function cancelEditing() {
 // 字母专项配置
 const alphabetActiveType = ref('sequence');
 const alphaSeqConfig = ref({ caseStyle: 'pair', subMode: 'full', rowMode: 3 });
-const alphaNeighConfig = ref({ count: 9, caseStyle: 'upper', layoutStyle: 'right-2col' });
-const alphaCaseConfig = ref({ count: 8, direction: 'random_switch', layoutStyle: 'right-2col' });
+const alphaNeighConfig = ref({ count: 8, caseStyle: 'upper', layoutStyle: 'bottom-4col' });
+const alphaCaseConfig = ref({ count: 8, direction: 'random_switch', layoutStyle: 'bottom-4col' });
+
+// 分栏隔断设置
+const separatorForm = ref({
+  title: '二、拓展强化练习',
+  sectionColumns: null
+});
+
+function handleAppendSeparator() {
+  const item = createQuestion('separator', {
+    title: separatorForm.value.title.trim(),
+    text: separatorForm.value.title.trim(),
+    sectionColumns: separatorForm.value.sectionColumns
+  });
+  state.draft.items.push(item);
+  message.success('已插入分栏隔断！后续题目将遵循此区域独立分栏。');
+}
 
 function handleGenerateAlphabet() {
   let newItems = [];

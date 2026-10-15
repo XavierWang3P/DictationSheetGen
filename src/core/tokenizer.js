@@ -21,12 +21,24 @@ export function parseSentenceToSegments(rawText) {
           blank: false
         });
       }
-      const blankContent = (match[2] || match[3] || '').trim();
-      const punct = match[4] || '';
+      let blankContent = (match[2] || match[3] || '').trim();
+      let punct = match[4] || '';
+      // 剥离括号内部末尾可能包含的句末标点（例如 [help.]）
+      const innerPunctMatch = blankContent.match(/([.,!?;:'"”]+)$/);
+      if (innerPunctMatch) {
+        punct = innerPunctMatch[1] + punct;
+        blankContent = blankContent.slice(0, -innerPunctMatch[1].length).trim();
+      }
       segments.push({
-        text: blankContent + punct,
+        text: blankContent,
         blank: true
       });
+      if (punct) {
+        segments.push({
+          text: punct,
+          blank: false
+        });
+      }
       lastIndex = bracketRegex.lastIndex;
     }
     if (lastIndex < sentence.length) {
@@ -52,9 +64,15 @@ export function parseSentenceToSegments(rawText) {
       }
       const punct = match[2] || '';
       segments.push({
-        text: 'blank' + punct,
+        text: 'blank',
         blank: true
       });
+      if (punct) {
+        segments.push({
+          text: punct,
+          blank: false
+        });
+      }
       lastIndex = underRegex.lastIndex;
     }
     if (lastIndex < sentence.length) {
@@ -72,18 +90,38 @@ export function parseSentenceToSegments(rawText) {
     const blankStart = 1;
     const blankCount = (words.length >= 5) ? 2 : 1;
     const beforeWords = words.slice(0, blankStart).join(' ');
-    const blankWords = words.slice(blankStart, blankStart + blankCount).join(' ');
+    let blankWords = words.slice(blankStart, blankStart + blankCount).join(' ');
     const afterWords = words.slice(blankStart + blankCount).join(' ');
+
+    let punct = '';
+    const pMatch = blankWords.match(/([.,!?;:'"”]+)$/);
+    if (pMatch) {
+      punct = pMatch[1];
+      blankWords = blankWords.slice(0, -punct.length);
+    }
 
     segments.push({ text: beforeWords + ' ', blank: false });
     segments.push({ text: blankWords, blank: true });
-    if (afterWords) {
+    if (punct) {
+      segments.push({ text: punct + (afterWords ? ' ' + afterWords : ''), blank: false });
+    } else if (afterWords) {
       segments.push({ text: ' ' + afterWords, blank: false });
     }
     return segments;
   }
 
-  return [{ text: sentence, blank: true }];
+  let cleanSentence = sentence;
+  let endPunct = '';
+  const pMatch = sentence.match(/([.,!?;:'"”]+)$/);
+  if (pMatch) {
+    endPunct = pMatch[1];
+    cleanSentence = sentence.slice(0, -endPunct.length);
+  }
+  const result = [{ text: cleanSentence, blank: true }];
+  if (endPunct) {
+    result.push({ text: endPunct, blank: false });
+  }
+  return result;
 }
 
 export function segmentsToMarkedText(segments) {

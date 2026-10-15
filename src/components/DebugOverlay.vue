@@ -4,7 +4,7 @@
     <div class="debug-toggle-indicator" @click="toggleDebug">
       <AppIcon name="bug" size="14" />
       <span>DEBUG MODE [{{ targetCount }} 节点已定位]</span>
-      <span style="opacity:0.7; font-size:10px;">(Ctrl+Alt+D 关闭)</span>
+      <span style="opacity:0.7; font-size:10px;">(Ctrl+Alt+D / macOS: Ctrl+⌥+D 关闭)</span>
     </div>
 
     <!-- 悬停/点击调试元信息展示卡 -->

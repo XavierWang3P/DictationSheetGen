@@ -156,21 +156,22 @@ export function generateLetterNeighborsItems(options = {}) {
     let targetEn = '';
 
     if (type === 'both') {
-      promptZh = `邻居: ___  ${midChar}  ___`;
+      promptZh = `邻居: _ ${midChar} _`;
       targetEn = `${prevChar}, ${nextChar}`;
     } else if (type === 'middle') {
-      promptZh = `邻居: ${prevChar}  ___  ${nextChar}`;
+      promptZh = `邻居: ${prevChar} _ ${nextChar}`;
       targetEn = midChar;
     } else if (type === 'pre') {
-      promptZh = `邻居: ___  ${midChar}`;
+      promptZh = `邻居: _ ${midChar}`;
       targetEn = prevChar;
     } else if (type === 'post') {
-      promptZh = `邻居: ${midChar}  ___`;
+      promptZh = `邻居: ${midChar} _`;
       targetEn = nextChar;
     }
 
-    const columns = layoutStyle === 'bottom-4col' ? 4 : (layoutStyle === 'right-2col' ? 2 : undefined);
-    const gridPosition = layoutStyle === 'bottom-4col' ? 'below' : (layoutStyle === 'right-2col' ? 'right' : undefined);
+    const effectiveLayout = layoutStyle || 'bottom-4col';
+    const columns = effectiveLayout === 'bottom-5col' ? 5 : (effectiveLayout === 'bottom-4col' ? 4 : (effectiveLayout === 'right-2col' ? 2 : 4));
+    const gridPosition = effectiveLayout === 'right-2col' ? 'right' : 'below';
 
     return createDraftItem({
       id: generateId('neighbor'),
@@ -181,14 +182,14 @@ export function generateLetterNeighborsItems(options = {}) {
       zh: promptZh,
       prompt: promptZh,
       phonetic: '',
-      layout: (columns && gridPosition) ? { columns, gridPosition } : {},
+      layout: { columns, gridPosition },
       neighborData: {
         type,
         midChar,
         prevChar,
         nextChar,
         curCase,
-        layoutStyle
+        layoutStyle: effectiveLayout
       }
     });
   });
@@ -236,12 +237,16 @@ export function generateCaseConversionItems(options = {}) {
       promptZh = `${l} 的大写`;
       targetEn = u;
     } else if (dir === 'pair_write') {
-      promptZh = `${u} 的大小写`;
-      targetEn = `${u} ${l}`;
+      promptZh = `${u} 的小写`;
+      targetEn = l;
+    } else {
+      promptZh = `${u} 的小写`;
+      targetEn = l;
     }
 
-    const columns = layoutStyle === 'bottom-4col' ? 4 : (layoutStyle === 'right-2col' ? 2 : undefined);
-    const gridPosition = layoutStyle === 'bottom-4col' ? 'below' : (layoutStyle === 'right-2col' ? 'right' : undefined);
+    const effectiveLayout = layoutStyle || 'bottom-4col';
+    const columns = effectiveLayout === 'bottom-5col' ? 5 : (effectiveLayout === 'bottom-4col' ? 4 : (effectiveLayout === 'right-2col' ? 2 : 4));
+    const gridPosition = effectiveLayout === 'right-2col' ? 'right' : 'below';
 
     return createDraftItem({
       id: generateId('case'),
@@ -252,14 +257,14 @@ export function generateCaseConversionItems(options = {}) {
       zh: promptZh,
       prompt: promptZh,
       phonetic: '',
-      layout: (columns && gridPosition) ? { columns, gridPosition } : {},
+      layout: { columns, gridPosition },
       caseData: {
         dir,
         upper: u,
         lower: l,
         sourceChar: (dir === 'lower_to_upper') ? l : u,
         targetChar: targetEn,
-        layoutStyle
+        layoutStyle: effectiveLayout
       }
     });
   });

@@ -106,6 +106,7 @@ export const DEFAULT_SETTINGS = {
   orientation: 'portrait',     // 'portrait' | 'landscape'
   copiesPerPage: 3,           // 1 | 2 | 3 (默认一页 3 份)
   pageMargin: 8,              // mm (4-16)
+  pageMarginHorizontal: 12,   // mm (4-24)
   dividerStyle: 'dashed',     // 'dashed' | 'solid' | 'none'
   showCutGuide: false,        // 不显示裁剪辅助线
   title: 'Unit 1 黑体词默写',
@@ -122,7 +123,7 @@ export const DEFAULT_SETTINGS = {
   promptFontSize: 14,         // pt (7-20) 提示/题号字号 (默认 14pt)
   zhFontSize: 'md',           // 'sm' | 'md' | 'lg'
   zhPosition: 'top',          // 'top' | 'left'
-  colGap: 6,                  // mm (3-12)
+  colGap: 6,                  // mm (2-16)
   rowGap: 3.5,                // mm (2-10)
   gridStyle: 'four-line',     // 'four-line' | 'single-line'
   gridLinesPerWord: 1,        // 1 行
@@ -131,13 +132,13 @@ export const DEFAULT_SETTINGS = {
   gridColor: '#cbd5e1',       // 线条颜色
   showVerticalBorder: true,   // 左右封闭竖线 (默认显示)
   dictMode: 'writing',        // 看中文写英文
-  clozeStyle: 'inline',       // 'inline' (句中内嵌填空) | 'below' (句下独立书写格)
-  clozeZhPosition: 'below',   // 'below' (句下独立行，推荐) | 'right' (紧随句末) | 'above' (句子上方) | 'hide' (隐藏中文)
+  clozeStyle: 'inline',       // 'inline' (句中内嵌填空)
+  clozeZhPosition: 'above',   // 'above' (固定在句子上方)
   clozeBlankWidth: 'auto',    // 默认按答案实际字体宽度的 150% 计算
   fontFamilyZh: "'KaiTi', '楷体', STKaiti, serif",
   fontFamilyEn: 'Arial, sans-serif',
   alphabetGuideFont: DEFAULT_ALPHABET_GUIDE_FONT,
-  alphabetLayout: 'auto',
+  alphabetLayout: 'bottom-4col', // 字母左右邻居与大小写转换默认每行4题
   alphabet26Rows: 3,
   autoOptimizeCopies: true,
   letterSpacing: '0',
@@ -334,7 +335,11 @@ export function createCasePracticeGridSvg(item, options = {}) {
   const l = cData.lower || '';
   const sourceChar = (dir === 'lower_to_upper') ? l : u;
   const targetChar = (dir === 'lower_to_upper') ? u : l;
-  const isRightOrBottom = item?.layout?.gridPosition === 'right' || item?.layout?.gridPosition === 'below' || cData.layoutStyle === 'right-2col' || cData.layoutStyle === 'bottom-4col';
+  const isRightOrBottom = cData.layoutStyle === 'bottom-4col' ||
+    cData.layoutStyle === 'bottom-5col' ||
+    cData.layoutStyle === 'right-2col' ||
+    item?.layout?.gridPosition === 'right' ||
+    item?.layout?.gridPosition === 'below';
 
   if (isRightOrBottom) {
     const lineMarkup = `
@@ -547,8 +552,14 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
   const bracketPunctRegex = /(\[([^\]]+)\]|\{([^}]+)\})([.,!?;:'"”]*)?/g;
   if (sentence.search(/\[([^\]]+)\]|\{([^}]+)\}/) !== -1) {
     formattedEn = escapeHtml(sentence).replace(bracketPunctRegex, (match, fullBracket, p1, p2, punct) => {
-      const word = (p1 || p2 || '').trim();
-      return renderBlankHtml(word, punct || '');
+      let word = (p1 || p2 || '').trim();
+      let allPunct = punct || '';
+      const innerPunct = word.match(/([.,!?;:'"”]+)$/);
+      if (innerPunct) {
+        allPunct = innerPunct[1] + allPunct;
+        word = word.slice(0, -innerPunct[1].length).trim();
+      }
+      return renderBlankHtml(word, allPunct);
     });
   } else if (sentence.includes('___') || sentence.includes('——')) {
     formattedEn = escapeHtml(sentence).replace(/(_{2,}|——+)([.,!?;:'"”]*)?/g, (match, line, punct) => {
@@ -685,7 +696,8 @@ export function computePageLayout(items, settings) {
   }
 
   // 计算每份试卷的最大可用物理高度 (mm)
-  const pageMargin = s.pageMargin || 8;
+  const pageMargin = Number(s.pageMargin || 8);
+  const pageMarginHorizontal = Number(s.pageMarginHorizontal ?? 12);
   const netPageHeightMm = pageHeightMm - (pageMargin * 2);
   const dividerHeightMm = (copiesPerPage > 1) ? (copiesPerPage - 1) * 3 : 0;
   const copyHeightMm = (netPageHeightMm - dividerHeightMm) / copiesPerPage;
@@ -694,17 +706,20 @@ export function computePageLayout(items, settings) {
   const maxAvailableHeightMm = Math.max(30, copyHeightMm - headerHeightMm - 3);
 
   const gridUnits = 60;
-  const contentWidthMm = Math.max(60, pageWidthMm - 24);
+  const contentWidthMm = Math.max(40, pageWidthMm - (pageMarginHorizontal * 2));
   const expandedItems = [];
+  let displaySeq = 0;
   migratedItems.forEach((item, originalIndex) => {
+    const isSep = item.questionType === 'separator';
+    const displayIndex = isSep ? null : ++displaySeq;
     if (item.questionType !== 'english-composition') {
-      expandedItems.push({ item, originalIndex });
+      expandedItems.push({ item, originalIndex, displayIndex });
       return;
     }
     const perLineMm = item.lineHeight + 1.2;
     const maxLinesPerPage = Math.max(3, Math.floor((maxAvailableHeightMm - 14) / perLineMm));
     if (item.lineCount <= maxLinesPerPage) {
-      expandedItems.push({ item, originalIndex });
+      expandedItems.push({ item, originalIndex, displayIndex });
       return;
     }
     let remaining = item.lineCount;
@@ -714,6 +729,7 @@ export function computePageLayout(items, settings) {
       const fragmentLineCount = Math.min(maxLinesPerPage, remaining);
       expandedItems.push({
         originalIndex,
+        displayIndex,
         item: migrateDraftItem({
           ...item,
           id: `${item.id}-part-${part}`,
@@ -761,11 +777,32 @@ export function computePageLayout(items, settings) {
     return { used, occupied, rowMax, total: used + rowMax };
   }
 
-  expandedItems.forEach(({ item, originalIndex }) => {
-    const requestedColumns = resolveQuestionColumns(item, s);
-    const isFullWidth = item.layoutHint === 'full-width'
+  let activeSectionColumns = null;
+  expandedItems.forEach(({ item, originalIndex, displayIndex }) => {
+    if (item.questionType === 'separator') {
+      if (item.sectionColumns) {
+        activeSectionColumns = Number(item.sectionColumns);
+      }
+    }
+
+    const isSep = item.questionType === 'separator';
+    const isFullWidth = isSep
+      || item.layoutHint === 'full-width'
       || item.questionType === 'english-composition'
       || shouldUseFullRow(item, s, contentWidthMm);
+
+    let requestedColumns = 1;
+    if (!isFullWidth) {
+      const override = Number(item?.layout?.columns);
+      if ([1, 2, 3, 4, 5].includes(override)) {
+        requestedColumns = override;
+      } else if (activeSectionColumns) {
+        requestedColumns = activeSectionColumns;
+      } else {
+        requestedColumns = resolveQuestionColumns(item, s);
+      }
+    }
+
     const gridSpan = isFullWidth ? gridUnits : Math.max(1, Math.round(gridUnits / requestedColumns));
     const availableItemWidthMm = isFullWidth
       ? contentWidthMm
@@ -785,7 +822,8 @@ export function computePageLayout(items, settings) {
     }
 
     currentPageItems.push({
-      overallIndex: originalIndex + 1,
+      overallIndex: displayIndex ?? (originalIndex + 1),
+      displayIndex,
       item,
       isFullWidth,
       gridSpan,
@@ -1022,6 +1060,21 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         practiceHtml: `<div class="composition-lines">${createPracticeGridSvg({ gridStyle: item.writingStyle === 'four-line' ? 'four-line' : 'single-line', gridLines: lineCount, gridHeightMm: item.lineHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: item.writingStyle === 'four-line' && s.showVerticalBorder })}</div>`,
         classes: ['is-composition-card']
       };
+    },
+    renderSeparator(item) {
+      const title = (item.title || item.text || '').trim();
+      const colText = item.sectionColumns ? `<span class="separator-col-note">（本区每行 ${item.sectionColumns} 题）</span>` : '';
+      return {
+        promptHtml: `
+          <div class="separator-bar">
+            <span class="separator-line"></span>
+            ${title ? `<span class="separator-title">${escapeHtml(title)}${colText}</span>` : ''}
+            <span class="separator-line"></span>
+          </div>
+        `,
+        practiceHtml: '',
+        classes: ['is-separator-card', 'is-full-width']
+      };
     }
   };
 }
@@ -1151,10 +1204,23 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
         isFullWidth ? 'is-full-width' : ''
       ].filter(Boolean).join(' ');
 
+      if (qType === 'separator') {
+        cardsHtml += `
+          <div class="${cardClasses}" data-id="${safeCardId}" data-debug-id="ITEM-${safeCardId}" data-debug-name="分栏隔断" data-debug-component="Separator" data-debug-file="src/core/layout.js" style="grid-column: 1 / -1;">
+            ${zhMeaningHtml}
+          </div>
+        `;
+        return;
+      }
+
+      const cardPromptSize = (qType === 'alphabet' && gridSpan <= 15)
+        ? Math.min(9.5, effectivePromptSize)
+        : effectivePromptSize;
+
       cardsHtml += `
         <div class="${cardClasses}" data-id="${safeCardId}" data-debug-id="ITEM-${safeCardId}" data-debug-name="题目 #${overallIndex} (${qType})" data-debug-component="PracticeGrid" data-debug-file="src/core/layout.js" style="letter-spacing:${safeLetterSpacing};grid-column:span ${gridSpan};">
-          <div class="meaning word-prompt-row" style="font-size:${effectivePromptSize}pt;">
-            <span class="word-num entry-index">${overallIndex}.</span>
+          <div class="meaning word-prompt-row" style="font-size:${cardPromptSize}pt;">
+            ${overallIndex ? `<span class="word-num entry-index">${overallIndex}.</span>` : ''}
             ${zhMeaningHtml}
           </div>
           ${practiceGridHtml ? `
@@ -1297,7 +1363,7 @@ export function renderPracticeSheetHtml(layout, settings) {
           max-height: ${pageHeightMm}mm;
           font-family: ${s.fontFamilyZh};
           --font-en: ${safePageFontEn};
-          padding: ${s.pageMargin}mm 12mm ${Math.max(4, s.pageMargin - 2)}mm 12mm;
+          padding: ${Number(s.pageMargin || 8)}mm ${Number(s.pageMarginHorizontal ?? 12)}mm ${Math.max(4, Number(s.pageMargin || 8) - 2)}mm ${Number(s.pageMarginHorizontal ?? 12)}mm;
         ">${copySlipsHtml}</div>`;
     });
   });

@@ -179,6 +179,22 @@ function normalizeComposition(data = {}) {
   };
 }
 
+export function normalizeSeparator(data = {}) {
+  const base = baseQuestion(data, 'separator');
+  const title = typeof data.title === 'string' ? data.title : (typeof data.text === 'string' ? data.text : '');
+  const sectionColumns = [1, 2, 3, 4, 5].includes(Number(data.sectionColumns)) ? Number(data.sectionColumns) : null;
+  return {
+    ...base,
+    questionType: 'separator',
+    type: 'separator',
+    title: title.trim(),
+    text: title.trim(),
+    sectionColumns,
+    isFullWidth: true,
+    layoutHint: 'full-width'
+  };
+}
+
 function basicValidation(item, fields = []) {
   const errors = fields.filter((field) => !String(item?.[field] || '').trim()).map((field) => `${field} 不能为空`);
   return { valid: errors.length === 0, errors };
@@ -303,11 +319,24 @@ export const questionTypeRegistry = {
     migrate: normalizeComposition,
     renderPreview: delegateRenderer('renderComposition'),
     renderPrint: delegateRenderer('renderComposition')
+  },
+  separator: {
+    label: '分栏隔断',
+    editor: 'QuickTextEditor',
+    createDefault: () => normalizeSeparator({ title: '分栏隔断' }),
+    normalize: normalizeSeparator,
+    validate: () => ({ valid: true, errors: [] }),
+    estimateHeight: (item) => (item.title ? 10 : 5),
+    defaultLayout: { columns: 1 },
+    migrate: normalizeSeparator,
+    renderPreview: delegateRenderer('renderSeparator'),
+    renderPrint: delegateRenderer('renderSeparator')
   }
 };
 
 export function inferQuestionType(data, fallbackMode = 'writing') {
   if (data?.questionType && questionTypeRegistry[data.questionType]) return data.questionType;
+  if (data?.questionType === 'separator' || data?.type === 'separator' || data?.questionType === 'section-break' || data?.type === 'section-break') return 'separator';
   if (data?.alphaData || data?.neighborData || data?.caseData || data?.type === 'alphabet' || fallbackMode === 'alphabet') return 'alphabet';
   if (data?.type === 'choice') return 'choice';
   if (data?.type === 'inline-fill') return 'inline-fill';
@@ -350,15 +379,18 @@ export function resolveQuestionColumns(item, settings = {}) {
   if ([1, 2, 3, 4, 5].includes(override)) return override;
   const defaults = normalizeLayoutDefaults(settings.layoutDefaults, settings);
   const type = item?.questionType || 'word-dictation';
+  if (type === 'separator') return 1;
   if (type === 'word-dictation') return defaults.wordDictationColumns;
   if (type === 'sentence-dictation') return defaults.sentenceDictationColumns;
   if (type === 'english-composition') return defaults.englishCompositionColumns || 1;
   if (type === 'alphabet') {
+    if (item?.neighborData?.layoutStyle === 'bottom-5col' || item?.caseData?.layoutStyle === 'bottom-5col') return 5;
     if (item?.neighborData?.layoutStyle === 'bottom-4col' || item?.caseData?.layoutStyle === 'bottom-4col') return 4;
     if (item?.neighborData?.layoutStyle === 'right-2col' || item?.caseData?.layoutStyle === 'right-2col') return 2;
+    if (settings.alphabetLayout === 'bottom-5col') return 5;
     if (settings.alphabetLayout === 'bottom-4col') return 4;
     if (settings.alphabetLayout === 'right-2col') return 2;
-    return Math.min(5, Math.max(1, Number(settings.columns) || 3));
+    return 4;
   }
 
   let value = 'auto';

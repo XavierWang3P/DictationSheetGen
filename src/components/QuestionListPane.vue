@@ -75,14 +75,19 @@
             v-for="(item, index) in state.draft.items"
             :key="item.id || index"
             class="word-item-row compact-exam-row word-chip"
-            :class="{ 'has-override-col': Boolean(item.layout?.columns) }"
+            :class="{
+              'has-override-col': Boolean(item.layout?.columns),
+              'is-separator-row': item.questionType === 'separator'
+            }"
             :data-id="item.id"
             :data-debug-id="'ITEM-' + item.id"
             data-debug-name="试卷题目项"
+            title="双击可编辑该题内容"
+            @dblclick="openEditModal(index)"
           >
             <!-- 序号与题型前导区 -->
             <div class="row-leading">
-              <span class="word-item-index">{{ formatIndex(index + 1) }}</span>
+              <span class="word-item-index">{{ item.questionType === 'separator' ? '§' : formatIndex(index + 1) }}</span>
               <span class="question-type-pill" :class="item.questionType || 'word-dictation'">
                 {{ getQuestionTypeLabel(item.questionType) }}
               </span>
@@ -91,7 +96,10 @@
             <!-- 主内容区：英文与中文垂直分层 -->
             <div class="word-item-main">
               <div class="word-primary-line" :title="getItemPrimaryText(item)">
-                <span v-if="item.en" class="word-item-en word-chip-en">
+                <span v-if="item.questionType === 'separator'" class="word-item-en word-chip-en separator-title-text">
+                  {{ item.title ? `【分栏隔断】${item.title}` : '【分栏隔断】全幅视觉分割线' }}
+                </span>
+                <span v-else-if="item.en" class="word-item-en word-chip-en">
                   <template v-if="item.questionType === 'sentence-cloze' && (item.en.includes('[') || item.en.includes('{'))">
                     <mark class="chip-blank-mark">{{ item.en }}</mark>
                   </template>
@@ -106,7 +114,10 @@
               </div>
 
               <div class="word-secondary-line" :title="getItemSecondaryText(item)">
-                <span v-if="item.zh" class="word-item-zh">{{ item.zh }}</span>
+                <span v-if="item.questionType === 'separator'" class="word-item-zh separator-sec-text">
+                  后续题目每行 {{ item.sectionColumns || 1 }} 题
+                </span>
+                <span v-else-if="item.zh" class="word-item-zh">{{ item.zh }}</span>
                 <span v-else-if="item.options" class="word-item-zh">{{ formatOptionsSummary(item.options) }}</span>
                 <span v-else class="word-item-zh" style="display:none;"></span>
 
@@ -118,7 +129,7 @@
 
             <!-- 紧凑 1:1 正方形操作按钮组 (28x28px) -->
             <div class="word-item-actions">
-              <!-- 单题布局弹出选择器 -->
+              <!-- 单题布局弹出选择器：使用原生 button 作为直接触发器，解决坐标飘到 (0, 0) 的 Bug -->
               <n-popselect
                 :value="item.layout?.columns || 'default'"
                 :options="columnOptions"
@@ -126,21 +137,23 @@
                 size="small"
                 @update:value="setColumnsFromSelect(item, $event)"
               >
-                <IconActionButton
+                <button
+                  type="button"
                   class="word-item-btn"
-                  label="设置该题每行列数（1至5列）"
-                  icon="grid"
-                  :icon-size="13"
-                />
+                  title="设置该题每行列数（1至5列）"
+                  aria-label="设置该题每行列数（1至5列）"
+                >
+                  <AppIcon name="grid" :size="13" />
+                </button>
               </n-popselect>
 
+              <!-- 全题型支持二次编辑（点击或双击整行） -->
               <IconActionButton
-                v-if="structuredTypes.includes(item.questionType)"
                 class="word-item-btn"
-                label="编辑题目"
+                label="编辑题目内容"
                 icon="edit"
                 :icon-size="13"
-                @click.stop="editItem(index)"
+                @click.stop="openEditModal(index)"
               />
 
               <IconActionButton
@@ -181,15 +194,201 @@
         </template>
       </div>
     </n-card>
+
+    <!-- 题目内容二次编辑弹窗 -->
+    <n-modal
+      v-model:show="isEditModalOpen"
+      preset="card"
+      :title="editModalTitle"
+      style="max-width: 520px; width: 94vw;"
+      :segmented="{ content: 'soft', footer: 'soft' }"
+    >
+      <div class="edit-modal-content">
+        <!-- 单词默写 -->
+        <div v-if="editForm.questionType === 'word-dictation'" class="edit-form-stack">
+          <div class="edit-form-item">
+            <label class="edit-form-label">英文单词</label>
+            <n-input v-model:value="editForm.en" placeholder="如 apple" />
+          </div>
+          <div class="edit-form-item">
+            <label class="edit-form-label">中文释义</label>
+            <n-input v-model:value="editForm.zh" placeholder="如 苹果" />
+          </div>
+          <div class="edit-form-item">
+            <label class="edit-form-label">音标（可选）</label>
+            <n-input v-model:value="editForm.phonetic" placeholder="如 /ˈæp.əl/" />
+          </div>
+        </div>
+
+        <!-- 句子听写 / 默写 -->
+        <div v-else-if="editForm.questionType === 'sentence-dictation'" class="edit-form-stack">
+          <div class="edit-form-item">
+            <label class="edit-form-label">英文句子</label>
+            <n-input
+              v-model:value="editForm.en"
+              type="textarea"
+              :autosize="{ minRows: 2, maxRows: 4 }"
+              placeholder="如 This is an apple."
+            />
+          </div>
+          <div class="edit-form-item">
+            <label class="edit-form-label">中文翻译</label>
+            <n-input
+              v-model:value="editForm.zh"
+              type="textarea"
+              :autosize="{ minRows: 2, maxRows: 3 }"
+              placeholder="如 这是一个苹果。"
+            />
+          </div>
+        </div>
+
+        <!-- 句子挖空 -->
+        <div v-else-if="editForm.questionType === 'sentence-cloze'" class="edit-form-stack">
+          <div class="edit-form-item">
+            <label class="edit-form-label">英文原句与挖空</label>
+            <n-input
+              v-model:value="editForm.en"
+              type="textarea"
+              :autosize="{ minRows: 2, maxRows: 4 }"
+              placeholder="使用中括号指定挖空，如 I [like] apples."
+            />
+            <div class="edit-form-help">
+              💡 提示：在需要挖空填词的单词前后加上中括号 [ ]，例如 "Ask [your teacher] for help."
+            </div>
+          </div>
+          <div class="edit-form-item">
+            <label class="edit-form-label">中文翻译（置于句子上方）</label>
+            <n-input
+              v-model:value="editForm.zh"
+              type="textarea"
+              :autosize="{ minRows: 2, maxRows: 3 }"
+              placeholder="如 向你的老师寻求帮助。"
+            />
+          </div>
+        </div>
+
+        <!-- 字母练习 -->
+        <div v-else-if="editForm.questionType === 'alphabet'" class="edit-form-stack">
+          <div class="edit-form-item">
+            <label class="edit-form-label">题目提示文案</label>
+            <n-input v-model:value="editForm.prompt" placeholder="如 _ B _ 或 A 的小写" />
+          </div>
+          <div v-if="editForm.char" class="edit-form-item">
+            <label class="edit-form-label">目标字母</label>
+            <n-input v-model:value="editForm.char" placeholder="如 B" />
+          </div>
+          <div class="edit-form-item">
+            <label class="edit-form-label">辅助说明（可选）</label>
+            <n-input v-model:value="editForm.zh" placeholder="提示说明" />
+          </div>
+        </div>
+
+        <!-- 单项选择 -->
+        <div v-else-if="editForm.questionType === 'choice'" class="edit-form-stack">
+          <div class="edit-form-item">
+            <label class="edit-form-label">题干内容</label>
+            <n-input
+              v-model:value="editForm.stem"
+              type="textarea"
+              :autosize="{ minRows: 2, maxRows: 4 }"
+              placeholder="请输入选择题题干"
+            />
+          </div>
+          <div class="edit-form-item">
+            <label class="edit-form-label">选项设置</label>
+            <div v-for="(opt, oIdx) in editForm.options" :key="oIdx" class="edit-option-row">
+              <span class="edit-opt-label">{{ opt.label || String.fromCharCode(65 + oIdx) }}.</span>
+              <n-input v-model:value="opt.text" :placeholder="`选项 ${opt.label}`" size="small" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 完形 / 语法填空 -->
+        <div v-else-if="editForm.questionType === 'inline-fill'" class="edit-form-stack">
+          <div class="edit-form-item">
+            <label class="edit-form-label">题干内容</label>
+            <n-input
+              v-model:value="editForm.stem"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 5 }"
+              placeholder="输入填空题题干"
+            />
+          </div>
+        </div>
+
+        <!-- 英语作文 -->
+        <div v-else-if="editForm.questionType === 'english-composition'" class="edit-form-stack">
+          <div class="edit-form-item">
+            <label class="edit-form-label">作文题目</label>
+            <n-input v-model:value="editForm.title" placeholder="如 My Favourite Animal" />
+          </div>
+          <div class="edit-form-item">
+            <label class="edit-form-label">写作要求 / 提示</label>
+            <n-input
+              v-model:value="editForm.instructions"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 5 }"
+              placeholder="写作要求与提示词"
+            />
+          </div>
+          <div class="edit-form-item">
+            <label class="edit-form-label">四线三格行数</label>
+            <n-input-number v-model:value="editForm.lineCount" :min="1" :max="20" />
+          </div>
+        </div>
+
+        <!-- 分栏隔断 -->
+        <div v-else-if="editForm.questionType === 'separator'" class="edit-form-stack">
+          <div class="edit-form-item">
+            <label class="edit-form-label">隔断标题（可选，留空则为纯横线）</label>
+            <n-input v-model:value="editForm.title" placeholder="如：Part II 听力与词汇（留空为纯分隔线）" />
+          </div>
+          <div class="edit-form-item">
+            <label class="edit-form-label">后续题目独立分栏（每行题数）</label>
+            <n-select v-model:value="editForm.sectionColumns" :options="sectionColumnOptions" />
+            <div class="edit-form-help">
+              从本隔断开始直至下一个隔断，后续题目将自动采用此分栏列数。
+            </div>
+          </div>
+        </div>
+
+        <!-- 通用每行列数设置（非隔断类型） -->
+        <div v-if="editForm.questionType !== 'separator'" class="edit-form-item" style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
+          <label class="edit-form-label">该题独立每行列数</label>
+          <n-select v-model:value="editForm.columns" :options="columnOptions" size="small" />
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="modal-footer">
+          <div class="modal-footer-left">
+            <n-button
+              v-if="structuredTypes.includes(editForm.questionType)"
+              text
+              type="primary"
+              size="small"
+              @click="openInFullStructuredEditor"
+            >
+              跳转到完整结构化编辑器 ↗
+            </n-button>
+          </div>
+          <div class="modal-footer-right">
+            <n-button size="small" @click="isEditModalOpen = false">取消</n-button>
+            <n-button size="small" type="primary" @click="saveEditModal">保存修改</n-button>
+          </div>
+        </div>
+      </template>
+    </n-modal>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { NCard, NPopconfirm, NPopselect, useMessage } from 'naive-ui';
+import { ref, computed } from 'vue';
+import { NCard, NPopconfirm, NPopselect, NModal, NInput, NInputNumber, NButton, NSelect, useMessage } from 'naive-ui';
 import { state } from '../stores/appStore.js';
 import { computePageLayout } from '../core/layout.js';
 import { normalizeQuestion } from '../question-types/registry.js';
+import { parseSentenceToSegments } from '../core/tokenizer.js';
 import AppIcon from './AppIcon.vue';
 import IconActionButton from './IconActionButton.vue';
 
@@ -207,6 +406,114 @@ const columnOptions = [
   { label: '每行 5 题', value: 5 }
 ];
 
+const sectionColumnOptions = [
+  { label: '每行 1 题（整行通栏）', value: 1 },
+  { label: '每行 2 题（双栏对开）', value: 2 },
+  { label: '每行 3 题（三栏排布）', value: 3 },
+  { label: '每行 4 题（四栏紧凑）', value: 4 },
+  { label: '每行 5 题（五栏极紧凑）', value: 5 }
+];
+
+// 编辑弹窗状态
+const isEditModalOpen = ref(false);
+const editingIndex = ref(-1);
+const editForm = ref({
+  questionType: 'word-dictation',
+  en: '',
+  zh: '',
+  phonetic: '',
+  prompt: '',
+  char: '',
+  stem: '',
+  options: [],
+  title: '',
+  instructions: '',
+  lineCount: 8,
+  sectionColumns: 2,
+  columns: 'default'
+});
+
+const editModalTitle = computed(() => {
+  const typeName = getQuestionTypeLabel(editForm.value.questionType);
+  return `编辑题目内容 - ${typeName}（第 ${editingIndex.value + 1} 项）`;
+});
+
+function openEditModal(index) {
+  const item = state.draft.items[index];
+  if (!item) return;
+  editingIndex.value = index;
+  editForm.value = {
+    questionType: item.questionType || 'word-dictation',
+    en: item.en || '',
+    zh: item.zh || '',
+    phonetic: item.phonetic || '',
+    prompt: item.prompt || '',
+    char: item.char || '',
+    stem: item.stem || '',
+    options: item.options ? JSON.parse(JSON.stringify(item.options)) : [],
+    title: item.title || '',
+    instructions: item.instructions || '',
+    lineCount: item.lineCount || 8,
+    sectionColumns: item.sectionColumns || 2,
+    columns: item.layout?.columns || 'default'
+  };
+  isEditModalOpen.value = true;
+}
+
+function saveEditModal() {
+  const idx = editingIndex.value;
+  if (idx < 0 || idx >= state.draft.items.length) return;
+  const original = state.draft.items[idx];
+  const type = editForm.value.questionType;
+
+  const updated = { ...original };
+
+  if (type === 'word-dictation' || type === 'sentence-dictation') {
+    updated.en = (editForm.value.en || '').trim();
+    updated.zh = (editForm.value.zh || '').trim();
+    if (type === 'word-dictation') updated.phonetic = (editForm.value.phonetic || '').trim();
+  } else if (type === 'sentence-cloze') {
+    updated.en = (editForm.value.en || '').trim();
+    updated.zh = (editForm.value.zh || '').trim();
+    updated.segments = parseSentenceToSegments(updated.en);
+  } else if (type === 'alphabet') {
+    updated.prompt = (editForm.value.prompt || '').trim();
+    if (editForm.value.char) updated.char = editForm.value.char.trim();
+    if (editForm.value.zh) updated.zh = editForm.value.zh.trim();
+  } else if (type === 'choice') {
+    updated.stem = (editForm.value.stem || '').trim();
+    updated.options = editForm.value.options.map(opt => ({ ...opt, text: (opt.text || '').trim() }));
+  } else if (type === 'inline-fill') {
+    updated.stem = (editForm.value.stem || '').trim();
+  } else if (type === 'english-composition') {
+    updated.title = (editForm.value.title || '').trim();
+    updated.instructions = (editForm.value.instructions || '').trim();
+    updated.lineCount = Number(editForm.value.lineCount) || 8;
+  } else if (type === 'separator') {
+    updated.title = (editForm.value.title || '').trim();
+    updated.sectionColumns = Number(editForm.value.sectionColumns) || 2;
+  }
+
+  if (editForm.value.columns === 'default' || !editForm.value.columns) {
+    if (updated.layout) delete updated.layout.columns;
+  } else {
+    if (!updated.layout) updated.layout = {};
+    updated.layout.columns = Number(editForm.value.columns);
+  }
+
+  state.draft.items[idx] = updated;
+  isEditModalOpen.value = false;
+  message.success('已保存题目修改并同步预览');
+}
+
+function openInFullStructuredEditor() {
+  const idx = editingIndex.value;
+  isEditModalOpen.value = false;
+  state.ui.activeView = 'paneQuick';
+  window.__editingQuestionIndex = idx;
+  window.dispatchEvent(new CustomEvent('edit-question', { detail: idx }));
+}
+
 const statBreakdownSummary = computed(() => {
   const items = state.draft.items || [];
   if (items.length === 0) return '空画布';
@@ -219,9 +526,10 @@ const statBreakdownSummary = computed(() => {
   if (counts['word-dictation']) parts.push(`单词${counts['word-dictation']}`);
   if (counts['sentence-cloze']) parts.push(`挖空${counts['sentence-cloze']}`);
   if (counts['sentence-dictation']) parts.push(`句子${counts['sentence-dictation']}`);
+  if (counts['alphabet']) parts.push(`字母${counts['alphabet']}`);
+  if (counts['separator']) parts.push(`隔断${counts['separator']}`);
   if (counts['choice']) parts.push(`选择${counts['choice']}`);
   if (counts['inline-fill']) parts.push(`填空${counts['inline-fill']}`);
-  if (counts['alphabet']) parts.push(`字母${counts['alphabet']}`);
   if (counts['english-composition']) parts.push(`作文${counts['english-composition']}`);
   const breakdownStr = parts.slice(0, 3).join(' · ');
   return `${breakdownStr} · 预计${layout.value.totalPages}页`;
@@ -239,8 +547,9 @@ function getQuestionTypeLabel(type) {
   const map = {
     'word-dictation': '单词',
     'sentence-cloze': '挖空',
-    'sentence-dictation': '默写',
+    'sentence-dictation': '句子',
     'alphabet': '字母',
+    'separator': '隔断',
     'choice': '选择',
     'inline-fill': '填空',
     'english-composition': '作文'
@@ -249,6 +558,9 @@ function getQuestionTypeLabel(type) {
 }
 
 function getItemPrimaryText(item) {
+  if (item.questionType === 'separator') {
+    return item.title ? `【分栏隔断】${item.title}` : '【分栏隔断】全幅视觉分割线';
+  }
   if (item.en) return item.en;
   if (item.prompt) return item.prompt;
   if (item.stem) return item.stem;
@@ -257,6 +569,9 @@ function getItemPrimaryText(item) {
 }
 
 function getItemSecondaryText(item) {
+  if (item.questionType === 'separator') {
+    return `后续题目每行 ${item.sectionColumns || 1} 题`;
+  }
   if (item.zh) return item.zh;
   if (item.options) return formatOptionsSummary(item.options);
   return '';
@@ -320,13 +635,6 @@ function duplicateItem(index) {
 function removeItem(index) {
   state.draft.items.splice(index, 1);
   message.info('已移除题目');
-}
-
-function editItem(index) {
-  // 切换至录入面板并载入编辑
-  state.ui.activeView = 'paneQuick';
-  window.__editingQuestionIndex = index;
-  window.dispatchEvent(new CustomEvent('edit-question', { detail: index }));
 }
 
 function handleClearAll() {
@@ -472,6 +780,7 @@ function switchToTab(tabKey) {
   background: var(--bg-card);
   gap: 8px;
   transition: background 0.15s ease;
+  user-select: none;
 }
 
 .compact-exam-row:last-child {
@@ -480,6 +789,26 @@ function switchToTab(tabKey) {
 
 .compact-exam-row:hover {
   background: var(--color-primary-light, #f0f6f4);
+}
+
+/* 隔断题目行突出样式 */
+.compact-exam-row.is-separator-row {
+  background: #f8fafc;
+  border-left: 3px solid var(--primary);
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.compact-exam-row.is-separator-row:hover {
+  background: #f1f5f9;
+}
+
+.separator-title-text {
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+}
+
+.separator-sec-text {
+  color: var(--text-muted);
 }
 
 .row-leading {
@@ -494,6 +823,7 @@ function switchToTab(tabKey) {
   font-weight: 700;
   color: var(--text-muted);
   min-width: 20px;
+  text-align: left;
 }
 
 .question-type-pill {
@@ -509,9 +839,10 @@ function switchToTab(tabKey) {
 .question-type-pill.word-dictation { background: #e0f2fe; color: #0369a1; }
 .question-type-pill.sentence-cloze { background: #fef3c7; color: #b45309; }
 .question-type-pill.sentence-dictation { background: #f3e8ff; color: #7e22ce; }
+.question-type-pill.alphabet { background: #ede9fe; color: #6d28d9; }
+.question-type-pill.separator { background: #e2e8f0; color: #334155; font-weight: 700; }
 .question-type-pill.choice { background: #dcfce7; color: #15803d; }
 .question-type-pill.inline-fill { background: #ffedd5; color: #c2410c; }
-.question-type-pill.alphabet { background: #ede9fe; color: #6d28d9; }
 .question-type-pill.english-composition { background: #fae8ff; color: #a21caf; }
 
 .word-item-main {
@@ -519,10 +850,13 @@ function switchToTab(tabKey) {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
   gap: 2px;
 }
 
 .word-primary-line {
+  width: 100%;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-main);
@@ -530,9 +864,11 @@ function switchToTab(tabKey) {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
+  text-align: left;
 }
 
 .word-secondary-line {
+  width: 100%;
   font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
@@ -542,6 +878,7 @@ function switchToTab(tabKey) {
   align-items: center;
   gap: 6px;
   line-height: 1.3;
+  text-align: left;
 }
 
 .chip-blank-mark {
@@ -642,5 +979,63 @@ function switchToTab(tabKey) {
 
 .empty-action-btn:hover {
   background: var(--primary-hover);
+}
+
+/* 二次编辑弹窗样式 */
+.edit-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edit-form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edit-form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.edit-form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.edit-form-help {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.edit-option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.edit-opt-label {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--primary);
+  min-width: 18px;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

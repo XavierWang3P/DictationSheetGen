@@ -95,59 +95,29 @@ async function testClozeFeatures() {
     const pass2 = r2.copies9 === 2 && r2.copies16 === 1;
     console.log('-> 判定:', pass2 ? '✅ PASS' : '❌ FAIL', '\n');
 
-    // ================= 验证 3: 四种中文位置设置均能改变实际排版 =================
-    console.log('【验证 3】句下、句末、句上、隐藏四种中文位置均正确生效:');
+    // ================= 验证 3: 精简后中文翻译固定在句子上方 =================
+    console.log('【验证 3】精简后中文翻译固定在句子上方:');
     const r3 = await evalExpr(`(async () => {
       // 载入默认 9 句
       document.getElementById('btnLoadDefaultSample').click();
       await new Promise(r => setTimeout(r, 150));
 
-      const inspect = () => {
-        const card = document.querySelector('.cloze-card-inline');
-        const layout = card?.querySelector('.cloze-position-layout') || null;
-        const style = layout ? window.getComputedStyle(layout) : null;
-        return {
-          className: layout?.className || '',
-          firstClass: layout?.children?.[0]?.className || '',
-          secondClass: layout?.children?.[1]?.className || '',
-          hasChinese: !!layout?.querySelector('.cloze-zh'),
-          hasEnglish: !!layout?.querySelector('.cloze-english-column'),
-          display: style?.display || '',
-          direction: style?.flexDirection || ''
-        };
+      const card = document.querySelector('.cloze-card-inline');
+      const layout = card?.querySelector('.cloze-position-layout') || null;
+      return {
+        className: layout?.className || '',
+        firstClass: layout?.children?.[0]?.className || '',
+        secondClass: layout?.children?.[1]?.className || '',
+        hasChinese: !!layout?.querySelector('.cloze-zh'),
+        hasEnglish: !!layout?.querySelector('.cloze-english-column')
       };
-
-      document.getElementById('clozeZhBelow').click();
-      await new Promise(r => setTimeout(r, 100));
-      const below = inspect();
-      document.getElementById('clozeZhRight').click();
-      await new Promise(r => setTimeout(r, 100));
-      const right = inspect();
-      document.getElementById('clozeZhAbove').click();
-      await new Promise(r => setTimeout(r, 100));
-      const above = inspect();
-      document.getElementById('clozeZhHide').click();
-      await new Promise(r => setTimeout(r, 100));
-      const hidden = inspect();
-      document.getElementById('clozeZhBelow').click();
-      await new Promise(r => setTimeout(r, 100));
-
-      return { below, right, above, hidden };
     })()`);
     console.log('-> 结果:', JSON.stringify(r3, null, 2));
     const pass3 = (
-      r3.below.className.includes('cloze-layout-below') &&
-      r3.below.firstClass.includes('cloze-english-column') &&
-      r3.below.secondClass.includes('pos-below') &&
-      r3.below.display === 'flex' && r3.below.direction === 'column' &&
-      r3.right.className.includes('cloze-layout-right') &&
-      r3.right.firstClass.includes('cloze-english-column') &&
-      r3.right.secondClass.includes('pos-right') &&
-      r3.above.className.includes('cloze-layout-above') &&
-      r3.above.firstClass.includes('pos-above') &&
-      r3.above.secondClass.includes('cloze-english-column') &&
-      r3.hidden.className.includes('cloze-layout-hide') &&
-      !r3.hidden.hasChinese && r3.hidden.hasEnglish
+      r3.className.includes('cloze-layout-above') &&
+      r3.firstClass.includes('pos-above') &&
+      r3.secondClass.includes('cloze-english-column') &&
+      r3.hasChinese && r3.hasEnglish
     );
     console.log('-> 判定:', pass3 ? '✅ PASS' : '❌ FAIL', '\n');
 
