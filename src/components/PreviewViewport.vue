@@ -38,6 +38,20 @@
       </div>
     </div>
 
+    <!-- 当右侧排版面板折叠时，提供常驻浮动展开入口 -->
+    <button
+      v-if="state.ui.isSettingsCollapsed"
+      type="button"
+      class="btn-expand-inspector-floating no-print"
+      id="btnFloatingExpandSettings"
+      @click="state.ui.isSettingsCollapsed = false"
+      title="展开右侧试卷排版面板"
+      aria-label="展开试卷排版"
+    >
+      <AppIcon name="settings" :size="14" />
+      <span>排版</span>
+    </button>
+
     <!-- 排版检测助手横幅 (当一页多份题目溢出到第二页时提示) -->
     <div
       v-if="overflowDetected"
@@ -182,10 +196,15 @@ function handleZoom100() {
 }
 
 watch(
-  () => [state.draft.settings.paperSize, state.draft.settings.orientation, state.ui.isSidebarCollapsed],
+  () => [
+    state.draft.settings.paperSize,
+    state.draft.settings.orientation,
+    state.ui.isSidebarCollapsed,
+    state.ui.isSettingsCollapsed
+  ],
   () => {
     if (state.ui.isZoomFit) {
-      setTimeout(updateZoomFit, 200);
+      setTimeout(updateZoomFit, 260);
     }
   }
 );
@@ -254,5 +273,32 @@ onBeforeUnmount(() => {
   gap: 24px;
   transform-origin: top center;
   transition: transform 0.15s ease-out;
+}
+
+.btn-expand-inspector-floating {
+  position: absolute;
+  right: 0;
+  top: 64px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  z-index: 20;
+  transition: all 0.2s ease;
+}
+
+.btn-expand-inspector-floating:hover {
+  background: var(--primary-light);
+  color: var(--primary-hover);
+  padding-right: 14px;
 }
 </style>

@@ -35,6 +35,18 @@
       >
         可视化挖空
       </button>
+
+      <!-- 兼容旧测试脚本隐藏桩 (试卷排版已升级为右侧独立检视面板，保留无障碍桩支持历史自动化脚本) -->
+      <button
+        type="button"
+        class="sidebar-tab-btn"
+        data-tab="paneSettings"
+        style="display:none;"
+        aria-hidden="true"
+        @click="onTabClick('paneSettings')"
+      >
+        试卷排版
+      </button>
     </div>
 
     <!-- 侧栏可滚动内容区 -->
@@ -54,10 +66,6 @@
       <div id="paneClozeVisual" class="sidebar-tab-pane" :class="{ active: state.ui.activeView === 'paneClozeVisual' }">
         <VisualClozePane />
       </div>
-
-      <div id="paneSettings" class="sidebar-tab-pane" :class="{ active: state.ui.activeView === 'paneSettings' }">
-        <SettingsPane />
-      </div>
     </div>
   </aside>
 </template>
@@ -68,30 +76,35 @@ import QuickInputPane from './QuickInputPane.vue';
 import QuestionListPane from './QuestionListPane.vue';
 import WordLibraryPane from './WordLibraryPane.vue';
 import VisualClozePane from './VisualClozePane.vue';
-import SettingsPane from './SettingsPane.vue';
 import AppIcon from './AppIcon.vue';
 
 const tabs = [
   { key: 'paneQuick', label: '题目录入', icon: 'edit' },
   { key: 'paneList', label: '试卷题目', icon: 'file-text' },
-  { key: 'paneWordLib', label: '备课资源库', icon: 'book' },
-  { key: 'paneSettings', label: '试卷排版', icon: 'settings' }
+  { key: 'paneWordLib', label: '备课资源库', icon: 'book' }
 ];
 
 function onTabClick(key) {
   state.ui.activeView = key;
-  ['paneQuick', 'paneList', 'paneWordLib', 'paneClozeVisual', 'paneSettings'].forEach(k => {
+  if (key === 'paneSettings') {
+    state.ui.isSettingsCollapsed = false;
+  }
+  ['paneQuick', 'paneList', 'paneWordLib', 'paneClozeVisual'].forEach(k => {
     const pane = document.getElementById(k);
     if (pane) {
       pane.classList.toggle('active', k === key);
     }
   });
+  const paneSettings = document.getElementById('paneSettings');
+  if (paneSettings) {
+    paneSettings.classList.toggle('active', key === 'paneSettings' || !state.ui.isSettingsCollapsed);
+  }
 }
 </script>
 
 <style scoped>
 .sidebar {
-  width: 440px;
+  width: 400px;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-color);
   display: flex;

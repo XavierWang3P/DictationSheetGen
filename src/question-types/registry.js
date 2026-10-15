@@ -268,7 +268,30 @@ export const questionTypeRegistry = {
     validate: (item) => basicValidation(item, ['en']),
     estimateHeight: (item, context) => {
       if (context.settings.clozeStyle === 'below') return 10 + context.effectiveGridHeight;
-      return ['above', 'below'].includes(context.settings.clozeZhPosition) ? 22 : 16;
+      const isMulti = (context.copies > 1);
+      const zh = item.overrideZh || item.zh || item.translation || '';
+      const pos = context.settings.clozeZhPosition || 'above';
+      const zhHeight = (zh && ['above', 'below'].includes(pos)) ? (isMulti ? 4.2 : 5.0) : 0;
+
+      // 评估英文句面宽度与折行
+      const cleanEn = (item.en || '').replace(/\[([^\]]+)\]/g, '____');
+      const fontSize = isMulti
+        ? Math.min(12, Number(context.settings.promptFontSize) || 14) * 1.333333
+        : (context.fontSizePx || 18.67);
+      const measured = calculateWritingGridWidth({
+        text: cleanEn,
+        fontFamily: context.fontFamilyEn || 'Arial, sans-serif',
+        fontSize,
+        availableWidth: context.availableWidthPx || 340,
+        minWidth: 48,
+        maxWidth: context.availableWidthPx || 340,
+        scale: 1.0
+      });
+      const lines = Math.max(1, Math.min(3, Math.ceil((measured.targetWidth || 1) / Math.max(1, context.availableWidthPx || 340))));
+      const enBaseHeight = isMulti ? 7.8 : 9.0;
+      const enExtraHeight = (lines - 1) * (isMulti ? 6.5 : 7.5);
+      const spacing = zhHeight > 0 ? 1.5 : 0;
+      return zhHeight + enBaseHeight + enExtraHeight + spacing;
     },
     defaultLayout: { columns: 'auto' },
     migrate: normalizeCloze,

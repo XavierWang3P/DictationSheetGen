@@ -607,15 +607,15 @@ export function autoAdaptCopiesAndCapacity(items, settings) {
 
   if (mode === 'cloze') {
     // 句子挖空题型 (默认2列排版)
-    // 1 页 3 份：每份约 85mm，扣除标题考生栏，最多舒适容纳 6 句 (3行 x 2列)
-    // 1 页 2 份：每份约 135mm，最多容纳 12 句 (6行 x 2列)
-    // 1 页 1 份：整页约 270mm，容纳 13 句以上 (整页舒展排版)
-    if (count <= 6) {
+    // 1 页 3 份：每份约 85-95mm，扣除标题考生栏，精准舒适容纳 10 句 (5行 x 2列)
+    // 1 页 2 份：每份约 135-145mm，最多容纳 14 句 (7行 x 2列)
+    // 1 页 1 份：整页约 270mm，容纳 15 句以上 (整页舒展排版)
+    if (count <= 10) {
       targetCopies = 3;
-      targetCapacity = Math.max(6, count);
-    } else if (count <= 12) {
-      targetCopies = 2;
       targetCapacity = Math.max(10, count);
+    } else if (count <= 14) {
+      targetCopies = 2;
+      targetCapacity = Math.max(14, count);
     } else {
       targetCopies = 1;
       targetCapacity = Math.max(20, count);
@@ -699,11 +699,15 @@ export function computePageLayout(items, settings) {
   const pageMargin = Number(s.pageMargin || 8);
   const pageMarginHorizontal = Number(s.pageMarginHorizontal ?? 12);
   const netPageHeightMm = pageHeightMm - (pageMargin * 2);
-  const dividerHeightMm = (copiesPerPage > 1) ? (copiesPerPage - 1) * 3 : 0;
+  const dividerHeightMm = (copiesPerPage > 1) ? (copiesPerPage - 1) * 2.5 : 0;
   const copyHeightMm = (netPageHeightMm - dividerHeightMm) / copiesPerPage;
   const headerHeightMm = (copiesPerPage > 1) ? 14 : 22;
-  // 留出 3mm 边距防溢出安全裕量
-  const maxAvailableHeightMm = Math.max(30, copyHeightMm - headerHeightMm - 3);
+  const copyPaddingMm = (copiesPerPage > 1) ? 3 : 8;
+  const maxAvailableHeightMm = Math.max(30, copyHeightMm - headerHeightMm - copyPaddingMm + 1.5);
+
+  const effectiveRowGap = (copiesPerPage > 1)
+    ? Math.min(copiesPerPage >= 3 ? 2.0 : 2.5, Number(s.rowGap) || 3.5)
+    : (Number(s.rowGap) || 3.5);
 
   const gridUnits = 60;
   const contentWidthMm = Math.max(40, pageWidthMm - (pageMarginHorizontal * 2));
@@ -763,18 +767,27 @@ export function computePageLayout(items, settings) {
     let occupied = currentGridOccupied;
     let rowMax = currentRowMaxHeightMm;
     if (occupied > 0 && occupied + span > gridUnits) {
-      used += rowMax + (s.rowGap || 3.5);
+      used += rowMax + effectiveRowGap;
       occupied = 0;
       rowMax = 0;
     }
     occupied += span;
     rowMax = Math.max(rowMax, itemHeightMm);
+    const total = used + rowMax;
+    let nextUsed = used;
+    let nextOccupied = occupied;
+    let nextRowMax = rowMax;
     if (occupied >= gridUnits) {
-      used += rowMax + (s.rowGap || 3.5);
-      occupied = 0;
-      rowMax = 0;
+      nextUsed = used + rowMax + effectiveRowGap;
+      nextOccupied = 0;
+      nextRowMax = 0;
     }
-    return { used, occupied, rowMax, total: used + rowMax };
+    return {
+      used: nextUsed,
+      occupied: nextOccupied,
+      rowMax: nextRowMax,
+      total
+    };
   }
 
   // 检查是否所有题目在物理高度上完全可以容纳在单页内
@@ -810,18 +823,18 @@ export function computePageLayout(items, settings) {
       const itemH = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: itemW }, copiesPerPage);
 
       if (testOccupied > 0 && testOccupied + span > gridUnits) {
-        testUsed += testRowMax + (s.rowGap || 3.5);
+        testUsed += testRowMax + effectiveRowGap;
         testOccupied = 0;
         testRowMax = 0;
       }
       testOccupied += span;
       testRowMax = Math.max(testRowMax, itemH);
+      if (testUsed + testRowMax > maxAvailableHeightMm) return false;
       if (testOccupied >= gridUnits) {
-        testUsed += testRowMax + (s.rowGap || 3.5);
+        testUsed += testRowMax + effectiveRowGap;
         testOccupied = 0;
         testRowMax = 0;
       }
-      if (testUsed + testRowMax > maxAvailableHeightMm) return false;
     }
     return true;
   })();
@@ -1336,7 +1349,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   // 网格主体
   const effectiveRowGap = s._teacherMode
     ? Math.min(1.2, s.rowGap || 3.5)
-    : ((copies > 1) ? Math.min(2.5, s.rowGap || 3.5) : (s.rowGap || 3.5));
+    : ((copies > 1) ? Math.min(copies >= 3 ? 2.0 : 2.5, s.rowGap || 3.5) : (s.rowGap || 3.5));
   const effectiveColGap = s._teacherMode ? Math.min(4, s.colGap || 6) : s.colGap;
 
   const bodyHtml = isAlpha26 ? `

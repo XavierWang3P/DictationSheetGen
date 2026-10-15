@@ -25,6 +25,7 @@
           <div class="app-workspace">
             <SidebarTabs />
             <PreviewViewport />
+            <LayoutInspector />
           </div>
 
           <!-- 应用版本与版权信息仅用于操作界面，打印/PDF 时自动隐藏 -->
@@ -119,6 +120,7 @@ import AppHeader from './components/AppHeader.vue';
 import AppIcon from './components/AppIcon.vue';
 import SidebarTabs from './components/SidebarTabs.vue';
 import PreviewViewport from './components/PreviewViewport.vue';
+import LayoutInspector from './components/LayoutInspector.vue';
 import DebugOverlay from './components/DebugOverlay.vue';
 import { naiveThemeOverrides as themeOverrides } from './theme/naiveTheme.js';
 

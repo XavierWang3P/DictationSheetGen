@@ -43,7 +43,7 @@ async function runPhase3Tests() {
     }
 
     await new Promise(resolve => ws.onopen = resolve);
-    await evalExpr(`window.alert = () => {}; window.confirm = () => true;`);
+    await evalExpr(`window.alert = () => {}; window.confirm = () => true; if (window.__appStoreState) window.__appStoreState.draft.items = [];`);
 
     console.log('=== 开始执行 Phase 3 词库与可视化挖空自动化测试 ===\n');
 

@@ -31,7 +31,8 @@
     "test:fonts-browser": "node test_handwriting_fonts_browser.js",
     "test:footer": "node test_app_footer.js",
     "test:align": "node test_alphabet_alignment.js",
-    "test:all": "node test_naive_ui_audit.js && node test_handwriting_fonts.js && node test_handwriting_fonts_browser.js && node test_v241_features.js && node test_question_types_v240.js && node test_app_footer.js && node test_acceptance.js && node test_phase2.js && node test_phase3.js && node test_alphabet.js && node test_architecture_fix.js && node test_cloze_features.js && node test_word_grouping.js && node test_popconfirm_i18n.js && node test_empty_startup.js && node test_excel_import.js && node test_delete_group.js && node test_v230_refactor.js && node test_alphabet_alignment.js && node test_question_types_browser.js"
+    "test:three-col": "node test_three_column_layout.js",
+    "test:all": "node test_naive_ui_audit.js && node test_handwriting_fonts.js && node test_handwriting_fonts_browser.js && node test_v241_features.js && node test_question_types_v240.js && node test_app_footer.js && node test_acceptance.js && node test_phase2.js && node test_phase3.js && node test_alphabet.js && node test_architecture_fix.js && node test_cloze_features.js && node test_word_grouping.js && node test_popconfirm_i18n.js && node test_empty_startup.js && node test_excel_import.js && node test_delete_group.js && node test_v230_refactor.js && node test_alphabet_alignment.js && node test_three_column_layout.js && node test_question_types_browser.js"
   },
   "repository": {
     "type": "git",

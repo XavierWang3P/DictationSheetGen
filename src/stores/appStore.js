@@ -50,7 +50,8 @@ export const state = reactive({
     activeView: 'paneQuick',
     zoom: 0.85,
     isZoomFit: true,
-    isSidebarCollapsed: false
+    isSidebarCollapsed: false,
+    isSettingsCollapsed: false
   }
 });
 
@@ -86,6 +87,11 @@ Object.defineProperty(state, 'isZoomFit', {
 Object.defineProperty(state, 'isSidebarCollapsed', {
   get() { return this.ui.isSidebarCollapsed; },
   set(v) { this.ui.isSidebarCollapsed = v; }
+});
+
+Object.defineProperty(state, 'isSettingsCollapsed', {
+  get() { return this.ui.isSettingsCollapsed; },
+  set(v) { this.ui.isSettingsCollapsed = v; }
 });
 
 // 挂载全局对象以保证现有自动化测试工具无缝调用

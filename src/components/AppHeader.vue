@@ -74,6 +74,20 @@
       </n-popconfirm>
 
       <n-button
+        size="small"
+        id="btnToggleSettings"
+        :type="state.ui.isSettingsCollapsed ? 'default' : 'primary'"
+        :ghost="state.ui.isSettingsCollapsed"
+        data-debug-id="H-008"
+        data-debug-name="试卷排版侧栏切换按钮"
+        @click="state.ui.isSettingsCollapsed = !state.ui.isSettingsCollapsed"
+        :title="state.ui.isSettingsCollapsed ? '展开右侧试卷排版面板' : '收起右侧试卷排版面板'"
+      >
+        <template #icon><AppIcon name="settings" :size="14" /></template>
+        试卷排版
+      </n-button>
+
+      <n-button
         type="primary"
         id="btnPrintSheet"
         data-debug-id="H-007"
