@@ -148,7 +148,7 @@
               id="copy1"
               value="1"
               :checked="state.draft.settings.copiesPerPage === 1"
-              @change="state.draft.settings.copiesPerPage = 1"
+              @change="onCopiesChange(1)"
             />
             <label for="copy1">1 份 (全页)</label>
             <input
@@ -157,7 +157,7 @@
               id="copy2"
               value="2"
               :checked="state.draft.settings.copiesPerPage === 2"
-              @change="state.draft.settings.copiesPerPage = 2"
+              @change="onCopiesChange(2)"
             />
             <label for="copy2">2 份 (对半)</label>
             <input
@@ -166,7 +166,7 @@
               id="copy3"
               value="3"
               :checked="state.draft.settings.copiesPerPage === 3"
-              @change="state.draft.settings.copiesPerPage = 3"
+              @change="onCopiesChange(3)"
             />
             <label for="copy3">3 份 (推荐)</label>
           </div>
@@ -776,6 +776,13 @@ function onPromptFontSizeInput(e) {
 function setMarginPreset(h, v) {
   state.draft.settings.pageMarginHorizontal = h;
   state.draft.settings.pageMargin = v;
+}
+
+function onCopiesChange(count) {
+  state.draft.settings.copiesPerPage = count;
+  if (state.draft.items.length > 0) {
+    state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
+  }
 }
 </script>
 

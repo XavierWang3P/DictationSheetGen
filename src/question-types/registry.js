@@ -1,5 +1,5 @@
 import { generateId, parseSentenceToSegments } from '../core/tokenizer.js';
-import { calculateWritingGridWidth } from '../core/writingGridWidth.js';
+import { calculateWritingGridWidth, measureAnswerText } from '../core/writingGridWidth.js';
 
 export const DEFAULT_LAYOUT_DEFAULTS = Object.freeze({
   wordDictationColumns: 3,
@@ -24,7 +24,10 @@ function cloneDefault(value) {
 }
 
 function validColumnValue(key, value) {
-  return COLUMN_RULES[key]?.includes(value);
+  if (value === 'auto') return COLUMN_RULES[key]?.includes('auto');
+  const num = Number(value);
+  if ([1, 2, 3, 4, 5].includes(num)) return COLUMN_RULES[key]?.includes(num);
+  return false;
 }
 
 export function normalizeLayoutDefaults(layoutDefaults, legacySettings = {}) {
@@ -42,7 +45,15 @@ export function normalizeLayoutDefaults(layoutDefaults, legacySettings = {}) {
   }
 
   Object.keys(DEFAULT_LAYOUT_DEFAULTS).forEach((key) => {
-    if (validColumnValue(key, source[key])) result[key] = source[key];
+    const val = source[key];
+    if (val === 'auto' && COLUMN_RULES[key]?.includes('auto')) {
+      result[key] = 'auto';
+    } else {
+      const num = Number(val);
+      if ([1, 2, 3, 4, 5].includes(num) && COLUMN_RULES[key]?.includes(num)) {
+        result[key] = num;
+      }
+    }
   });
   return result;
 }
@@ -417,23 +428,42 @@ export function shouldUseFullRow(item, settings = {}, availableWidthMm = 180) {
   const columns = resolveQuestionColumns(item, settings);
   if (columns <= 1 || type === 'english-composition') return true;
   if (!['sentence-dictation', 'sentence-cloze', 'choice', 'inline-fill'].includes(type)) return false;
-  const text = type === 'choice'
-    ? `${item.stem || ''} ${item.options?.map?.((option) => option.text).join(' ') || ''}`
-    : type === 'inline-fill'
-      ? `${item.stem || ''} ${item.blanks?.map?.((blank) => blank.answer).join(' ') || ''}`
-      : (item.answer || item.en || '');
+
   const gapMm = Number(settings.colGap) || 6;
   const cellWidthPx = Math.max(1, ((availableWidthMm - gapMm * (columns - 1)) / columns) * 3.7795275591);
-  const measurement = calculateWritingGridWidth({
-    text,
-    fontFamily: settings.fontFamilyEn || 'Arial, sans-serif',
-    fontSize: (Number(settings.promptFontSize) || 14) * 1.333333,
-    letterSpacing: parseFloat(settings.letterSpacing) || 0,
-    availableWidth: cellWidthPx,
-    minWidth: 48,
-    maxWidth: cellWidthPx
-  });
-  return measurement.overflow;
+
+  if (type === 'sentence-dictation') {
+    const text = item.answer || item.en || '';
+    const measured = measureAnswerText({
+      text,
+      fontFamily: settings.fontFamilyEn || 'Arial, sans-serif',
+      fontSize: (Number(settings.promptFontSize) || 14) * 1.333333,
+      letterSpacing: parseFloat(settings.letterSpacing) || 0
+    });
+    // 普通句子 (如 15~35 字符) measured ~150-280px，在 2 列 (cellWidth ~340px) 下从容容纳；
+    // 只有超长句 (如 70+ 字符测试用例) measured ~700-900px > cellWidthPx * 1.35 时才自动跨整行
+    return measured > cellWidthPx * 1.35 || text.length > 60;
+  }
+
+  if (type === 'sentence-cloze') {
+    const text = item.en || '';
+    // 句子挖空题干具有文字自适应换行，书写格仅限于挖空词本身
+    // 仅在题干超过超长篇幅 (如 70 字符) 时才强制跨整行
+    return text.length > 70;
+  }
+
+  if (type === 'choice') {
+    const stem = item.stem || '';
+    const longest = Math.max(0, ...(item.options || []).map((o) => (o.text || '').length));
+    return stem.length > 60 || longest > 28;
+  }
+
+  if (type === 'inline-fill') {
+    const stem = item.stem || '';
+    return stem.length > 60 || (item.blanks || []).length > 3;
+  }
+
+  return false;
 }
 
 export function estimateQuestionHeight(item, context) {

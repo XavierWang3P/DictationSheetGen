@@ -727,6 +727,7 @@ function handleStructuredSubmit(item) {
     message.success('题目修改已保存');
   } else {
     state.draft.items.push(item);
+    state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
     message.success('题目已添加到试卷');
   }
 }
@@ -754,6 +755,7 @@ function handleAppendSeparator() {
     sectionColumns: separatorForm.value.sectionColumns
   });
   state.draft.items.push(item);
+  state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
   message.success('已插入分栏隔断！后续题目将遵循此区域独立分栏。');
 }
 

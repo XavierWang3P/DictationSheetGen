@@ -57,6 +57,9 @@ async function testEmptyStartup() {
       const state = window.__appStoreState;
       // 重置为首次打开状态
       state.draft.items = [];
+      state.draft.settings.dictMode = 'writing';
+      state.draft.settings.copiesPerPage = 3;
+      await new Promise(r => setTimeout(r, 150));
 
       const textarea = document.getElementById('customWordTextarea');
       const badge = document.getElementById('badgeWordCount');

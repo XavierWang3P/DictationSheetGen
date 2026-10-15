@@ -98,4 +98,67 @@ assert.ok(tightMarginLayout);
 console.log('-> 水平边距生效');
 console.log('-> 判定: ✅ PASS\n');
 
-console.log('=== 🎉 全部 5 项专项单元测试 100% 验证通过！ ===\n');
+// 6. 验证句子挖空、句子默写严格生效列数设置（如每行2题），不被内部强制跨整行
+console.log('【验证 6】句子挖空与句子默写每行列数设置生效测试:');
+const clozeAndSentences = [
+  normalizeQuestion({ en: 'Ask [your teacher] for help.', zh: '向你的老师求助。', questionType: 'sentence-cloze' }),
+  normalizeQuestion({ en: 'You [need to] talk [to each] other.', zh: '向你的老师求助。', questionType: 'sentence-cloze' }),
+  normalizeQuestion({ prompt: '这是一支铅笔。', en: 'This is a pencil.', questionType: 'sentence-dictation' }),
+  normalizeQuestion({ prompt: '那是一只钢笔。', en: 'That is a pen.', questionType: 'sentence-dictation' })
+];
+
+const col2Layout = computePageLayout(clozeAndSentences, {
+  ...DEFAULT_SETTINGS,
+  copiesPerPage: 1,
+  layoutDefaults: {
+    ...DEFAULT_SETTINGS.layoutDefaults,
+    sentenceClozeColumns: 2,
+    sentenceDictationColumns: 2
+  }
+});
+
+const p0Items = col2Layout.pageChunks[0].items;
+assert.equal(p0Items[0].gridSpan, 30, '句子挖空设为2列时每题必须为 span: 30 (50% 宽度)');
+assert.equal(p0Items[0].isFullWidth, false, '句子挖空设为2列时不应被标记为 isFullWidth');
+assert.equal(p0Items[1].gridSpan, 30);
+assert.equal(p0Items[2].gridSpan, 30, '句子默写设为2列时每题必须为 span: 30');
+assert.equal(p0Items[2].isFullWidth, false);
+console.log('-> 句子挖空与默写 2 列设置生效 (span=30)');
+console.log('-> 判定: ✅ PASS\n');
+
+// 7. 验证版面高度充足时完整容纳全部题目（消除留白与机械分页）
+console.log('【验证 7】充足版面高度时自动完整容纳题目，不留大片空白:');
+const fullSheet12Items = [
+  normalizeQuestion({ en: 'Ask [your teacher] for help.', zh: '向你的老师求助。', questionType: 'sentence-cloze' }),
+  normalizeQuestion({ en: 'You [need to] talk [to each] other.', zh: '向你的老师求助。', questionType: 'sentence-cloze' }),
+  normalizeQuestion({ en: 'how are you', zh: '你好吗', questionType: 'word-dictation' }),
+  normalizeQuestion({ en: 'piano', zh: '钢琴', questionType: 'word-dictation' }),
+  normalizeQuestion({ en: 'rope', zh: '绳；粗绳', questionType: 'word-dictation' }),
+  normalizeQuestion({ en: 'chess', zh: '国际象棋', questionType: 'word-dictation' }),
+  normalizeQuestion({ en: 'jump', zh: '跳；跃', questionType: 'word-dictation' }),
+  normalizeQuestion({ en: 'robot', zh: '机器人', questionType: 'word-dictation' }),
+  normalizeQuestion({ en: 'young', zh: '幼小的；年轻的', questionType: 'word-dictation' }),
+  normalizeQuestion({ en: 'word10', zh: '第十词', questionType: 'word-dictation' }),
+  normalizeQuestion({ en: 'word11', zh: '第十一词', questionType: 'word-dictation' }),
+  normalizeQuestion({ en: 'word12', zh: '第十二词', questionType: 'word-dictation' })
+];
+
+const sheetRes = computePageLayout(fullSheet12Items, {
+  ...DEFAULT_SETTINGS,
+  copiesPerPage: 2,
+  pageMargin: 4,
+  wordsPerPage: 9,
+  layoutDefaults: {
+    ...DEFAULT_SETTINGS.layoutDefaults,
+    wordDictationColumns: 3,
+    sentenceClozeColumns: 2,
+    sentenceDictationColumns: 2
+  }
+});
+
+assert.equal(sheetRes.totalPages, 1, '12 题在高度充足时必须容纳在单页内，不得人为截断到第二页留出大片空白');
+assert.equal(sheetRes.pageChunks[0].items.length, 12, '第一页必须完整包含全部 12 道题目');
+console.log('-> 12题一页2份排版无空白、无截断、单页完整');
+console.log('-> 判定: ✅ PASS\n');
+
+console.log('=== 🎉 全部 7 项专项单元测试 100% 验证通过！ ===\n');

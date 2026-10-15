@@ -629,6 +629,7 @@ function moveDown(index) {
 function duplicateItem(index) {
   const source = state.draft.items[index];
   state.draft.items.splice(index + 1, 0, normalizeQuestion(source));
+  state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
   message.success('已复制题目');
 }
 

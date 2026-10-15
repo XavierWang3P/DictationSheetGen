@@ -777,6 +777,55 @@ export function computePageLayout(items, settings) {
     return { used, occupied, rowMax, total: used + rowMax };
   }
 
+  // 检查是否所有题目在物理高度上完全可以容纳在单页内
+  // 若能够容纳在单页内，则整张试卷保持单页排版，避免因默认题量阈值导致强制分页并在页面下方留出大片空白
+  const canFitAllInSinglePage = (() => {
+    let testUsed = 0;
+    let testOccupied = 0;
+    let testRowMax = 0;
+    let secCols = null;
+    for (const { item } of expandedItems) {
+      if (item.questionType === 'separator' && item.sectionColumns) {
+        secCols = Number(item.sectionColumns);
+      }
+      const isSep = item.questionType === 'separator';
+      const isComp = item.questionType === 'english-composition';
+      const isExplicitFull = item.layoutHint === 'full-width';
+      let cols = 1;
+      if (isSep || isComp || isExplicitFull) {
+        cols = 1;
+      } else {
+        const override = Number(item?.layout?.columns);
+        if ([1, 2, 3, 4, 5].includes(override)) {
+          cols = override;
+        } else if (secCols) {
+          cols = secCols;
+        } else {
+          cols = resolveQuestionColumns(item, s);
+        }
+      }
+      const isFull = (cols <= 1) || isSep || isComp || isExplicitFull || shouldUseFullRow(item, s, contentWidthMm);
+      const span = isFull ? gridUnits : Math.max(1, Math.round(gridUnits / cols));
+      const itemW = isFull ? contentWidthMm : Math.max(30, (contentWidthMm - (cols - 1) * (s.colGap || 6)) / cols);
+      const itemH = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: itemW }, copiesPerPage);
+
+      if (testOccupied > 0 && testOccupied + span > gridUnits) {
+        testUsed += testRowMax + (s.rowGap || 3.5);
+        testOccupied = 0;
+        testRowMax = 0;
+      }
+      testOccupied += span;
+      testRowMax = Math.max(testRowMax, itemH);
+      if (testOccupied >= gridUnits) {
+        testUsed += testRowMax + (s.rowGap || 3.5);
+        testOccupied = 0;
+        testRowMax = 0;
+      }
+      if (testUsed + testRowMax > maxAvailableHeightMm) return false;
+    }
+    return true;
+  })();
+
   let activeSectionColumns = null;
   expandedItems.forEach(({ item, originalIndex, displayIndex }) => {
     if (item.questionType === 'separator') {
@@ -786,13 +835,13 @@ export function computePageLayout(items, settings) {
     }
 
     const isSep = item.questionType === 'separator';
-    const isFullWidth = isSep
-      || item.layoutHint === 'full-width'
-      || item.questionType === 'english-composition'
-      || shouldUseFullRow(item, s, contentWidthMm);
+    const isComposition = item.questionType === 'english-composition';
+    const isExplicitFullWidth = item.layoutHint === 'full-width';
 
     let requestedColumns = 1;
-    if (!isFullWidth) {
+    if (isSep || isComposition || isExplicitFullWidth) {
+      requestedColumns = 1;
+    } else {
       const override = Number(item?.layout?.columns);
       if ([1, 2, 3, 4, 5].includes(override)) {
         requestedColumns = override;
@@ -803,6 +852,7 @@ export function computePageLayout(items, settings) {
       }
     }
 
+    const isFullWidth = (requestedColumns <= 1) || isSep || isComposition || isExplicitFullWidth || shouldUseFullRow(item, s, contentWidthMm);
     const gridSpan = isFullWidth ? gridUnits : Math.max(1, Math.round(gridUnits / requestedColumns));
     const availableItemWidthMm = isFullWidth
       ? contentWidthMm
@@ -810,7 +860,7 @@ export function computePageLayout(items, settings) {
     const itemHeightMm = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: availableItemWidthMm }, copiesPerPage);
     let placement = simulatePlacement(gridSpan, itemHeightMm);
     const exceedsHeight = currentPageItems.length > 0 && placement.total > maxAvailableHeightMm;
-    const exceedsCapacity = currentPageItems.length >= userCapacity && !isAlpha26;
+    const exceedsCapacity = !canFitAllInSinglePage && (currentPageItems.length >= userCapacity) && !isAlpha26;
 
     if (exceedsHeight || exceedsCapacity) {
       pageChunks.push({ pageIndex: pageChunks.length, items: currentPageItems });

@@ -115,10 +115,16 @@ const overflowDetected = computed(() => {
 
 function switchToCopies(count) {
   state.draft.settings.copiesPerPage = count;
+  if (state.draft.items.length > 0) {
+    state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
+  }
 }
 
 function autoFitCopies() {
   const currentCopies = Number(state.draft.settings.copiesPerPage) || 1;
+  if (state.draft.items.length > 0) {
+    state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
+  }
   if (currentCopies === 3) {
     const test2 = computePageLayout(state.draft.items, { ...state.draft.settings, copiesPerPage: 2 });
     const total2 = test2.totalPages || test2.pages?.length || 1;
