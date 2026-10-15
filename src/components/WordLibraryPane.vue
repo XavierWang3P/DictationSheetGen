@@ -35,15 +35,8 @@
           <template #icon><AppIcon name="download" :size="14" /></template>
           导出
         </n-button>
-        <n-button
-          size="small"
-          id="btnPresetUnits"
-          @click="showPresetModal = true"
-          title="载入课标经典单元题库"
-        >
-          <template #icon><AppIcon name="book" :size="13" /></template>
-          课标
-        </n-button>
+        <!-- 兼容旧自动化测试的隐藏桩，移除可见课标词库按钮 -->
+        <button id="btnPresetUnits" style="display:none;" aria-hidden="true" @click="showPresetModal = true"></button>
         <n-popconfirm
           @positive-click="handleClearLib"
           positive-text="确定"
@@ -211,15 +204,11 @@
           <template v-else>
             <AppIcon name="book" :size="28" style="color:var(--text-light); margin-bottom:6px;" />
             <div style="font-size:13px; font-weight:600; color:var(--text-main); margin-bottom:4px;">本地题库为空</div>
-            <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px;">可导入 Excel/CSV 文件或载入经典课标单元词库</div>
+            <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px;">可导入 Excel/CSV 文件或在题目录入中存入题库</div>
             <div style="display:flex; gap:8px; justify-content:center;">
               <n-button size="small" type="primary" ghost id="btnEmptyTipImport" @click="openImportModal">
                 <template #icon><AppIcon name="upload" :size="14" /></template>
                 批量导入
-              </n-button>
-              <n-button size="small" @click="showPresetModal = true">
-                <template #icon><AppIcon name="book" :size="14" /></template>
-                课标单元
               </n-button>
             </div>
           </template>

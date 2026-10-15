@@ -976,13 +976,13 @@ onMounted(() => {
 }
 
 #inputVisualSentence {
-  font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
+  font-family: 'Times New Roman', Times, serif !important;
   font-size: 14px;
 }
 
 .visual-token-btn {
   padding: 3px 8px;
-  font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
+  font-family: 'Times New Roman', Times, serif !important;
   font-size: 14px;
   border: 1px solid var(--border-color);
   border-radius: 5px;
@@ -990,6 +990,11 @@ onMounted(() => {
   color: var(--text-main);
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+#customWordTextarea,
+.word-textarea {
+  font-family: 'Times New Roman', Times, serif !important;
 }
 
 .visual-token-btn:hover {

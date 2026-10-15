@@ -632,16 +632,19 @@ export function autoAdaptCopiesAndCapacity(items, settings) {
       targetCapacity = count;
     }
   } else {
-    // 普通单词默写题型 (默认3列排版)
-    if (count <= 9) {
+    // 普通单词默写题型 (根据设定列数智能计算容量)
+    const cols = Number(currentSettings.layoutDefaults?.wordDictationColumns || currentSettings.columns) || 3;
+    const target3CopiesCap = cols * 3;
+    const target2CopiesCap = cols * 5;
+    if (count <= target3CopiesCap) {
       targetCopies = 3;
-      targetCapacity = 9;
-    } else if (count <= 18) {
+      targetCapacity = Math.max(target3CopiesCap, count);
+    } else if (count <= target2CopiesCap) {
       targetCopies = 2;
       targetCapacity = count;
     } else {
       targetCopies = 1;
-      targetCapacity = Math.max(25, count);
+      targetCapacity = Math.max(cols * 8, count);
     }
   }
 
@@ -1351,9 +1354,9 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
     },
     renderComposition(item) {
       const fragment = item.compositionFragment;
-      const lineCount = fragment?.lineCount || item.lineCount;
+      const lineCount = fragment?.lineCount || item.lineCount || 5;
       const continuation = item.title;
-      const heading = item.showTitleArea ? `<div class="composition-heading"><strong>${escapeHtml(continuation || '英语作文')}</strong>${fragment ? `<span class="composition-part">第 ${fragment.part} 页</span>` : ''}</div>` : '';
+      const heading = item.showTitleArea ? `<div class="composition-heading"><strong>${escapeHtml(continuation || '英语作文')}</strong></div>` : '';
       const instructions = !fragment?.isContinuation && item.instructions ? `<div class="composition-instructions">${escapeHtml(item.instructions)}</div>` : '';
       if (teacherMode) {
         return {
@@ -1443,6 +1446,7 @@ export function renderAlpha26GridRows(seqItems, s, copies, effectivePromptSize) 
         cellsHtml += `
           <div class="alpha-26-cell alpha-dummy-cell">
             <div class="alpha-cell-top" style="font-size:${effectivePromptSize}pt;">
+              <span class="word-num entry-index dummy-entry-placeholder">99.</span>
               <span class="alpha-dummy-star">★</span>
             </div>
             <div class="alpha-cell-grid">
@@ -1460,6 +1464,7 @@ export function renderAlpha26GridRows(seqItems, s, copies, effectivePromptSize) 
       cellsHtml += `
         <div class="alpha-26-cell alpha-dummy-cell">
           <div class="alpha-cell-top" style="font-size:${effectivePromptSize}pt;">
+            <span class="word-num entry-index dummy-entry-placeholder">99.</span>
             <span class="alpha-dummy-star">★</span>
           </div>
           <div class="alpha-cell-grid">

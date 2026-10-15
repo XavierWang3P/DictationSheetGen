@@ -279,7 +279,7 @@ function normalizeComposition(data = {}) {
     title: String(data.title || ''),
     instructions: String(data.instructions || ''),
     writingStyle: data.writingStyle === 'four-line' ? 'four-line' : 'single-line',
-    lineCount: Math.min(40, Math.max(3, Number(data.lineCount) || 10)),
+    lineCount: Math.min(40, Math.max(3, Number(data.lineCount) || 5)),
     lineHeight: Math.min(18, Math.max(8, Number(data.lineHeight) || 11)),
     showTitleArea: data.showTitleArea !== false,
     compositionFragment: data.compositionFragment ? { ...data.compositionFragment } : null

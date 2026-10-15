@@ -726,23 +726,6 @@
             </button>
           </div>
         </div>
-
-        <!-- 英语作文 -->
-        <div class="column-config-row">
-          <span class="column-config-label">英语作文</span>
-          <div class="grid-button-group col-btn-group">
-            <button
-              v-for="c in [1, 2]"
-              :key="c"
-              type="button"
-              class="grid-btn"
-              :class="{ active: currentColumns.composition === c }"
-              @click="setQTypeColumns('english-composition', c)"
-            >
-              {{ c }}列
-            </button>
-          </div>
-        </div>
       </div>
     </section>
   </div>
@@ -812,7 +795,6 @@ const currentColumns = computed(() => {
     sentenceCloze: d.sentenceClozeColumns === 'auto' ? 2 : Number(d.sentenceClozeColumns) || 2,
     choice: d.choiceColumns === 'auto' ? 2 : Number(d.choiceColumns) || 2,
     inlineFill: d.inlineFillColumns === 'auto' ? 2 : Number(d.inlineFillColumns) || 2,
-    composition: Number(d.englishCompositionColumns) || 1,
     alphabetNeighbor: neighborCols,
     alphabetCase: caseCols,
     alphabet26Rows: alpha26Rows,
@@ -826,6 +808,10 @@ function setQTypeColumns(type, cols) {
   }
   if (type === 'word-dictation') {
     state.draft.settings.layoutDefaults.wordDictationColumns = cols;
+    state.draft.settings.columns = cols;
+    // 动态调整 wordsPerPage 以适配新列数，避免因过小容量导致过早分页
+    const rows = state.draft.settings.copiesPerPage === 1 ? 8 : (state.draft.settings.copiesPerPage === 2 ? 6 : 3);
+    state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length, cols * rows);
   } else if (type === 'sentence-dictation') {
     state.draft.settings.layoutDefaults.sentenceDictationColumns = cols;
   } else if (type === 'sentence-cloze') {
@@ -837,15 +823,17 @@ function setQTypeColumns(type, cols) {
   } else if (type === 'alphabet') {
     setAlphabetSubColumns('neighbor', cols);
     setAlphabetSubColumns('case', cols);
-  } else if (type === 'english-composition') {
-    state.draft.settings.layoutDefaults.englishCompositionColumns = cols;
   }
 
   // 同步更新现有该类型题目，使全局实时生效
   state.draft.items.forEach(item => {
-    if (item.questionType === type) {
+    const isWord = (item.questionType === 'word-dictation' || item.type === 'word' || (!item.questionType && !item.segments?.some(s => s.blank) && !item.options));
+    if ((item.questionType === type) || (type === 'word-dictation' && isWord)) {
       if (!item.layout) item.layout = {};
       item.layout.columns = cols;
+      if (type === 'word-dictation') {
+        item.questionType = 'word-dictation';
+      }
     }
   });
 }
@@ -892,6 +880,7 @@ function setAlphabet26Rows(rows) {
 
 function restoreDefaultColumns() {
   state.draft.settings.layoutDefaults = { ...DEFAULT_LAYOUT_DEFAULTS };
+  state.draft.settings.columns = 3;
   state.draft.settings.alphabetLayout = 'bottom-5col';
   state.draft.settings.alphabetNeighborLayout = 'bottom-5col';
   state.draft.settings.alphabetCaseLayout = 'right-4col';

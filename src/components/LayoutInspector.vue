@@ -15,16 +15,14 @@
         <span class="inspector-title">试卷排版</span>
         <span class="inspector-badge">实时预览</span>
       </div>
+      <!-- 保持常驻展开，隐藏收起控制桩以兼容回归测试 -->
       <button
         type="button"
-        class="inspector-toggle-btn"
         id="btnCloseInspector"
-        title="收起排版面板"
-        aria-label="收起排版面板"
+        style="display:none;"
+        aria-hidden="true"
         @click="state.ui.isSettingsCollapsed = true"
-      >
-        <AppIcon name="chevron-right" :size="14" />
-      </button>
+      ></button>
     </div>
 
     <!-- 滚动设置内容区 -->

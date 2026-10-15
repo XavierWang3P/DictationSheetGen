@@ -470,7 +470,7 @@ const editModalTitle = computed(() => {
 });
 
 function handleItemClick(item, index, event) {
-  if (event?.target?.closest('button, input, select, .word-item-actions, .col-override-tag, .n-base-selection')) {
+  if (event?.target?.closest('button, input, select, .word-item-actions, .col-override-tag')) {
     return;
   }
   if (isEditModalOpen.value && editingIndex.value !== -1) {
@@ -904,7 +904,8 @@ function switchToTab(tabKey) {
 .word-primary-line {
   width: 100%;
   min-width: 0;
-  font-size: 12.5px;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-main);
   line-height: 1.35;
@@ -938,6 +939,10 @@ function switchToTab(tabKey) {
   min-width: 0;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+
+.word-item-en {
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .chip-blank-mark {
@@ -1155,7 +1160,8 @@ function switchToTab(tabKey) {
   align-items: center;
   gap: 5px;
   padding: 4px 10px;
-  font-size: 13px;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 13.5px;
   font-weight: 600;
   border-radius: 5px;
   border: 1.5px solid #cbd5e1;

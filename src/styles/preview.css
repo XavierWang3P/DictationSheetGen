@@ -288,7 +288,7 @@
   min-width: 0;
   line-height: 1.75;
   overflow-wrap: anywhere;
-  font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
+  font-family: var(--font-en, 'Times New Roman', Times, serif);
 }
 
 .adaptive-writing-grid {
@@ -407,7 +407,10 @@
   justify-content: center;
 }
 
-.is-composition-card { break-inside: avoid; }
+.is-composition-card {
+  break-inside: avoid;
+  margin-bottom: 6mm;
+}
 .composition-heading { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
 .composition-part { color: #64748b; font-size: 0.78em; font-weight: 400; }
 .composition-instructions { margin-top: 1mm; color: #475569; font-size: inherit; }
@@ -864,14 +867,14 @@
   font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
 }
 
-/* 句子挖空题型默认强制使用 XuMin 字体 */
+/* 句子挖空题型使用统一英文字体 */
 .type-sentence-cloze,
 .type-sentence-cloze .cloze-english-column,
 .type-sentence-cloze .cloze-blank-line,
 .type-sentence-cloze .cloze-sentence,
 .cloze-card-inline,
 .cloze-sentence-content {
-  font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
+  font-family: var(--font-en, 'Times New Roman', Times, serif);
 }
 
 /* 多联拼版 (2联、3联、4联、6联) 容器体系 */

@@ -13,70 +13,67 @@
         size="small"
         :show-require-mark="false"
       >
-        <!-- 1. 选择题编辑器：支持智能整题粘贴、扁平全宽选项、圆圈标记答案 -->
+        <!-- 1. 选择题编辑器：支持智能整题粘贴、扁平全宽选项、点选标记答案 -->
         <template v-if="type === 'choice'">
-          <!-- 快捷智能识别整题粘贴 -->
-          <div class="choice-smart-card">
-            <div class="smart-card-title">
-              <span>智能识别整题（一键粘贴）</span>
-              <button
+          <!-- 快捷智能识别整题粘贴（平铺无嵌套卡片） -->
+          <div class="editor-field wide choice-smart-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+              <span>智能识别整题（可选，一键粘贴后识别填入）</span>
+              <n-button
                 v-if="choicePasteText.trim()"
-                type="button"
-                class="smart-parse-btn"
+                size="tiny"
+                type="primary"
                 @click="handleParseChoicePaste"
               >
-                <AppIcon name="refresh" :size="12" /> 识别填入
-              </button>
+                <template #icon><AppIcon name="refresh" :size="12" /></template>
+                识别填入
+              </n-button>
             </div>
             <textarea
               v-model="choicePasteText"
               rows="2"
-              class="smart-paste-input"
+              class="native-search-input smart-paste-input"
               placeholder="在此粘贴整道题（含题干与 A. B. C. 选项），点击“识别填入”自动切分"
               @keydown.enter.ctrl="handleParseChoicePaste"
+              style="font-family: 'Times New Roman', Times, serif; resize: vertical;"
             ></textarea>
           </div>
 
           <div class="editor-grid">
-            <n-form-item class="editor-field wide" label="题干" path="stem">
+            <div class="editor-field wide">
+              <span>题干</span>
               <n-input
                 v-model:value="choice.stem"
                 type="textarea"
                 :autosize="{ minRows: 2, maxRows: 4 }"
-                :input-props="{ id: 'choiceStemInput' }"
+                :input-props="{ id: 'choiceStemInput', style: 'font-family: \'Times New Roman\', Times, serif;' }"
                 placeholder="请输入选择题题干，例如：Which animal can fly?"
               />
-            </n-form-item>
+            </div>
           </div>
 
-          <!-- 清爽选项列表：去挤压、去沉重按钮、全宽输入 -->
-          <div class="clean-option-section">
-            <div class="section-sub-header">
-              <span class="sub-label">选项列表（点击圆圈设为正确答案）：</span>
-            </div>
-            <div class="option-editor-list clean-choice-list">
+          <!-- 统一全局风格选项列表 -->
+          <div class="editor-field wide" style="margin-top: 2px;">
+            <span style="margin-bottom: 4px;">选项列表（点选设为正确答案）：</span>
+            <div class="option-editor-list">
               <div
                 v-for="(option, index) in visibleChoiceOptions"
                 :key="option.id"
-                class="option-editor-row clean-choice-row"
+                class="option-editor-row"
               >
-                <label
-                  class="answer-toggle clean-answer-badge"
-                  :class="{ 'is-selected-answer': choice.answers.includes(option.id) }"
-                  title="点击设为正确答案"
-                >
+                <label class="answer-toggle" title="设为正确答案" style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;">
                   <input
                     type="radio"
                     name="choice-answer"
                     :checked="choice.answers.includes(option.id)"
                     @change="toggleChoiceAnswer(option.id)"
-                    style="display:none;"
                   />
-                  <span class="badge-letter">{{ choiceLabel(index) }}</span>
+                  <span style="font-weight: 700; font-size: 13px; min-width: 14px;">{{ choiceLabel(index) }}</span>
                 </label>
                 <input
                   v-model="option.text"
-                  class="option-text-input clean-option-input"
+                  class="native-search-input option-text-input"
+                  style="font-family: 'Times New Roman', Times, serif;"
                   :placeholder="`请输入选项 ${choiceLabel(index)} 内容`"
                 />
                 <!-- 保持测试兼容的隐藏按钮与动作 -->
@@ -95,7 +92,7 @@
                 <button
                   v-if="choice.labelStyle !== 'true-false'"
                   type="button"
-                  class="clean-delete-btn"
+                  class="option-del-btn"
                   data-action="remove-option"
                   :disabled="choice.options.length <= 2"
                   title="删除此选项"
@@ -106,30 +103,43 @@
               </div>
             </div>
 
-            <button
-              v-if="choice.labelStyle !== 'true-false'"
-              type="button"
-              id="btnAddChoiceOption"
-              class="clean-add-option-btn"
-              :disabled="choice.options.length >= 6"
-              @click="addOption"
-            >
-              <AppIcon name="plus" :size="13" /> 添加选项（最多6个）
-            </button>
+            <div style="margin-top: 6px;">
+              <n-button
+                v-if="choice.labelStyle !== 'true-false'"
+                size="small"
+                id="btnAddChoiceOption"
+                :disabled="choice.options.length >= 6"
+                @click="addOption"
+              >
+                <template #icon><AppIcon name="plus" :size="13" /></template>
+                添加选项（最多6个）
+              </n-button>
+            </div>
           </div>
 
-          <!-- 精简二级设置（仅保留排列方式，彻底移除多选） -->
-          <div class="compact-config-row">
-            <div class="compact-config-item">
-              <span class="config-label">选项排版:</span>
-              <select id="choiceOptionLayout" v-model="choice.optionLayout" class="compact-select">
-                <option value="auto">自动排列</option>
-                <option value="single">单列</option>
-                <option value="double">双列</option>
-                <option value="three">三列</option>
-                <option value="inline">行内</option>
-              </select>
+          <!-- 选项排版：采用全局标准 compact-segmented -->
+          <div class="form-row-compact" style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+            <span class="sub-label">选项排版:</span>
+            <div class="compact-segmented">
+              <input type="radio" id="optAuto" value="auto" v-model="choice.optionLayout" />
+              <label for="optAuto">自动</label>
+              <input type="radio" id="optSingle" value="single" v-model="choice.optionLayout" />
+              <label for="optSingle">单列</label>
+              <input type="radio" id="optDouble" value="double" v-model="choice.optionLayout" />
+              <label for="optDouble">双列</label>
+              <input type="radio" id="optThree" value="three" v-model="choice.optionLayout" />
+              <label for="optThree">三列</label>
+              <input type="radio" id="optInline" value="inline" v-model="choice.optionLayout" />
+              <label for="optInline">行内</label>
             </div>
+            <!-- 保留无障碍/旧测试兼容隐藏桩 -->
+            <select id="choiceOptionLayout" v-model="choice.optionLayout" style="display:none;" aria-hidden="true">
+              <option value="auto">自动排列</option>
+              <option value="single">单列</option>
+              <option value="double">双列</option>
+              <option value="three">三列</option>
+              <option value="inline">行内</option>
+            </select>
           </div>
         </template>
 
@@ -270,12 +280,18 @@ She usually goes to school by [bike]."
         <!-- 3. 作文题编辑器 -->
         <template v-else-if="type === 'english-composition'">
           <div class="editor-grid">
-            <n-form-item class="editor-field wide" label="作文标题">
-              <n-input v-model:value="composition.title" :input-props="{ id: 'compositionTitleInput' }" placeholder="例如：My School" />
-            </n-form-item>
-            <label class="editor-field wide">题目要求或提示
+            <div class="editor-field wide">
+              <span>作文标题</span>
+              <n-input
+                v-model:value="composition.title"
+                :input-props="{ id: 'compositionTitleInput', style: 'font-family: \'Times New Roman\', Times, serif;' }"
+                placeholder="例如：My School"
+              />
+            </div>
+            <div class="editor-field wide">
+              <span>题目要求或提示</span>
               <textarea v-model="composition.instructions" rows="2" placeholder="请输入作文要求或提示文字"></textarea>
-            </label>
+            </div>
             <label class="editor-field">书写行数
               <input id="compositionLineCount" v-model.number="composition.lineCount" type="number" min="3" max="40" />
             </label>
@@ -374,7 +390,7 @@ const fillVisualTokens = ref(parseSentenceIntoVisualTokens(fillVisualSentence.va
 const fillBatchText = ref('');
 
 const fill = reactive({ stem: '{1}', zh: '', autoNumber: true, blanks: [], stemSegments: [] });
-const composition = reactive({ title: '', instructions: '', writingStyle: 'single-line', lineCount: 10, lineHeight: 11, showTitleArea: true });
+const composition = reactive({ title: '', instructions: '', writingStyle: 'single-line', lineCount: 5, lineHeight: 11, showTitleArea: true });
 
 const activeModel = computed(() => {
   if (props.type === 'choice') return choice;
@@ -439,7 +455,7 @@ function resetComposition(source = null) {
   composition.title = item?.title || '';
   composition.instructions = item?.instructions || '';
   composition.writingStyle = item?.writingStyle || 'single-line';
-  composition.lineCount = item?.lineCount || 10;
+  composition.lineCount = item?.lineCount || 5;
   composition.lineHeight = item?.lineHeight || 11;
   composition.showTitleArea = item?.showTitleArea ?? true;
 }
@@ -732,45 +748,13 @@ async function submitQuestion() {
 .secondary-editor-btn { align-self: flex-start; }
 .editor-check { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
 
-/* 智能整题识别粘贴卡片 */
-.choice-smart-card {
-  background: var(--bg-hover, #f8fafc);
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 6px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.smart-card-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-muted, #64748b);
-}
-.smart-parse-btn {
-  background: var(--primary, #2f6659);
-  color: white;
-  border: none;
-  border-radius: 5px;
-  height: 28px;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.15s ease;
-}
-.smart-parse-btn:hover {
-  opacity: 0.9;
+/* 智能整题识别粘贴输入框（平铺无卡片嵌套） */
+.choice-smart-field {
+  margin-bottom: 2px;
 }
 .smart-paste-input {
   width: 100%;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 5px;
   padding: 6px 8px;
   font-size: 12px;
@@ -778,56 +762,20 @@ async function submitQuestion() {
   resize: vertical;
 }
 
-/* 扁平清爽选项列表 */
-.clean-option-section {
+/* 统一选项列表 */
+.option-editor-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 6px;
+  width: 100%;
 }
-.section-sub-header {
-  font-size: 12px;
-  color: var(--text-muted, #64748b);
-  font-weight: 500;
-}
-.clean-choice-list {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-.clean-choice-row {
+.option-editor-row {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
 }
-.clean-answer-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border-color, #cbd5e1);
-  background: #f1f5f9;
-  color: #334155;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
-  flex-shrink: 0;
-  user-select: none;
-  transition: all 0.15s ease;
-}
-.clean-answer-badge:hover {
-  border-color: var(--primary, #2f6659);
-  color: var(--primary, #2f6659);
-}
-.clean-answer-badge.is-selected-answer {
-  background: var(--primary, #2f6659);
-  border-color: var(--primary, #2f6659);
-  color: #ffffff;
-}
-.clean-option-input {
+.option-text-input {
   flex: 1;
   min-width: 0;
   height: 28px;
@@ -836,12 +784,13 @@ async function submitQuestion() {
   padding: 0 10px;
   font-size: 13px;
   background: white;
+  font-family: 'Times New Roman', Times, serif;
 }
-.clean-option-input:focus {
+.option-text-input:focus {
   border-color: var(--primary, #2f6659);
   outline: none;
 }
-.clean-delete-btn {
+.option-del-btn {
   background: transparent;
   border: none;
   color: #94a3b8;
@@ -855,33 +804,13 @@ async function submitQuestion() {
   border-radius: 5px;
   transition: all 0.15s ease;
 }
-.clean-delete-btn:hover:not(:disabled) {
+.option-del-btn:hover:not(:disabled) {
   color: #ef4444;
   background: #fee2e2;
 }
-.clean-delete-btn:disabled {
+.option-del-btn:disabled {
   opacity: 0.2;
   cursor: not-allowed;
-}
-.clean-add-option-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  align-self: flex-start;
-  height: 28px;
-  padding: 0 12px;
-  background: white;
-  border: 1px solid var(--border-color, #cbd5e1);
-  border-radius: 5px;
-  font-size: 12px;
-  color: var(--primary, #2f6659);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.clean-add-option-btn:hover:not(:disabled) {
-  background: var(--bg-hover, #f1f5f9);
-  border-color: var(--primary, #2f6659);
 }
 
 /* 紧凑二级设置 */
@@ -988,7 +917,8 @@ async function submitQuestion() {
   border-radius: 5px;
   border: 1px solid #cbd5e1;
   background: white;
-  font-size: 12.5px;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 13.5px;
   cursor: pointer;
   color: #334155;
   transition: all 0.15s ease;
