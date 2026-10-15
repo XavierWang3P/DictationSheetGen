@@ -179,6 +179,72 @@ function normalizeChoice(data = {}) {
 
 function normalizeInlineFill(data = {}) {
   const base = baseQuestion(data, 'inline-fill');
+  
+  // 支持直接传入 segments（来自句子挖空式胶囊）
+  if (Array.isArray(data.segments) && data.segments.length > 0 && (!data.stemSegments || data.stemSegments.length === 0)) {
+    const blanks = [];
+    const stemSegments = [];
+    data.segments.forEach((seg) => {
+      if (seg.blank) {
+        const blankId = generateId('blank');
+        blanks.push({
+          id: blankId,
+          answer: String(seg.text || '').trim(),
+          lineStyle: 'single', // 横线
+          widthMode: 'auto',
+          width: 80
+        });
+        stemSegments.push({ type: 'blank', blankId });
+      } else {
+        stemSegments.push({ type: 'text', text: String(seg.text || '') });
+      }
+    });
+    return {
+      ...base,
+      stem: String(data.stem || data.en || ''),
+      zh: String(data.zh || data.translation || ''),
+      autoNumber: data.autoNumber !== false,
+      stemSegments,
+      blanks: blanks.length > 0 ? blanks : [{ id: generateId('blank'), answer: '', lineStyle: 'single', widthMode: 'auto', width: 80 }]
+    };
+  }
+
+  // 支持包含 [word] 标记的题干自动解析为下划线填空
+  const rawStem = String(data.stem || data.en || '');
+  if ((!data.stemSegments || data.stemSegments.length === 0) && /\[([^\]]+)\]/.test(rawStem)) {
+    const blanks = [];
+    const stemSegments = [];
+    const regex = /\[([^\]]+)\]/g;
+    let last = 0;
+    let match;
+    while ((match = regex.exec(rawStem)) !== null) {
+      if (match.index > last) {
+        stemSegments.push({ type: 'text', text: rawStem.slice(last, match.index) });
+      }
+      const blankId = generateId('blank');
+      blanks.push({
+        id: blankId,
+        answer: match[1].trim(),
+        lineStyle: 'single', // 横线
+        widthMode: 'auto',
+        width: 80
+      });
+      stemSegments.push({ type: 'blank', blankId });
+      last = regex.lastIndex;
+    }
+    if (last < rawStem.length) {
+      stemSegments.push({ type: 'text', text: rawStem.slice(last) });
+    }
+    return {
+      ...base,
+      stem: rawStem,
+      zh: String(data.zh || data.translation || ''),
+      autoNumber: data.autoNumber !== false,
+      stemSegments,
+      blanks
+    };
+  }
+
   let blanks = Array.isArray(data.blanks) ? data.blanks : [];
   if (blanks.length === 0) blanks = [{ id: generateId('blank'), answer: '', lineStyle: 'single', widthMode: 'auto' }];
   blanks = blanks.map((blank) => ({
@@ -199,6 +265,7 @@ function normalizeInlineFill(data = {}) {
   return {
     ...base,
     stem: String(data.stem || ''),
+    zh: String(data.zh || data.translation || ''),
     autoNumber: data.autoNumber !== false,
     stemSegments,
     blanks

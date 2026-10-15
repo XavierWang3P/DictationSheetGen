@@ -427,29 +427,38 @@ html, body {
   margin: 0;
 }
 
+.alphabet-26-section-block {
+  display: block;
+  width: 100%;
+}
+
 .alpha-cell-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2px 2px 2px;
-  height: 20px;
-  min-height: 20px;
-  max-height: 20px;
+  padding: 0 2px 1mm 2px;
   box-sizing: border-box;
-  font-size: 8pt;
   line-height: 1.2;
 }
 
 .alpha-cell-top .entry-index {
-  font-weight: 700;
-  color: #1e293b;
-  font-size: 9.5pt;
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.9em;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .alpha-dummy-cell .dummy-entry-placeholder {
   visibility: hidden !important;
   user-select: none !important;
   pointer-events: none !important;
+}
+
+.alpha-cell-top .alpha-dummy-star {
+  font-size: 0.8em;
+  color: #cbd5e1;
+  font-weight: 600;
+  margin-left: auto;
 }
 
 .alpha-cell-grid {

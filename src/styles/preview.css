@@ -326,9 +326,6 @@
 }
 
 .teacher-question-english,
-.choice-stem,
-.choice-option,
-.inline-fill-stem,
 .composition-heading,
 .composition-instructions {
   font-family: var(--font-en, Arial, sans-serif);
@@ -549,23 +546,25 @@
   margin: 0;
 }
 
+.alphabet-26-section-block {
+  display: block;
+  width: 100%;
+}
+
 .alpha-cell-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2px 2px 2px;
-  height: 20px;
-  min-height: 20px;
-  max-height: 20px;
+  padding: 0 2px 1mm 2px;
   box-sizing: border-box;
-  font-size: 8pt;
   line-height: 1.2;
 }
 
 .alpha-cell-top .entry-index {
-  font-weight: 700;
-  color: #1e293b;
-  font-size: 9.5pt;
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.9em;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .alpha-dummy-cell .dummy-entry-placeholder {
@@ -575,7 +574,7 @@
 }
 
 .alpha-cell-top .alpha-dummy-star {
-  font-size: 7.5pt;
+  font-size: 0.8em;
   color: #cbd5e1;
   font-weight: 600;
   margin-left: auto;
@@ -788,9 +787,13 @@
 
 /* 常规题型英文字体默认强制使用 'Times New Roman', Times, serif (除句子挖空外) */
 .type-inline-fill,
+.is-inline-fill-card,
+.is-inline-fill-card .meaning.word-prompt-row,
 .inline-fill-stem,
 .inline-fill-blank,
 .type-choice,
+.is-choice-card,
+.is-choice-card .meaning.word-prompt-row,
 .choice-stem,
 .choice-option,
 .choice-label,
@@ -799,8 +802,17 @@
 .is-word-card .teacher-answer-value,
 .is-sentence-dict-card .teacher-answer-value,
 .teacher-question-english,
-.word-num.entry-index {
-  font-family: 'Times New Roman', Times, serif;
+.word-num.entry-index,
+.question-english-content {
+  font-family: 'Times New Roman', Times, serif !important;
+}
+
+/* 填空题与选择题中文辅助提示使用中文字体 */
+.inline-fill-zh-hint,
+.choice-zh-hint {
+  font-family: var(--font-zh, inherit) !important;
+  font-size: 0.9em;
+  color: #64748b;
 }
 
 /* 试卷中文字体穿透（提示语、释义、作文要求、考生栏、标题等全局生效） */

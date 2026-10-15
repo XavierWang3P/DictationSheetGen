@@ -711,66 +711,6 @@ export function computePageLayout(items, settings) {
   // 迁移所有题目为规范格式
   const migratedItems = rawWords.map(w => migrateDraftItem(w, s.dictMode));
 
-  // 检查是否首部包含完整的 26 字母默写组 (严格基于 subType/alphaData，杜绝 dictMode 全局状态污染)
-  // 严格基于 subType/alphaData 识别字母全默写题目
-  const isSeqItem = (it) => Boolean(it && (it.subType === 'sequence' || it.alphabetType === 'sequence' || it.alphaData));
-
-  // 若整份试卷仅由 26 个字母全默写构成，直接返回单页完整排版
-  if (migratedItems.length === 26 && migratedItems.every(isSeqItem)) {
-    return {
-      paperDim: pDim,
-      isLandscape: isLand,
-      isSplitFold: false,
-      impRows: 1,
-      impCols: 1,
-      copyWidthMm: pageWidthMm - (Number(s.pageMarginHorizontal ?? 12) * 2),
-      copyHeightMm: pageHeightMm - (Number(s.pageMargin || 8) * 2),
-      pageWidthMm,
-      pageHeightMm,
-      wordsPerPage: 26,
-      capacity: 26,
-      copiesPerPage: 1,
-      totalPages: 1,
-      pageCount: 1,
-      totalItems: 26,
-      pageChunks: [{ pageIndex: 0, items: migratedItems.map((item, i) => ({ overallIndex: i + 1, item, isFullWidth: true, gridSpan: 60 })) }]
-    };
-  }
-
-  // 将题目流切分为“普通流式区段”与“26 字母全默写独立区段”
-  const segments = [];
-  let curIndex = 0;
-  while (curIndex < migratedItems.length) {
-    if (
-      curIndex <= migratedItems.length - 26 &&
-      migratedItems.slice(curIndex, curIndex + 26).every(isSeqItem)
-    ) {
-      segments.push({
-        type: 'sequence26',
-        items: migratedItems.slice(curIndex, curIndex + 26)
-      });
-      curIndex += 26;
-    } else {
-      const flowItems = [];
-      while (curIndex < migratedItems.length) {
-        if (
-          curIndex <= migratedItems.length - 26 &&
-          migratedItems.slice(curIndex, curIndex + 26).every(isSeqItem)
-        ) {
-          break;
-        }
-        flowItems.push(migratedItems[curIndex]);
-        curIndex++;
-      }
-      if (flowItems.length > 0) {
-        segments.push({
-          type: 'flow',
-          items: flowItems
-        });
-      }
-    }
-  }
-
   // 计算每份试卷的最大可用物理高度与宽度 (mm)
   const pageMargin = Number(s.pageMargin || 8);
   const pageMarginHorizontal = Number(s.pageMarginHorizontal ?? 12);
@@ -799,14 +739,215 @@ export function computePageLayout(items, settings) {
 
   const gridUnits = 60;
   const contentWidthMm = copyWidthMm;
+
+  // 严格基于 subType/alphaData 识别字母全默写题目
+  const isSeqItem = (it) => Boolean(it && (it.subType === 'sequence' || it.alphabetType === 'sequence' || it.alphaData));
+
+  // 若整份试卷仅由 26 个字母全默写构成，直接返回单页完整排版（遵循设定的联数与单联尺寸）
+  if (migratedItems.length === 26 && migratedItems.every(isSeqItem)) {
+    return {
+      paperDim: pDim,
+      isLandscape: isLand,
+      isSplitFold: Boolean(s.splitFold && isLand),
+      impRows,
+      impCols,
+      copyWidthMm,
+      copyHeightMm,
+      pageWidthMm,
+      pageHeightMm,
+      wordsPerPage: 26,
+      capacity: 26,
+      copiesPerPage,
+      totalPages: 1,
+      pageCount: 1,
+      totalItems: 26,
+      gridUnits,
+      contentWidthMm,
+      layoutDefaults: s.layoutDefaults,
+      pageChunks: [{ pageIndex: 0, items: migratedItems.map((item, i) => ({ overallIndex: i + 1, item, isFullWidth: true, gridSpan: 60 })), isAlpha26: true }],
+      pages: [{ pageIndex: 0, items: migratedItems.map((item, i) => ({ overallIndex: i + 1, item, isFullWidth: true, gridSpan: 60 })), isAlpha26: true }]
+    };
+  }
+
+  // 将题目流切分为“普通流式区段”与“26 字母全默写独立区段”
+  const segments = [];
+  let curIndex = 0;
+  while (curIndex < migratedItems.length) {
+    if (
+      curIndex <= migratedItems.length - 26 &&
+      migratedItems.slice(curIndex, curIndex + 26).every(isSeqItem)
+    ) {
+      segments.push({
+        type: 'sequence26',
+        items: migratedItems.slice(curIndex, curIndex + 26)
+      });
+      curIndex += 26;
+    } else if (isSeqItem(migratedItems[curIndex])) {
+      const seqItems = [];
+      while (curIndex < migratedItems.length && isSeqItem(migratedItems[curIndex])) {
+        seqItems.push(migratedItems[curIndex]);
+        curIndex++;
+      }
+      segments.push({
+        type: 'sequence26',
+        items: seqItems
+      });
+    } else {
+      const flowItems = [];
+      while (curIndex < migratedItems.length) {
+        if (isSeqItem(migratedItems[curIndex])) {
+          break;
+        }
+        flowItems.push(migratedItems[curIndex]);
+        curIndex++;
+      }
+      if (flowItems.length > 0) {
+        segments.push({
+          type: 'flow',
+          items: flowItems
+        });
+      }
+    }
+  }
+
   const pageChunks = [];
   let displaySeq = 0;
   let activeSectionColumns = null;
   const userCapacity = Math.max(3, parseInt(s.wordsPerPage, 10) || 9);
 
+  // 测算所有题目是否可在单页完整容纳（若可容纳，则优先单页并存排版）
+  const canFitAllInSinglePage = (() => {
+    let testUsed = 0;
+    let testOccupied = 0;
+    let testRowMax = 0;
+    let secCols = null;
+
+    for (const seg of segments) {
+      if (seg.type === 'sequence26') {
+        const rowMode = (seg.items[0]?.alphaData?.rowMode === 4 || s.alphabet26Rows === 4) ? 4 : 3;
+        const alphaBaseH = getEffectiveGridHeight(s, copiesPerPage);
+        const effGridH = (rowMode === 4)
+          ? ((copiesPerPage > 1) ? Math.round(alphaBaseH * (9.5 / 11) * 10) / 10 : Math.round(alphaBaseH * (14 / 12) * 10) / 10)
+          : ((copiesPerPage > 1) ? alphaBaseH : Math.round(alphaBaseH * (18 / 12) * 10) / 10);
+        const pSize = Number(s.promptFontSize) || 14;
+        const topHMm = Math.max(5.5, pSize * 0.45);
+        const rHeightMm = effGridH + topHMm;
+        const blockHMm = (rHeightMm * rowMode) + ((rowMode - 1) * effectiveRowGap * 1.5) + effectiveRowGap + 2;
+
+        if (testOccupied > 0) {
+          testUsed += testRowMax + effectiveRowGap;
+          testOccupied = 0;
+          testRowMax = 0;
+        }
+        testUsed += blockHMm + effectiveRowGap;
+        if (testUsed > maxAvailableHeightMm) return false;
+      } else if (seg.type === 'flow') {
+        for (const item of seg.items) {
+          if (item.questionType === 'separator' && item.sectionColumns) {
+            secCols = Number(item.sectionColumns);
+          }
+          const isSep = item.questionType === 'separator';
+          const isComp = item.questionType === 'english-composition';
+          const isExplicitFull = item.layoutHint === 'full-width';
+          let cols = 1;
+          if (isSep || isComp || isExplicitFull) {
+            cols = 1;
+          } else {
+            const override = Number(item?.layout?.columns);
+            if ([1, 2, 3, 4, 5].includes(override)) {
+              cols = override;
+            } else if (secCols) {
+              cols = secCols;
+            } else {
+              cols = resolveQuestionColumns(item, s);
+            }
+          }
+          const isFull = (cols <= 1) || isSep || isComp || isExplicitFull || shouldUseFullRow(item, s, contentWidthMm);
+          const span = isFull ? gridUnits : Math.max(1, Math.round(gridUnits / cols));
+          const itemW = isFull ? contentWidthMm : Math.max(30, (contentWidthMm - (cols - 1) * (s.colGap || 6)) / cols);
+          const itemH = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: itemW }, copiesPerPage);
+
+          if (testOccupied > 0 && testOccupied + span > gridUnits) {
+            testUsed += testRowMax + effectiveRowGap;
+            testOccupied = 0;
+            testRowMax = 0;
+          }
+          testOccupied += span;
+          testRowMax = Math.max(testRowMax, itemH);
+          if (testUsed + testRowMax > maxAvailableHeightMm) return false;
+          if (testOccupied >= gridUnits) {
+            testUsed += testRowMax + effectiveRowGap;
+            testOccupied = 0;
+            testRowMax = 0;
+          }
+        }
+      }
+    }
+    return true;
+  })();
+
+  let currentPageItems = [];
+  let currentUsedHeightMm = 0;
+  let currentGridOccupied = 0;
+  let currentRowMaxHeightMm = 0;
+
+  function simulatePlacement(span, itemHeightMm) {
+    let used = currentUsedHeightMm;
+    let occupied = currentGridOccupied;
+    let rowMax = currentRowMaxHeightMm;
+    if (occupied > 0 && occupied + span > gridUnits) {
+      used += rowMax + effectiveRowGap;
+      occupied = 0;
+      rowMax = 0;
+    }
+    occupied += span;
+    rowMax = Math.max(rowMax, itemHeightMm);
+    const total = used + rowMax;
+    let nextUsed = used;
+    let nextOccupied = occupied;
+    let nextRowMax = rowMax;
+    if (occupied >= gridUnits) {
+      nextUsed = used + rowMax + effectiveRowGap;
+      nextOccupied = 0;
+      nextRowMax = 0;
+    }
+    return {
+      used: nextUsed,
+      occupied: nextOccupied,
+      rowMax: nextRowMax,
+      total
+    };
+  }
+
   for (const segment of segments) {
     if (segment.type === 'sequence26') {
-      const chunkItems = segment.items.map((item) => {
+      const rowMode = (segment.items[0]?.alphaData?.rowMode === 4 || s.alphabet26Rows === 4) ? 4 : 3;
+      const alphaBaseH = getEffectiveGridHeight(s, copiesPerPage);
+      const effGridH = (rowMode === 4)
+        ? ((copiesPerPage > 1) ? Math.round(alphaBaseH * (9.5 / 11) * 10) / 10 : Math.round(alphaBaseH * (14 / 12) * 10) / 10)
+        : ((copiesPerPage > 1) ? alphaBaseH : Math.round(alphaBaseH * (18 / 12) * 10) / 10);
+      const pSize = Number(s.promptFontSize) || 14;
+      const topHMm = Math.max(5.5, pSize * 0.45);
+      const rHeightMm = effGridH + topHMm;
+      const seqBlockHeightMm = (rHeightMm * rowMode) + ((rowMode - 1) * effectiveRowGap * 1.5) + effectiveRowGap + 2;
+
+      let usedBefore = currentUsedHeightMm + (currentGridOccupied > 0 ? (currentRowMaxHeightMm + effectiveRowGap) : 0);
+      if (currentPageItems.length > 0 && (usedBefore + seqBlockHeightMm > maxAvailableHeightMm)) {
+        pageChunks.push({
+          pageIndex: pageChunks.length,
+          items: currentPageItems
+        });
+        currentPageItems = [];
+        currentUsedHeightMm = 0;
+        currentGridOccupied = 0;
+        currentRowMaxHeightMm = 0;
+      } else if (currentGridOccupied > 0) {
+        currentUsedHeightMm += currentRowMaxHeightMm + effectiveRowGap;
+        currentGridOccupied = 0;
+        currentRowMaxHeightMm = 0;
+      }
+
+      const seqChunkItems = segment.items.map((item) => {
         const isSep = item.questionType === 'separator';
         const displayIndex = isSep ? null : ++displaySeq;
         return {
@@ -817,11 +958,10 @@ export function computePageLayout(items, settings) {
           gridSpan: gridUnits
         };
       });
-      pageChunks.push({
-        pageIndex: pageChunks.length,
-        items: chunkItems,
-        isAlpha26: true
-      });
+      currentPageItems.push(...seqChunkItems);
+      currentUsedHeightMm += seqBlockHeightMm + effectiveRowGap;
+      currentGridOccupied = 0;
+      currentRowMaxHeightMm = 0;
     } else if (segment.type === 'flow') {
       const expandedItems = [];
       segment.items.forEach((item, idx) => {
@@ -862,86 +1002,6 @@ export function computePageLayout(items, settings) {
           part += 1;
         }
       });
-
-      let currentPageItems = [];
-      let currentUsedHeightMm = 0;
-      let currentGridOccupied = 0;
-      let currentRowMaxHeightMm = 0;
-
-      function simulatePlacement(span, itemHeightMm) {
-        let used = currentUsedHeightMm;
-        let occupied = currentGridOccupied;
-        let rowMax = currentRowMaxHeightMm;
-        if (occupied > 0 && occupied + span > gridUnits) {
-          used += rowMax + effectiveRowGap;
-          occupied = 0;
-          rowMax = 0;
-        }
-        occupied += span;
-        rowMax = Math.max(rowMax, itemHeightMm);
-        const total = used + rowMax;
-        let nextUsed = used;
-        let nextOccupied = occupied;
-        let nextRowMax = rowMax;
-        if (occupied >= gridUnits) {
-          nextUsed = used + rowMax + effectiveRowGap;
-          nextOccupied = 0;
-          nextRowMax = 0;
-        }
-        return {
-          used: nextUsed,
-          occupied: nextOccupied,
-          rowMax: nextRowMax,
-          total
-        };
-      }
-
-      const canFitAllInSinglePage = (() => {
-        let testUsed = 0;
-        let testOccupied = 0;
-        let testRowMax = 0;
-        let secCols = activeSectionColumns;
-        for (const { item } of expandedItems) {
-          if (item.questionType === 'separator' && item.sectionColumns) {
-            secCols = Number(item.sectionColumns);
-          }
-          const isSep = item.questionType === 'separator';
-          const isComp = item.questionType === 'english-composition';
-          const isExplicitFull = item.layoutHint === 'full-width';
-          let cols = 1;
-          if (isSep || isComp || isExplicitFull) {
-            cols = 1;
-          } else {
-            const override = Number(item?.layout?.columns);
-            if ([1, 2, 3, 4, 5].includes(override)) {
-              cols = override;
-            } else if (secCols) {
-              cols = secCols;
-            } else {
-              cols = resolveQuestionColumns(item, s);
-            }
-          }
-          const isFull = (cols <= 1) || isSep || isComp || isExplicitFull || shouldUseFullRow(item, s, contentWidthMm);
-          const span = isFull ? gridUnits : Math.max(1, Math.round(gridUnits / cols));
-          const itemW = isFull ? contentWidthMm : Math.max(30, (contentWidthMm - (cols - 1) * (s.colGap || 6)) / cols);
-          const itemH = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: itemW }, copiesPerPage);
-
-          if (testOccupied > 0 && testOccupied + span > gridUnits) {
-            testUsed += testRowMax + effectiveRowGap;
-            testOccupied = 0;
-            testRowMax = 0;
-          }
-          testOccupied += span;
-          testRowMax = Math.max(testRowMax, itemH);
-          if (testUsed + testRowMax > maxAvailableHeightMm) return false;
-          if (testOccupied >= gridUnits) {
-            testUsed += testRowMax + effectiveRowGap;
-            testOccupied = 0;
-            testRowMax = 0;
-          }
-        }
-        return true;
-      })();
 
       expandedItems.forEach(({ item, originalIndex, displayIndex }) => {
         if (item.questionType === 'separator') {
@@ -1001,15 +1061,26 @@ export function computePageLayout(items, settings) {
         currentGridOccupied = placement.occupied;
         currentRowMaxHeightMm = placement.rowMax;
       });
-
-      if (currentPageItems.length > 0) {
-        pageChunks.push({
-          pageIndex: pageChunks.length,
-          items: currentPageItems
-        });
-      }
     }
   }
+
+  if (currentPageItems.length > 0) {
+    pageChunks.push({
+      pageIndex: pageChunks.length,
+      items: currentPageItems
+    });
+  }
+
+  const isSeqEntry = (entry) => {
+    const it = entry?.item;
+    return Boolean(it && (it.subType === 'sequence' || it.alphabetType === 'sequence' || it.alphaData));
+  };
+  pageChunks.forEach((chunk, pIdx) => {
+    chunk.pageIndex = pIdx;
+    if (chunk.items.length === 26 && chunk.items.every(isSeqEntry)) {
+      chunk.isAlpha26 = true;
+    }
+  });
 
   if (pageChunks.length === 0) {
     pageChunks.push({
@@ -1241,7 +1312,7 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         return `<span class="choice-option"><span class="choice-label">${escapeHtml(option.label)}.</span><span>${escapeHtml(option.text)}</span></span>`;
       }).join('');
       return {
-        promptHtml: `${bracketHtml}<span class="meaning-text choice-stem">${escapeHtml(cleanStem)}</span>`,
+        promptHtml: `${bracketHtml}<span class="choice-stem question-english-content">${escapeHtml(cleanStem)}</span>`,
         practiceHtml: `<div class="choice-options layout-${optionLayout}">${options}</div>`,
         classes: ['is-choice-card']
       };
@@ -1269,7 +1340,8 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
         if (blank.lineStyle === 'four-line') return createInlineGridHtml(measurement.width, s, '', effectiveGridHeight);
         return `<span class="inline-fill-blank" style="width:${Math.round(measurement.width)}px;"></span>`;
       }).join('');
-      return { promptHtml: `<span class="meaning-text inline-fill-stem">${segments}</span>`, practiceHtml: '', classes: ['is-inline-fill-card'] };
+      const zhHtml = item.zh ? `<span class="inline-fill-zh-hint" style="margin-left:6px;">（${escapeHtml(item.zh)}）</span>` : '';
+      return { promptHtml: `<span class="inline-fill-stem question-english-content">${segments}</span>${zhHtml}`, practiceHtml: '', classes: ['is-inline-fill-card'] };
     },
     renderComposition(item) {
       const fragment = item.compositionFragment;
@@ -1308,88 +1380,63 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
   };
 }
 
-// 单联 HTML 生成 (纯函数，支持混合题型精准渲染)
-export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSize) {
-  const copies = Math.max(1, parseInt(s.copiesPerPage, 10) || 1);
-  const isSeqEntry = (entry) => {
-    const it = entry?.item;
-    return Boolean(it && (it.subType === 'sequence' || it.alphabetType === 'sequence' || it.alphaData));
-  };
-  const isAlpha26 = chunk.isAlpha26 || (chunk.items.length === 26 && (chunk.items.every(isSeqEntry) || Boolean(chunk.items[0]?.item?.alphaData)));
+// 渲染 26 字母全默写网格行 (3行或4行，末尾补齐★)
+export function renderAlpha26GridRows(seqItems, s, copies, effectivePromptSize) {
+  const rowMode = (seqItems[0]?.item?.alphaData?.rowMode === 4 || seqItems[0]?.alphaData?.rowMode === 4 || s.alphabet26Rows === 4) ? 4 : 3;
+  const alphaBaseH = getEffectiveGridHeight(s, copies);
+  const effectiveGridHeight = (rowMode === 4)
+    ? ((copies > 1) ? Math.round(alphaBaseH * (9.5 / 11) * 10) / 10 : Math.round(alphaBaseH * (14 / 12) * 10) / 10)
+    : ((copies > 1) ? alphaBaseH : Math.round(alphaBaseH * (18 / 12) * 10) / 10);
 
-  let cardsHtml = '';
+  const rows = (rowMode === 4)
+    ? [
+        seqItems.slice(0, 7),
+        seqItems.slice(7, 14),
+        seqItems.slice(14, 21),
+        seqItems.slice(21, 26)
+      ]
+    : [
+        seqItems.slice(0, 9),
+        seqItems.slice(9, 18),
+        seqItems.slice(18, 26)
+      ];
+
   let alpha26RowsHtml = '';
+  rows.forEach((rowItems, rIdx) => {
+    let cellsHtml = '';
+    rowItems.forEach((entry) => {
+      const item = entry.item || entry;
+      const overallIndex = entry.overallIndex || '';
+      const safeCardId = escapeHtml(item.id);
+      const aData = item.alphaData || {};
+      const guideChar = aData.targetEn || item.en || '';
+      const cellLabel = (aData.caseStyle === 'upper')
+        ? (aData.upper || '')
+        : (aData.caseStyle === 'lower' ? (aData.lower || '') : `${aData.upper || ''}${aData.lower || ''}`);
 
-  if (isAlpha26) {
-    const rowMode = (chunk.items[0]?.item?.alphaData?.rowMode === 4 || s.alphabet26Rows === 4) ? 4 : 3;
-    const alphaBaseH = getEffectiveGridHeight(s, copies);
-    const effectiveGridHeight = (rowMode === 4)
-      ? ((copies > 1) ? Math.round(alphaBaseH * (9.5 / 11) * 10) / 10 : Math.round(alphaBaseH * (14 / 12) * 10) / 10)
-      : ((copies > 1) ? alphaBaseH : Math.round(alphaBaseH * (18 / 12) * 10) / 10);
-
-    const rows = (rowMode === 4)
-      ? [
-          chunk.items.slice(0, 7),
-          chunk.items.slice(7, 14),
-          chunk.items.slice(14, 21),
-          chunk.items.slice(21, 26)
-        ]
-      : [
-          chunk.items.slice(0, 9),
-          chunk.items.slice(9, 18),
-          chunk.items.slice(18, 26)
-        ];
-
-    rows.forEach((rowItems, rIdx) => {
-      let cellsHtml = '';
-      rowItems.forEach(({ overallIndex, item }) => {
-        const safeCardId = escapeHtml(item.id);
-        const aData = item.alphaData || {};
-        const guideChar = aData.targetEn || item.en || '';
-        const cellLabel = (aData.caseStyle === 'upper')
-          ? (aData.upper || '')
-          : (aData.caseStyle === 'lower' ? (aData.lower || '') : `${aData.upper || ''}${aData.lower || ''}`);
-
-        cellsHtml += `
-          <div class="word-card alpha-26-cell" data-id="${safeCardId}" data-debug-id="ITEM-${safeCardId}" data-debug-name="字母格 #${overallIndex} (${escapeHtml(cellLabel)})" data-debug-component="PracticeGridSvg" data-debug-file="src/core/layout.js">
-            <div class="alpha-cell-top">
-              <span class="word-num entry-index">${overallIndex}.</span>
-            </div>
-            <div class="alpha-cell-grid">
-              ${createSingleAlphabetGridSvg({
-                gridHeightMm: effectiveGridHeight,
-                strokeWidth: s.gridStroke || 0.85,
-                lineColor: s.gridColor || '#cbd5e1',
-                guideText: s._teacherMode ? guideChar : '',
-                alphabetGuideFont: s.alphabetGuideFont
-              })}
-            </div>
+      cellsHtml += `
+        <div class="word-card alpha-26-cell" data-id="${safeCardId}" data-debug-id="ITEM-${safeCardId}" data-debug-name="字母格 #${overallIndex} (${escapeHtml(cellLabel)})" data-debug-component="PracticeGridSvg" data-debug-file="src/core/layout.js">
+          <div class="alpha-cell-top" style="font-size:${effectivePromptSize}pt;">
+            <span class="word-num entry-index">${overallIndex ? `${overallIndex}.` : ''}</span>
           </div>
-        `;
-      });
+          <div class="alpha-cell-grid">
+            ${createSingleAlphabetGridSvg({
+              gridHeightMm: effectiveGridHeight,
+              strokeWidth: s.gridStroke || 0.85,
+              lineColor: s.gridColor || '#cbd5e1',
+              guideText: s._teacherMode ? guideChar : '',
+              alphabetGuideFont: s.alphabetGuideFont
+            })}
+          </div>
+        </div>
+      `;
+    });
 
-      if (rowMode === 4 && rIdx === 3) {
-        for (let d = 0; d < 2; d++) {
-          cellsHtml += `
-            <div class="alpha-26-cell alpha-dummy-cell">
-              <div class="alpha-cell-top">
-                <span class="alpha-dummy-star">★</span>
-              </div>
-              <div class="alpha-cell-grid">
-                ${createSingleAlphabetGridSvg({
-                  gridHeightMm: effectiveGridHeight,
-                  strokeWidth: s.gridStroke || 0.85,
-                  lineColor: s.gridColor || '#cbd5e1',
-                  alphabetGuideFont: s.alphabetGuideFont
-                })}
-              </div>
-            </div>
-          `;
-        }
-      } else if (rowMode === 3 && rIdx === 2) {
+    if (rowMode === 4 && rIdx === 3) {
+      for (let d = 0; d < 2; d++) {
         cellsHtml += `
           <div class="alpha-26-cell alpha-dummy-cell">
-            <div class="alpha-cell-top">
+            <div class="alpha-cell-top" style="font-size:${effectivePromptSize}pt;">
               <span class="alpha-dummy-star">★</span>
             </div>
             <div class="alpha-cell-grid">
@@ -1403,15 +1450,69 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
           </div>
         `;
       }
-
-      alpha26RowsHtml += `
-        <div class="alpha-26-grid-row">
-          ${cellsHtml}
+    } else if (rowMode === 3 && rIdx === 2) {
+      cellsHtml += `
+        <div class="alpha-26-cell alpha-dummy-cell">
+          <div class="alpha-cell-top" style="font-size:${effectivePromptSize}pt;">
+            <span class="alpha-dummy-star">★</span>
+          </div>
+          <div class="alpha-cell-grid">
+            ${createSingleAlphabetGridSvg({
+              gridHeightMm: effectiveGridHeight,
+              strokeWidth: s.gridStroke || 0.85,
+              lineColor: s.gridColor || '#cbd5e1',
+              alphabetGuideFont: s.alphabetGuideFont
+            })}
+          </div>
         </div>
       `;
-    });
+    }
+
+    alpha26RowsHtml += `
+      <div class="alpha-26-grid-row">
+        ${cellsHtml}
+      </div>
+    `;
+  });
+  return alpha26RowsHtml;
+}
+
+// 单联 HTML 生成 (纯函数，支持混合题型精准渲染)
+export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSize) {
+  const copies = Math.max(1, parseInt(s.copiesPerPage, 10) || 1);
+  const effectiveRowGap = getEffectiveRowGap(s, copies, !!s._teacherMode);
+  const isSeqEntry = (entry) => {
+    const it = entry?.item;
+    return Boolean(it && (it.subType === 'sequence' || it.alphabetType === 'sequence' || it.alphaData));
+  };
+  const isAlpha26Only = chunk.isAlpha26 || (chunk.items.length === 26 && chunk.items.every(isSeqEntry));
+
+  let cardsHtml = '';
+  let alpha26RowsHtml = '';
+
+  if (isAlpha26Only) {
+    alpha26RowsHtml = renderAlpha26GridRows(chunk.items, s, copies, effectivePromptSize);
   } else {
-    chunk.items.forEach((entry) => {
+    let idx = 0;
+    while (idx < chunk.items.length) {
+      const entry = chunk.items[idx];
+      if (isSeqEntry(entry)) {
+        const seqGroup = [];
+        while (idx < chunk.items.length && isSeqEntry(chunk.items[idx])) {
+          seqGroup.push(chunk.items[idx]);
+          idx++;
+        }
+        const blockHtml = renderAlpha26GridRows(seqGroup, s, copies, effectivePromptSize);
+        cardsHtml += `
+          <div class="alphabet-26-section-block" style="grid-column: 1 / -1; width: 100%;">
+            <div class="alphabet-26-sheet-container" style="gap: ${effectiveRowGap * 1.5}mm; margin-top: 1mm; margin-bottom: 2mm;">
+              ${blockHtml}
+            </div>
+          </div>
+        `;
+        continue;
+      }
+
       const { overallIndex, item, isFullWidth, gridSpan = 12 } = entry;
       const qType = item.questionType || 'word-dictation';
       const safeCardId = escapeHtml(item.id);
@@ -1450,7 +1551,8 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
             ${zhMeaningHtml}
           </div>
         `;
-        return;
+        idx++;
+        continue;
       }
 
       const cardPromptSize = effectivePromptSize;
@@ -1468,7 +1570,8 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
           ` : ''}
         </div>
       `;
-    });
+      idx++;
+    }
   }
 
   // 考生信息栏
@@ -1533,10 +1636,9 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
 
   // 网格主体
   const effectiveGridHeight = getEffectiveGridHeight(s, copies);
-  const effectiveRowGap = getEffectiveRowGap(s, copies, !!s._teacherMode);
   const effectiveColGap = s._teacherMode ? Math.min(4, s.colGap || 6) : s.colGap;
 
-  const bodyHtml = isAlpha26 ? `
+  const bodyHtml = isAlpha26Only ? `
     <div class="alphabet-26-sheet-container" style="gap: ${effectiveRowGap * 1.5}mm;">
       ${alpha26RowsHtml}
     </div>

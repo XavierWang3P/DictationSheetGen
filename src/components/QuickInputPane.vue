@@ -407,6 +407,7 @@
         :type="currentInputType"
         :editing-item="editingItem"
         @submit="handleStructuredSubmit"
+        @batch-submit="handleStructuredBatchSubmit"
         @cancel="cancelEditing"
         @error="message.error"
       />
@@ -723,6 +724,13 @@ function handleStructuredSubmit(item) {
   }
 }
 
+function handleStructuredBatchSubmit(items) {
+  if (!Array.isArray(items) || items.length === 0) return;
+  items.forEach(it => state.draft.items.push(it));
+  state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
+  message.success(`已批量添加 ${items.length} 道题目到试卷！`);
+}
+
 function cancelEditing() {
   editingIndex.value = -1;
 }
@@ -775,6 +783,7 @@ function handleGenerateAlphabet() {
 
   if (newItems.length > 0) {
     newItems.forEach(it => state.draft.items.push(it));
+    state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
     message.success(`已成功添加 ${newItems.length} 道字母专项题目！`);
   }
 }
