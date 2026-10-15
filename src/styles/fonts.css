@@ -1,3 +1,24 @@
+/* 思源黑体 (Noto Sans SC) 大陆可用的国内字体 CDN (JSDMirror 境内高速节点，不依赖 Google Fonts) */
+@import url('https://cdn.jsdmirror.com/npm/@fontsource/noto-sans-sc@5.1.0/400.css');
+@import url('https://cdn.jsdmirror.com/npm/@fontsource/noto-sans-sc@5.1.0/500.css');
+
+/* OPPO Sans 本地静态字体 (400/500 字重保证印刷清晰度，不发虚) */
+@font-face {
+  font-family: 'OPPO Sans';
+  src: url('/fonts/OPPOSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'OPPO Sans';
+  src: url('/fonts/OPPOSans-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* 用户提供的英文书写字体。构建时由 vite-plugin-singlefile 内联，打印/PDF 不依赖系统安装。 */
 @font-face {
   font-family: 'Shuyao Hengshui';

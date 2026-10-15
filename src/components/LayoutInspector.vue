@@ -44,7 +44,7 @@ import AppIcon from './AppIcon.vue';
 
 <style scoped>
 .layout-inspector {
-  width: 360px;
+  width: 410px;
   background: var(--bg-sidebar);
   border-left: 1px solid var(--border-color);
   display: flex;
@@ -118,22 +118,20 @@ import AppIcon from './AppIcon.vue';
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 14px 14px 40px 14px;
+  padding: 16px 16px 40px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 
 .inspector-pane {
   display: flex;
   flex-direction: column;
-  gap: 14px;
   width: 100%;
 }
 
 @media (max-width: 1366px) {
   .layout-inspector {
-    width: 330px;
+    width: 380px;
   }
 }
 </style>

@@ -104,7 +104,7 @@
                     </template>
                   </span>
                   <span v-if="item.zh || item.translation" class="cloze-zh-hint" :style="{ fontFamily: settings.fontFamilyZh }">
-                    ({{ item.zh || item.translation }})
+                    {{ item.zh || item.translation }}
                   </span>
                 </div>
               </template>
@@ -128,7 +128,7 @@
                     </template>
                   </span>
                   <span v-if="item.zh || item.translation" style="margin-left:6px; color:#475569;">
-                    ({{ item.zh || item.translation }})
+                    {{ item.zh || item.translation }}
                   </span>
                 </div>
                 <div class="grid-container" style="margin-top: 2mm;">

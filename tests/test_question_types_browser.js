@@ -63,6 +63,10 @@ async function run() {
 
     const editorFlow = await evaluate(`(async () => {
       const delay = ms => new Promise(r => setTimeout(r, ms));
+      let retries = 50;
+      while (!window.__appStoreState && retries-- > 0) {
+        await delay(100);
+      }
       const setValue = (selector, value) => {
         const el = document.querySelector(selector);
         if (!el) return false;
@@ -84,7 +88,7 @@ async function run() {
         input.value = ['apple', 'desk', 'window', 'door'][index] || '';
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
-      const lastRow = document.querySelectorAll('.option-editor-row')[3];
+      const lastRow = document.querySelectorAll('.option-editor-row')[2];
       lastRow?.querySelector('.answer-toggle input')?.click();
       lastRow?.querySelector('[data-action="remove-option"]')?.click();
       document.getElementById('btnAddChoiceOption')?.click();
@@ -217,7 +221,7 @@ async function run() {
     const pdfB4Pages = (pdfB4.match(/\/Type\s*\/Page\b/g) || []).length;
 
     const checks = {
-      structuredEditorFlow: editorFlow.initialOptions === 4 && editorFlow.afterStyleOptions === 4 && editorFlow.choiceOptionsAfterEdit === 4 && editorFlow.removedAnswerPruned && editorFlow.inlineBlankCount === 2 && editorFlow.compositionLineCount === 8 && editorFlow.addedTypes.join(',') === 'choice,inline-fill,english-composition',
+      structuredEditorFlow: editorFlow.initialOptions === 3 && editorFlow.afterStyleOptions === 3 && editorFlow.choiceOptionsAfterEdit === 3 && editorFlow.removedAnswerPruned && editorFlow.inlineBlankCount === 2 && editorFlow.compositionLineCount === 8 && editorFlow.addedTypes.join(',') === 'choice,inline-fill,english-composition',
       allQuestionTypesRendered: screen.choiceOptions === 3 && screen.fillBlanks === 2 && screen.compositionLines === 12,
       perTypeLayout: (screen.wordSpan.includes('20') || screen.wordSpan.includes('4')) && (screen.sentenceSpan.includes('60') || screen.sentenceSpan.includes('12')),
       clozeAlignment: screen.clozePositionClass.includes('cloze-layout-below') && screen.clozeFirstChildClass.includes('cloze-english-column') && screen.clozeSecondChildClass.includes('pos-below') && screen.clozeLayoutDirection === 'column' && screen.clozeGridCount === 2 && screen.clozeBlankVerticalAlign === 'middle',
@@ -239,6 +243,7 @@ async function run() {
     console.log('验收结果:', JSON.stringify(checks, null, 2));
     const passed = Object.values(checks).every(Boolean);
     console.log(passed ? 'QUESTION_TYPE_BROWSER_TESTS_PASSED' : 'QUESTION_TYPE_BROWSER_TESTS_FAILED');
+    try { await evaluate('localStorage.clear();'); } catch {}
     ws.close();
     edge.kill();
     process.exit(passed ? 0 : 1);

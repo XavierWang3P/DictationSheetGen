@@ -11,10 +11,17 @@ async function runTests() {
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);
 
-  await new Promise(r => setTimeout(r, 2000));
+  let res = null;
+  for (let retry = 0; retry < 10; retry++) {
+    try {
+      await new Promise(r => setTimeout(r, 400));
+      res = await fetch('http://127.0.0.1:9250/json');
+      if (res.ok) break;
+    } catch (e) {}
+  }
+  if (!res) throw new Error('无法连接 Edge 调试端口 9250');
 
   try {
-    const res = await fetch('http://127.0.0.1:9250/json');
     const tabs = await res.json();
     const target = tabs.find(t => t.url.includes('DictationSheetGen'));
     if (!target) throw new Error('Target tab not found');
@@ -30,6 +37,7 @@ async function runTests() {
           if (data.id === id) {
             ws.removeEventListener('message', handler);
             if (data.error) reject(data.error);
+            else if (data.result?.exceptionDetails) reject(new Error(data.result.exceptionDetails.exception?.description || data.result.exceptionDetails.text));
             else resolve(data.result.result.value);
           }
         };
@@ -49,6 +57,13 @@ async function runTests() {
 
     console.log('=== 开始执行自动化测试套件 ===\n');
 
+    // 等待 DOM 挂载就绪
+    for (let i = 0; i < 50; i++) {
+      const isReady = await evalExpr(`!!document.getElementById('btnLoadDefaultSample')`).catch(() => false);
+      if (isReady) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+
     // 载入默认9词以供排版参数验收
     await evalExpr(`document.getElementById('btnLoadDefaultSample').click();`);
     await new Promise(r => setTimeout(r, 150));
@@ -64,6 +79,7 @@ async function runTests() {
       return {
         paperSize: s.paperSize,
         orientation: s.orientation,
+        splitFold: s.splitFold,
         copiesPerPage: s.copiesPerPage,
         pageMargin: s.pageMargin,
         dividerStyle: s.dividerStyle,
@@ -74,6 +90,7 @@ async function runTests() {
         columns: s.columns,
         wordsPerPage: s.wordsPerPage,
         promptFontSize: s.promptFontSize,
+        letterSpacing: s.letterSpacing,
         gridHeight: s.gridHeight,
         gridStroke: s.gridStroke,
         gridColor: s.gridColor,
@@ -90,6 +107,7 @@ async function runTests() {
     const pass1 = (
       r1.paperSize === 'A4' &&
       r1.orientation === 'portrait' &&
+      r1.splitFold === false &&
       r1.copiesPerPage === 3 &&
       r1.pageMargin === 8 &&
       r1.dividerStyle === 'dashed' &&
@@ -100,6 +118,7 @@ async function runTests() {
       r1.columns === 3 &&
       r1.wordsPerPage === 9 &&
       r1.promptFontSize === 14 &&
+      r1.letterSpacing === '0.8px' &&
       r1.gridHeight === 12 &&
       r1.gridStroke === 0.85 &&
       r1.gridColor === '#cbd5e1' &&
@@ -112,7 +131,7 @@ async function runTests() {
     );
     console.log('-> 判定:', pass1 ? '✅ PASS' : '❌ FAIL', '\n');
 
-    // 验收 2: 冗余开关清理、教师答案版开关与字号滑动调整
+    // 验收 2: 标题字号固定为18pt且移除调节滑块、教师答案版开关与提示字号滑动调整
     const r2 = await evalExpr(`(async () => {
       const waitForRender = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const cutGuide = document.getElementById('checkShowCutGuide');
@@ -125,20 +144,8 @@ async function runTests() {
       const titleSlider = document.getElementById('inputTitleFontSize');
       const promptSlider = document.getElementById('inputPromptFontSize');
 
-      // 测试滑动调整标题字号与提示字号
-      let titleSliderTested = false;
+      // 测试滑动调整提示字号
       let promptSliderTested = false;
-      if (titleSlider) {
-        titleSlider.value = 22;
-        titleSlider.dispatchEvent(new Event('input'));
-        await waitForRender();
-        const afterTitle = document.querySelector('.sheet-title-text');
-        titleSliderTested = (afterTitle && afterTitle.style.fontSize === '22pt');
-        // 恢复 18pt
-        titleSlider.value = 18;
-        titleSlider.dispatchEvent(new Event('input'));
-        await waitForRender();
-      }
       if (promptSlider) {
         promptSlider.value = 16;
         promptSlider.dispatchEvent(new Event('input'));
@@ -160,12 +167,11 @@ async function runTests() {
         hasDictModeSwitch: !!dictMode,
         hasDividerStyleSwitch: !!dividerStyle,
         hasTitleRadios: titleRadios.length > 0,
-        hasTitleSlider: !!titleSlider && titleSlider.type === 'range',
-        titleSliderTested,
+        hasTitleSlider: !!titleSlider,
         promptSliderTested
       };
     })()`);
-    console.log('【验收 2】冗余开关清理、教师答案版开关与字号交互验证:');
+    console.log('【验收 2】标题字号滑块移除、教师答案版开关与字号交互验证:');
     console.log('-> 结果:', JSON.stringify(r2, null, 2));
     const pass2 = (
       !r2.hasCutGuideSwitch &&
@@ -176,108 +182,110 @@ async function runTests() {
       !r2.hasDictModeSwitch &&
       !r2.hasDividerStyleSwitch &&
       !r2.hasTitleRadios &&
-      r2.hasTitleSlider &&
-      r2.titleSliderTested &&
+      !r2.hasTitleSlider &&
       r2.promptSliderTested
     );
     console.log('-> 判定:', pass2 ? '✅ PASS' : '❌ FAIL', '\n');
 
-    // 验收 3: 面板折叠与顺序验证（题目区域与四线三格默认展开）
+    // 验收 3: 排版设置三大扁平化分组（纸张与版面、字体与间距、按题型列数配置）与挖空预览模块删除验证
     const r3 = await evalExpr(`(async () => {
-      const waitForRender = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      const gTitle = document.getElementById('groupTitleInfo');
       const gPage = document.getElementById('groupPageSettings');
-      const gWord = document.getElementById('groupWordArea');
-      const gGrid = document.getElementById('groupGrid');
       const gTypo = document.getElementById('groupTypography');
+      const gCol = document.getElementById('groupQuestionColumns');
+      const clozePreview = document.querySelector('.cloze-blank-preview, .cloze-preview-box, #clozePreview');
 
-      const isTitleBeforePage = !!(gTitle && gPage && (gTitle.compareDocumentPosition(gPage) & Node.DOCUMENT_POSITION_FOLLOWING));
-      const isPageCollapsed = gPage ? gPage.classList.contains('collapsed') : false;
-      const isWordCollapsed = gWord ? gWord.classList.contains('collapsed') : false;
-      const isGridCollapsed = gGrid ? gGrid.classList.contains('collapsed') : false;
-      const isTypoCollapsed = gTypo ? gTypo.classList.contains('collapsed') : false;
-
-      // 测试页面设置点击头部展开与再次折叠
-      gPage.querySelector('.group-header').click();
-      await waitForRender();
-      const afterClickPage = gPage.classList.contains('collapsed');
-      gPage.querySelector('.group-header').click(); // 恢复折叠
-      await waitForRender();
-      const afterRestorePage = gPage.classList.contains('collapsed');
-
-      // 测试题目区域从默认展开切换为折叠，再恢复展开
-      gWord.querySelector('.group-header').click();
-      await waitForRender();
-      const afterClickWord = gWord.classList.contains('collapsed');
-      gWord.querySelector('.group-header').click(); // 恢复展开
-      await waitForRender();
-      const afterRestoreWord = gWord.classList.contains('collapsed');
+      const isPageBeforeTypo = !!(gPage && gTypo && (gPage.compareDocumentPosition(gTypo) & Node.DOCUMENT_POSITION_FOLLOWING));
+      const isTypoBeforeCol = !!(gTypo && gCol && (gTypo.compareDocumentPosition(gCol) & Node.DOCUMENT_POSITION_FOLLOWING));
 
       return {
-        isTitleBeforePage,
-        isPageCollapsed,
-        isWordCollapsed,
-        isGridCollapsed,
-        isTypoCollapsed,
-        pageExpandWorks: !afterClickPage && afterRestorePage,
-        wordToggleWorks: afterClickWord && !afterRestoreWord
+        hasGroupPage: !!gPage,
+        hasGroupTypo: !!gTypo,
+        hasGroupCol: !!gCol,
+        isPageBeforeTypo,
+        isTypoBeforeCol,
+        hasClozePreview: !!clozePreview
       };
     })()`);
-    console.log('【验收 3】标题顺序与设置面板默认展开状态:');
+    console.log('【验收 3】三大扁平化一级分组结构与挖空预览模块移除验证:');
     console.log('-> 结果:', JSON.stringify(r3, null, 2));
     const pass3 = (
-      r3.isTitleBeforePage &&
-      r3.isPageCollapsed &&
-      !r3.isWordCollapsed &&
-      !r3.isGridCollapsed &&
-      r3.isTypoCollapsed &&
-      r3.pageExpandWorks &&
-      r3.wordToggleWorks
+      r3.hasGroupPage &&
+      r3.hasGroupTypo &&
+      r3.hasGroupCol &&
+      r3.isPageBeforeTypo &&
+      r3.isTypoBeforeCol &&
+      !r3.hasClozePreview
     );
     console.log('-> 判定:', pass3 ? '✅ PASS' : '❌ FAIL', '\n');
 
-    // 验收 4: 纸张大小支持 A4 (默认)、B4、8K 及动态尺寸切换
+    // 验收 4: 纸张规格智能横竖向默认值与横向对半折拼版
     const r4 = await evalExpr(`(async () => {
       const waitForRender = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const initialPage = document.querySelector('.sheet-page');
       const initialStyleWidth = initialPage.style.width;
       const initialStyleHeight = initialPage.style.height;
 
-      // 切换到 B4
+      // 切换到 B4 -> 智能切换为横向 (364mm x 257mm)
       document.getElementById('sizeB4').click();
       await waitForRender();
       const b4Page = document.querySelector('.sheet-page');
       const b4StyleWidth = b4Page.style.width;
       const b4StyleHeight = b4Page.style.height;
+      const b4Orient = state.settings.orientation;
 
-      // 切换到 8K
+      // 切换到 8K -> 智能切换为横向 (370mm x 260mm)
       document.getElementById('size8K').click();
       await waitForRender();
       const k8Page = document.querySelector('.sheet-page');
       const k8StyleWidth = k8Page.style.width;
       const k8StyleHeight = k8Page.style.height;
+      const k8Orient = state.settings.orientation;
 
-      // 切回 A4
+      // 切换到 A3 -> 智能切换为横向 (420mm x 297mm) 并测试对半折
+      document.getElementById('sizeA3').click();
+      await waitForRender();
+      const a3Page = document.querySelector('.sheet-page');
+      const a3StyleWidth = a3Page.style.width;
+      const a3StyleHeight = a3Page.style.height;
+      const a3Orient = state.settings.orientation;
+
+      // 切换对半折
+      const foldSplitBtn = document.getElementById('foldSplit');
+      if (foldSplitBtn) {
+        foldSplitBtn.click();
+        await waitForRender();
+      }
+      const isSplitFoldActive = state.settings.splitFold;
+      const hasSplitContainer = !!document.querySelector('.sheet-page.is-split-fold, .split-fold-container');
+
+      // 切回 A4 -> 智能恢复为纵向 (210mm x 297mm)
       document.getElementById('sizeA4').click();
       await waitForRender();
       const a4Page = document.querySelector('.sheet-page');
       const a4StyleWidth = a4Page.style.width;
       const a4StyleHeight = a4Page.style.height;
+      const a4Orient = state.settings.orientation;
 
       return {
         initialA4: { width: initialStyleWidth, height: initialStyleHeight },
-        b4: { width: b4StyleWidth, height: b4StyleHeight },
-        k8: { width: k8StyleWidth, height: k8StyleHeight },
-        restoredA4: { width: a4StyleWidth, height: a4StyleHeight }
+        b4: { width: b4StyleWidth, height: b4StyleHeight, orient: b4Orient },
+        k8: { width: k8StyleWidth, height: k8StyleHeight, orient: k8Orient },
+        a3: { width: a3StyleWidth, height: a3StyleHeight, orient: a3Orient },
+        isSplitFoldActive,
+        hasSplitContainer,
+        restoredA4: { width: a4StyleWidth, height: a4StyleHeight, orient: a4Orient }
       };
     })()`);
-    console.log('【验收 4】纸张规格 A4、B4、8K 动态切换:');
+    console.log('【验收 4】纸张规格智能横竖向默认值与横向对半折拼版:');
     console.log('-> 结果:', JSON.stringify(r4, null, 2));
     const pass4 = (
       r4.initialA4.width === '210mm' && r4.initialA4.height === '297mm' &&
-      r4.b4.width === '257mm' && r4.b4.height === '364mm' &&
-      r4.k8.width === '260mm' && r4.k8.height === '370mm' &&
-      r4.restoredA4.width === '210mm' && r4.restoredA4.height === '297mm'
+      r4.b4.width === '364mm' && r4.b4.height === '257mm' && r4.b4.orient === 'landscape' &&
+      r4.k8.width === '370mm' && r4.k8.height === '260mm' && r4.k8.orient === 'landscape' &&
+      r4.a3.width === '420mm' && r4.a3.height === '297mm' && r4.a3.orient === 'landscape' &&
+      r4.isSplitFoldActive === true &&
+      r4.hasSplitContainer &&
+      r4.restoredA4.width === '210mm' && r4.restoredA4.height === '297mm' && r4.restoredA4.orient === 'portrait'
     );
     console.log('-> 判定:', pass4 ? '✅ PASS' : '❌ FAIL', '\n');
 

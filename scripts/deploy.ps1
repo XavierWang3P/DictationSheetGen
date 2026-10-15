@@ -1,4 +1,4 @@
-﻿# DictationSheetGen Deploy Script
+# DictationSheetGen Deploy Script
 param(
     [string]$RemoteHost = "gz",
     [string]$DeployPath = "/www/sites/run.i2c.icu/index/dictation",
@@ -14,7 +14,8 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-$distFile = Join-Path $PSScriptRoot "dist\index.html"
+$projectRoot = Split-Path $PSScriptRoot -Parent
+$distFile = Join-Path $projectRoot "dist\index.html"
 if (-not (Test-Path $distFile)) {
     Write-Host "Build artifact not found: $distFile" -ForegroundColor Red
     exit 1

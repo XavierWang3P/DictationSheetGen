@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.4.0-forestgreen.svg" alt="Version">
+  <img src="https://img.shields.io/badge/版本-v2.4.1-forestgreen.svg" alt="Version">
   <img src="https://img.shields.io/badge/运行环境-纯离线单网页-blue.svg" alt="Offline Ready">
   <img src="https://img.shields.io/badge/开源协议-MIT-green.svg" alt="License">
 </p>
@@ -61,8 +61,9 @@
 - **句子挖空**：支持在英文句子中点击单词切词胶囊设空，也支持使用方括号 `[word]` 批量标记；中文释义支持放置在句下、句末、句上或隐藏。
 - **整句默写**：中文作为题干，根据句子长度智能分配 1~3 行四线三格供学生规范书写。
 - **字母专项**：提供 26 个字母规范书写（大小写）、左右邻居默写、大小写互换等三年级专项题型，支持一键出卷。
-- **选择与填空**：支持单选/多选及多空填空，选项编号与对齐方式均可灵活配置。
+- **选择与填空**：选择题默认生成 3 个选项（A、B、C），题号后自带答题括号 `（   ）`，选项内容简短时智能单行 3 列等分排版；填空题自动去除冗余提示文案，排版紧凑纯净。
 - **英语作文**：支持设置作文标题、引导要求、指定行数与行高，超长题目仅在完整书写行间自然分页。
+- **分栏隔断与排版**：支持插入分栏隔断，后续题目每行题数单行切换，各区段分栏互不干扰。
 - **教师答案版**：可在学生卷后附加独立紧凑答案页，自动隐去书写格与学生信息，方便教师核对与批改。
 
 ### 2. 备课资源库
@@ -163,8 +164,28 @@ npm run dev
 # 编译为独立的离线单文件 (dist/index.html)
 npm run build
 
-# 执行全部 18 套自动化测试套件
+# 执行全部 22 套自动化测试套件
 npm run test:all
+```
+
+### 📁 项目结构
+
+```text
+DictationSheetGen/
+├── docs/           # 项目开发、接口与调试映射文档
+│   └── screenshots/# 界面预览与测试截图
+├── public/         # 离线手写字体等公共静态资源
+├── scripts/        # 自动化部署等运维脚本
+├── src/            # 核心业务源码 (Vue 3 + Naive UI + 排版引擎)
+│   ├── assets/     # 品牌 Logo、字体定义及静态资源
+│   ├── components/ # 界面组件 (题目录入、题目清单、排版检视等)
+│   ├── core/       # 四线三格排版算法、字母生成、切词器
+│   ├── question-types/ # 统一题型注册表与定义
+│   └── styles/     # 模块化样式 (布局、排版、打印、调试)
+├── tests/          # 自动化端到端验收与单元测试套件 (22 项测试)
+├── dist/           # 单文件打包产物 (dist/index.html)
+├── package.json    # 项目依赖与 npm 脚本配置
+└── vite.config.js  # Vite 与单文件内联配置
 ```
 
 详细组件职责、排版算法与测试规范请参阅 [开发文档](docs/development.md)。

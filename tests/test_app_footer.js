@@ -1,11 +1,14 @@
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 
-const appVue = fs.readFileSync('src/App.vue', 'utf8');
-const layoutCss = fs.readFileSync('src/styles/layout.css', 'utf8');
-const printCss = fs.readFileSync('src/styles/print.css', 'utf8');
-const packageInfo = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const appVue = fs.readFileSync(path.join(projectRoot, 'src/App.vue'), 'utf8');
+const layoutCss = fs.readFileSync(path.join(projectRoot, 'src/styles/layout.css'), 'utf8');
+const printCss = fs.readFileSync(path.join(projectRoot, 'src/styles/print.css'), 'utf8');
+const packageInfo = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8'));
+const changelog = fs.readFileSync(path.join(projectRoot, 'CHANGELOG.md'), 'utf8');
 
 assert.match(appVue, /import packageInfo from '\.\.\/package\.json';/, '版本号应直接读取 package.json');
 assert.match(appVue, /DictationSheet v\{\{ appVersion \}\}/, '页面底部应显示应用版本号与项目链接');

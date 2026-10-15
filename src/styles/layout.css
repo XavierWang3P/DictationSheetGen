@@ -95,7 +95,7 @@
 }
 
 .layout-inspector {
-  width: 360px;
+  width: 410px;
   background: var(--color-bg-sidebar);
   border-left: 1px solid var(--color-border);
   display: flex;

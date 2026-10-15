@@ -366,10 +366,23 @@
 
 .choice-options.layout-single { grid-template-columns: 1fr; }
 .choice-options.layout-double { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.choice-options.layout-three { grid-template-columns: repeat(3, 1fr); }
 .choice-options.layout-inline { grid-template-columns: repeat(auto-fit, minmax(24mm, max-content)); }
 .choice-option { display: inline-flex; gap: 1.2mm; min-width: 0; overflow-wrap: anywhere; }
 .choice-option.is-correct { color: #2f6659; font-weight: 700; }
 .choice-label { flex-shrink: 0; font-family: Arial, sans-serif; }
+
+.choice-bracket {
+  display: inline-block;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--text-main, #1e293b);
+  letter-spacing: 0.1em;
+  margin-right: 4px;
+}
+.choice-bracket.teacher-bracket {
+  letter-spacing: normal;
+}
 
 .inline-fill-stem {
   min-width: 0;
@@ -528,13 +541,11 @@
   pointer-events: none !important;
 }
 
-.alpha-cell-top .alpha-cell-hint {
+.alpha-cell-top .alpha-dummy-star {
   font-size: 7.5pt;
-  color: var(--primary, #2f6659);
+  color: #cbd5e1;
   font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin-left: auto;
 }
 
 .alpha-cell-grid {
@@ -718,5 +729,119 @@
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+}
+
+/* 常规题型英文字体默认强制使用 'Times New Roman', Times, serif */
+.type-inline-fill,
+.inline-fill-stem,
+.inline-fill-blank,
+.type-choice,
+.choice-stem,
+.choice-option,
+.choice-label,
+.type-english-composition,
+.composition-heading,
+.composition-instructions,
+.is-word-card .teacher-answer-value,
+.is-sentence-dict-card .sentence-dict-prompt,
+.is-sentence-dict-card .teacher-answer-value,
+.teacher-question-english,
+.word-num.entry-index {
+  font-family: 'Times New Roman', Times, serif;
+}
+
+/* 字母专项提示固定使用 xumin 字体 */
+.word-card.type-alphabet .meaning.word-prompt-row,
+.word-card.type-alphabet .meaning-text,
+.is-alphabet-card .alphabet-prompt-text,
+.is-alphabet-card .teacher-question-text,
+.is-alphabet-card .teacher-answer-value,
+.alpha-prompt-text {
+  font-family: 'Xumin Regular', 'xumin-regular', 'xumin', cursive, sans-serif !important;
+}
+
+/* 句子挖空题型遵循英文字体设置 (var(--font-en)) */
+.type-sentence-cloze .cloze-english-column,
+.type-sentence-cloze .cloze-blank-line,
+.cloze-card-inline {
+  font-family: var(--font-en, Arial, sans-serif);
+}
+
+/* 横向对半折左右双页拼版样式 */
+.sheet-page.is-split-fold {
+  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden;
+}
+
+.split-fold-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.split-half-pane {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.split-half-pane .sheet-copy-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.split-fold-seam {
+  width: 16mm;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  box-sizing: border-box;
+  margin: 0 1mm;
+}
+
+.fold-seam-line {
+  flex: 1;
+  width: 0;
+  border-left: 1px dashed #94a3b8;
+}
+
+.fold-seam-label {
+  font-size: 8pt;
+  color: #94a3b8;
+  writing-mode: vertical-rl;
+  letter-spacing: 5px;
+  padding: 8px 0;
+  font-family: var(--font-zh, 'SimSun', serif);
+}
+
+.half-page-footer {
+  margin-top: auto;
+  text-align: center;
+  font-size: 8pt;
+  color: #94a3b8;
+  padding-top: 1mm;
+}
+
+.split-half-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  font-size: 11pt;
 }
 

@@ -101,7 +101,11 @@
 
       <!-- 题型 1: 句子挖空 (可视化切词胶囊 + 批量文本混合双模) -->
       <div v-if="currentInputType === 'sentence-cloze'" class="cloze-unified-editor">
-        <QuestionEditorShell title="句子挖空题目设置" tip="输入句子后点击下方单词胶囊设空，或在文本中使用 [apple] 标记">
+        <QuestionEditorShell
+          title="句子挖空设置"
+          tip="点击胶囊或用[]设空"
+          tooltip="输入句子后点击下方单词胶囊设空，或在文本中使用 [apple] 标记挖空目标"
+        >
           <div class="form-item-block">
             <label class="item-label">英文句子</label>
             <input
@@ -250,7 +254,11 @@
 
       <!-- 题型 2: 字母专项快捷生成面板 (仅在选择字母专项时展开) -->
       <div v-else-if="currentInputType === 'alphabet'" class="alphabet-control-card" id="alphabetControlCard">
-        <QuestionEditorShell title="三年级英文字母专项设置" tip="支持 26 字母规范书写、前后左右邻居填空与大小写互换练习">
+        <QuestionEditorShell
+          title="英文字母专项设置"
+          tip="规范书写与前后邻居"
+          tooltip="支持 26 字母规范书写、前后左右邻居填空与大小写互换练习"
+        >
           <div class="alphabet-type-tabs" id="alphabetTypeTabs">
             <button
               type="button"
@@ -402,7 +410,7 @@
           </div>
 
           <template #actions>
-            <n-button type="primary" size="small" id="btnGenerateAlphabet" @click="handleGenerateAlphabet">
+            <n-button type="primary" size="small" id="btnGenerateAlphabet" class="primary-action-btn" @click="handleGenerateAlphabet">
               <template #icon><AppIcon name="plus" :size="14" /></template>
               生成并添加到试卷
             </n-button>
@@ -424,22 +432,22 @@
       <div v-else-if="currentInputType === 'separator'" class="separator-unified-editor">
         <QuestionEditorShell
           title="分栏隔断设置"
-          tip="插入隔断后，试卷被划分为独立区域，该隔断之后的所有题目将遵循此区域专属的每行题数列数规则。"
+          tip="自定义后续题数列数"
+          tooltip="插入隔断后，试卷被划分为独立区域，该隔断之后的所有题目将遵循此区域专属的每行题数列数规则"
         >
-          <div class="form-row-compact" style="margin-bottom: 12px;">
-            <span class="sub-label">隔断标题:</span>
+          <div class="form-item-block">
+            <label class="item-label">隔断标题</label>
             <input
               type="text"
-              class="form-control"
+              class="native-search-input"
               v-model="separatorForm.title"
               placeholder="例如：Part 2: 重点句子挖空默写（可留空仅显示线条）"
-              style="flex: 1; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 12px;"
             />
           </div>
 
-          <div class="form-row-compact" style="margin-bottom: 12px;">
-            <span class="sub-label">后续题数列数:</span>
-            <div class="segmented-control mini">
+          <div class="form-item-block">
+            <label class="item-label">后续题数列数</label>
+            <div class="segmented-control separator-cols-segmented">
               <input type="radio" id="sepColInherit" :value="null" v-model="separatorForm.sectionColumns" />
               <label for="sepColInherit">继承默认</label>
               <input type="radio" id="sepCol1" :value="1" v-model="separatorForm.sectionColumns" />
@@ -456,7 +464,7 @@
           </div>
 
           <template #actions>
-            <n-button type="primary" size="small" id="btnAddSeparator" @click="handleAppendSeparator">
+            <n-button type="primary" size="small" id="btnAddSeparator" class="primary-action-btn" @click="handleAppendSeparator">
               <template #icon><AppIcon name="plus" :size="14" /></template>
               插入分栏隔断到试卷
             </n-button>
@@ -468,7 +476,8 @@
       <div v-else class="text-unified-editor">
         <QuestionEditorShell
           :title="currentInputType === 'word-dictation' ? '单词默写录入' : '句子默写录入'"
-          :tip="inputHelperTip"
+          :tip="currentInputType === 'word-dictation' ? '每行一词，中英对照' : '整句默写，智能排版'"
+          :tooltip="inputHelperTip"
         >
           <textarea
             class="word-textarea"
@@ -833,7 +842,12 @@ onMounted(() => {
     const idx = e.detail;
     if (idx >= 0 && idx < state.draft.items.length) {
       editingIndex.value = idx;
-      currentInputType.value = state.draft.items[idx].questionType;
+      const it = state.draft.items[idx];
+      currentInputType.value = it.questionType;
+      if (it.questionType === 'alphabet') {
+        const sub = it.subType || it.alphabetType || (it.neighborData ? 'neighbors' : (it.caseData ? 'case' : 'sequence'));
+        alphabetActiveType.value = (sub === 'neighbor' || sub === 'neighbors') ? 'neighbors' : (sub === 'case' ? 'case' : 'sequence');
+      }
     }
   });
 });
@@ -964,6 +978,26 @@ onMounted(() => {
 
 .question-type-segmented .qtype-span-4 {
   grid-column: span 4 !important;
+}
+
+.separator-cols-segmented {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  width: 100%;
+  padding: 2px;
+  gap: 2px;
+  box-sizing: border-box;
+}
+
+.separator-cols-segmented label {
+  white-space: nowrap !important;
+  padding: 5px 2px !important;
+  font-size: 11px !important;
+  text-align: center !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  flex: none !important;
 }
 
 .form-row-compact {

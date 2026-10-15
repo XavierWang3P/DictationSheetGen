@@ -1,90 +1,24 @@
 <template>
-  <div class="settings-pane" data-debug-id="S-001" data-debug-name="试卷设置区">
-    <!-- 模块 2：标题与考生信息 (已上移) -->
-    <section class="settings-group" id="groupTitleInfo" data-debug-id="S-002" data-debug-name="试卷标题设置框">
-      <div class="group-header">
-        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
-          <AppIcon name="edit" :size="14" />
-          标题与考生信息
-        </span>
-      </div>
-
-      <div class="form-row">
-        <label>试卷标题</label>
-        <n-input
-          v-model:value="state.draft.settings.title"
-          id="inputSheetTitle"
-          size="small"
-          placeholder="请输入试卷标题"
-        />
-      </div>
-
-      <div class="form-row">
-        <label>标题字号</label>
-        <div class="form-range-wrap">
-          <input
-            type="range"
-            class="form-range"
-            id="inputTitleFontSize"
-            min="12"
-            max="32"
-            step="1"
-            :value="titleFontSizeNum"
-            @input="onTitleFontSizeInput"
-          />
-          <span class="form-range-val" id="valTitleFontSize">{{ state.draft.settings.titleFontSize }}</span>
-        </div>
-      </div>
-
-      <div class="form-row" style="align-items:flex-start;">
-        <label style="margin-top:2px;">考生信息栏</label>
-        <div class="checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="checkName" v-model="state.draft.settings.showStudentName" /> 姓名
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="checkClass" v-model="state.draft.settings.showStudentClass" /> 班级
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="checkNo" v-model="state.draft.settings.showStudentNo" /> 座号
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="checkDate" v-model="state.draft.settings.showStudentDate" /> 日期
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="checkScore" v-model="state.draft.settings.showStudentScore" /> 得分
-          </label>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <label>教师答案版</label>
-        <label class="checkbox-label">
-          <input type="checkbox" id="checkShowAnswerPage" v-model="state.draft.settings.showAnswerPage" />
-          在学生卷后追加教师答案页
-        </label>
-      </div>
-    </section>
-
-    <!-- 模块 3：页面设置 (默认折叠) -->
+  <div class="settings-pane" data-debug-id="S-004" data-debug-name="试卷排版设置">
+    <!-- 【分组一：纸张与版面】 -->
     <section
-      class="settings-group collapsible"
-      :class="{ collapsed: isPageCollapsed }"
+      class="settings-group"
       id="groupPageSettings"
-      data-debug-id="S-003"
-      data-debug-name="页面规格与份数设置"
+      data-debug-id="S-001"
+      data-debug-name="纸张与版面"
     >
-      <button type="button" class="group-header" @click="toggleGroup('page')" :aria-expanded="!isPageCollapsed">
-        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
-          <AppIcon name="file-text" :size="14" />
-          页面设置
-        </span>
-        <AppIcon class="collapse-arrow" name="arrow-down" :size="14" />
-      </button>
+      <div class="group-header">
+        <div class="group-title-wrap">
+          <AppIcon name="file-text" :size="15" />
+          <span class="group-title">纸张与版面</span>
+        </div>
+      </div>
+
       <div class="group-body">
+        <!-- 纸张规格 (A4 / B4 / 8K / A3) -->
         <div class="form-row">
           <label>纸张规格</label>
-          <div class="segmented-control">
+          <div class="compact-segmented">
             <input
               type="radio"
               name="paperSize"
@@ -112,19 +46,29 @@
               @change="onPaperSizeChange('8K')"
             />
             <label for="size8K">8K</label>
+            <input
+              type="radio"
+              name="paperSize"
+              id="sizeA3"
+              value="A3"
+              :checked="state.draft.settings.paperSize === 'A3'"
+              @change="onPaperSizeChange('A3')"
+            />
+            <label for="sizeA3">A3</label>
           </div>
         </div>
 
+        <!-- 纸张方向 (纵向 / 横向) -->
         <div class="form-row">
           <label>纸张方向</label>
-          <div class="segmented-control">
+          <div class="compact-segmented">
             <input
               type="radio"
               name="paperOrient"
               id="orientPortrait"
               value="portrait"
               :checked="state.draft.settings.orientation === 'portrait'"
-              @change="state.draft.settings.orientation = 'portrait'"
+              @change="onOrientationChange('portrait')"
             />
             <label for="orientPortrait">纵向</label>
             <input
@@ -133,15 +77,41 @@
               id="orientLandscape"
               value="landscape"
               :checked="state.draft.settings.orientation === 'landscape'"
-              @change="state.draft.settings.orientation = 'landscape'"
+              @change="onOrientationChange('landscape')"
             />
             <label for="orientLandscape">横向</label>
           </div>
         </div>
 
-        <div class="form-row">
+        <!-- 横向对半折（左右双页拼版） -->
+        <div class="form-row" v-if="state.draft.settings.orientation === 'landscape'">
+          <label>版面拼版</label>
+          <div class="compact-segmented">
+            <input
+              type="radio"
+              name="splitFold"
+              id="foldNormal"
+              :value="false"
+              :checked="!state.draft.settings.splitFold"
+              @change="state.draft.settings.splitFold = false"
+            />
+            <label for="foldNormal">标准单页</label>
+            <input
+              type="radio"
+              name="splitFold"
+              id="foldSplit"
+              :value="true"
+              :checked="state.draft.settings.splitFold"
+              @change="state.draft.settings.splitFold = true"
+            />
+            <label for="foldSplit">横向对半折（双页拼版）</label>
+          </div>
+        </div>
+
+        <!-- 一页份数 (非对半折横向时显示) -->
+        <div class="form-row" v-if="!state.draft.settings.splitFold">
           <label>一页份数</label>
-          <div class="segmented-control">
+          <div class="compact-segmented">
             <input
               type="radio"
               name="copiesPerPage"
@@ -150,7 +120,7 @@
               :checked="state.draft.settings.copiesPerPage === 1"
               @change="onCopiesChange(1)"
             />
-            <label for="copy1">1 份 (全页)</label>
+            <label for="copy1">1 份 (整页)</label>
             <input
               type="radio"
               name="copiesPerPage"
@@ -172,16 +142,52 @@
           </div>
         </div>
 
+        <!-- 试卷标题 -->
         <div class="form-row">
-          <label>排版检测助手</label>
+          <label>试卷主标题</label>
+          <n-input
+            v-model:value="state.draft.settings.title"
+            id="inputSheetTitle"
+            size="small"
+            placeholder="请输入试卷标题"
+            style="flex: 1; max-width: 250px;"
+          />
+        </div>
+
+        <!-- 考生信息栏 -->
+        <div class="form-row" style="align-items:flex-start;">
+          <label style="margin-top:2px;">考生信息栏</label>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="checkName" v-model="state.draft.settings.showStudentName" /> 姓名
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="checkClass" v-model="state.draft.settings.showStudentClass" /> 班级
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="checkNo" v-model="state.draft.settings.showStudentNo" /> 座号
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="checkDate" v-model="state.draft.settings.showStudentDate" /> 日期
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="checkScore" v-model="state.draft.settings.showStudentScore" /> 得分
+            </label>
+          </div>
+        </div>
+
+        <!-- 教师答案版 -->
+        <div class="form-row">
+          <label>教师答案版</label>
           <label class="checkbox-label">
-            <input type="checkbox" id="checkAutoOptimizeCopies" v-model="state.draft.settings.autoOptimizeCopies" />
-            当单联题目溢出至第二页时智能提示
+            <input type="checkbox" id="checkShowAnswerPage" v-model="state.draft.settings.showAnswerPage" />
+            在学生卷后追加教师答案页
           </label>
         </div>
 
+        <!-- 上下页边距 -->
         <div class="form-row">
-          <label>上下页边距 (mm)</label>
+          <label>上下页边距</label>
           <div class="form-range-wrap">
             <input
               type="range"
@@ -196,8 +202,9 @@
           </div>
         </div>
 
+        <!-- 左右页边距 -->
         <div class="form-row">
-          <label>左右页边距 (mm)</label>
+          <label>左右页边距</label>
           <div class="form-range-wrap">
             <input
               type="range"
@@ -212,331 +219,35 @@
           </div>
         </div>
 
-        <div class="form-row preset-btn-row">
-          <span class="sub-label">边距预设:</span>
-          <div class="preset-pill-group">
+        <!-- 边距快捷预设 -->
+        <div class="form-row">
+          <label>边距预设</label>
+          <div class="grid-button-group">
             <button
               type="button"
-              class="preset-pill-btn"
+              class="grid-btn"
               :class="{ active: state.draft.settings.pageMarginHorizontal === 6 && state.draft.settings.pageMargin === 6 }"
               @click="setMarginPreset(6, 6)"
             >紧凑 (6mm)</button>
             <button
               type="button"
-              class="preset-pill-btn"
+              class="grid-btn"
               :class="{ active: (state.draft.settings.pageMarginHorizontal === 12 || state.draft.settings.pageMarginHorizontal == null) && state.draft.settings.pageMargin === 8 }"
               @click="setMarginPreset(12, 8)"
             >标准 (12mm)</button>
             <button
               type="button"
-              class="preset-pill-btn"
+              class="grid-btn"
               :class="{ active: state.draft.settings.pageMarginHorizontal === 16 && state.draft.settings.pageMargin === 10 }"
               @click="setMarginPreset(16, 10)"
             >宽松 (16mm)</button>
           </div>
         </div>
-      </div>
-    </section>
 
-    <!-- 模块 4：题目区域排版 (默认展开) -->
-    <section
-      class="settings-group collapsible"
-      :class="{ collapsed: isWordCollapsed }"
-      id="groupWordArea"
-      data-debug-id="S-004"
-      data-debug-name="题目排列与容量设置"
-    >
-      <button type="button" class="group-header" @click="toggleGroup('word')" :aria-expanded="!isWordCollapsed">
-        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
-          <AppIcon name="settings" :size="14" />
-          题目区域排版
-        </span>
-        <AppIcon class="collapse-arrow" name="arrow-down" :size="14" />
-      </button>
-      <div class="group-body">
-        <div class="form-row layout-default-row">
-          <label for="wordDictationColumns">单词默写默认</label>
-          <select id="wordDictationColumns" class="form-select" v-model.number="state.draft.settings.layoutDefaults.wordDictationColumns">
-            <option :value="1">每行1题</option>
-            <option :value="2">每行2题</option>
-            <option :value="3">每行3题（推荐）</option>
-            <option :value="4">每行4题</option>
-            <option :value="5">每行5题</option>
-          </select>
-        </div>
-
-        <div class="form-row layout-default-row">
-          <label for="sentenceDictationColumns">句子默写默认</label>
-          <select id="sentenceDictationColumns" class="form-select" v-model.number="state.draft.settings.layoutDefaults.sentenceDictationColumns">
-            <option :value="1">每行1题（推荐）</option>
-            <option :value="2">每行2题</option>
-            <option :value="3">每行3题</option>
-            <option :value="4">每行4题</option>
-            <option :value="5">每行5题</option>
-          </select>
-        </div>
-
-        <div class="form-row layout-default-row">
-          <label for="sentenceClozeColumns">句子挖空默认</label>
-          <select id="sentenceClozeColumns" class="form-select" v-model="state.draft.settings.layoutDefaults.sentenceClozeColumns">
-            <option value="auto">自动选择每行1题至2题</option>
-            <option :value="1">每行1题</option>
-            <option :value="2">每行2题</option>
-            <option :value="3">每行3题</option>
-            <option :value="4">每行4题</option>
-            <option :value="5">每行5题</option>
-          </select>
-        </div>
-
-        <div class="form-row layout-default-row">
-          <label for="choiceColumns">选择题默认</label>
-          <select id="choiceColumns" class="form-select" v-model="state.draft.settings.layoutDefaults.choiceColumns">
-            <option value="auto">自动选择每行1题至2题</option>
-            <option :value="1">每行1题</option>
-            <option :value="2">每行2题</option>
-            <option :value="3">每行3题</option>
-            <option :value="4">每行4题</option>
-            <option :value="5">每行5题</option>
-          </select>
-        </div>
-
-        <div class="form-row layout-default-row">
-          <label for="inlineFillColumns">填空题默认</label>
-          <select id="inlineFillColumns" class="form-select" v-model="state.draft.settings.layoutDefaults.inlineFillColumns">
-            <option value="auto">自动选择每行1题至2题</option>
-            <option :value="1">每行1题</option>
-            <option :value="2">每行2题</option>
-            <option :value="3">每行3题</option>
-            <option :value="4">每行4题</option>
-            <option :value="5">每行5题</option>
-          </select>
-        </div>
-
-        <div class="form-row layout-default-row">
-          <label for="englishCompositionColumns">英语作文默认</label>
-          <select id="englishCompositionColumns" class="form-select" v-model.number="state.draft.settings.layoutDefaults.englishCompositionColumns">
-            <option :value="1">每行1题（推荐，保持完整书写行宽）</option>
-            <option :value="2">每行2题（不建议）</option>
-            <option :value="3">每行3题（不建议）</option>
-            <option :value="4">每行4题（不建议）</option>
-            <option :value="5">每行5题（不建议）</option>
-          </select>
-        </div>
-
-        <div class="form-row layout-default-row">
-          <label for="alphabetLayout">字母邻居与转换默认</label>
-          <select id="alphabetLayout" class="form-select" v-model="state.draft.settings.alphabetLayout">
-            <option value="bottom-4col">下方四线格（每行4题，推荐）</option>
-            <option value="bottom-5col">下方四线格（每行5题）</option>
-            <option value="right-2col">右侧四线格（每行2题）</option>
-          </select>
-        </div>
-
-        <div class="form-row layout-default-row">
-          <label for="alphabet26Rows">26个字母默写默认</label>
-          <select id="alphabet26Rows" class="form-select" v-model.number="state.draft.settings.alphabet26Rows">
-            <option :value="3">3 行 (3×9，含1个★占位格)</option>
-            <option :value="4">4 行 (4×7，含2个★占位格，单格更宽)</option>
-          </select>
-        </div>
-
-        <div class="form-row">
-          <label>每页词数容量</label>
-          <div class="form-range-wrap">
-            <input
-              type="range"
-              class="form-range"
-              id="wordsPerPageInput"
-              min="3"
-              max="25"
-              step="1"
-              v-model.number="state.draft.settings.wordsPerPage"
-            />
-            <span class="form-range-val" id="valWordsPerPage">{{ state.draft.settings.wordsPerPage }} 题</span>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label>提示字号 (题号/释义)</label>
-          <div class="form-range-wrap">
-            <input
-              type="range"
-              class="form-range"
-              id="inputPromptFontSize"
-              min="7"
-              max="20"
-              step="0.5"
-              :value="state.draft.settings.promptFontSize"
-              @input="onPromptFontSizeInput"
-            />
-            <span class="form-range-val" id="valPromptFontSize">{{ state.draft.settings.promptFontSize }}pt</span>
-          </div>
-        </div>
-
-        <div v-if="state.draft.settings.dictMode !== 'cloze'" class="form-row">
-          <label>中文释义位置</label>
-          <div class="segmented-control">
-            <input
-              type="radio"
-              name="zhPosition"
-              id="zhPosTop"
-              value="top"
-              :checked="state.draft.settings.zhPosition === 'top'"
-              @change="state.draft.settings.zhPosition = 'top'"
-            />
-            <label for="zhPosTop">格子上方</label>
-            <input
-              type="radio"
-              name="zhPosition"
-              id="zhPosLeft"
-              value="left"
-              :checked="state.draft.settings.zhPosition === 'left'"
-              @change="state.draft.settings.zhPosition = 'left'"
-            />
-            <label for="zhPosLeft">格子左侧</label>
-          </div>
-        </div>
-
-        <!-- 句子挖空专属设置 (四线格长) -->
-        <template v-if="state.draft.settings.dictMode === 'cloze'">
-          <div class="form-row">
-            <label>四线格挖空长度</label>
-            <div class="segmented-control mini cloze-width-control">
-              <input
-                type="radio"
-                name="settingsClozeBlankWidth"
-                id="setBlankWidthAuto"
-                value="auto"
-                :checked="state.draft.settings.clozeBlankWidth === 'auto'"
-                @change="state.draft.settings.clozeBlankWidth = 'auto'"
-              />
-              <label for="setBlankWidthAuto">按答案宽度150%（默认）</label>
-              <input
-                type="radio"
-                name="settingsClozeBlankWidth"
-                id="setBlankWidth1Word"
-                value="1word"
-                :checked="state.draft.settings.clozeBlankWidth === '1word'"
-                @change="state.draft.settings.clozeBlankWidth = '1word'"
-              />
-              <label for="setBlankWidth1Word">1格</label>
-              <input
-                type="radio"
-                name="settingsClozeBlankWidth"
-                id="setBlankWidth1Point5Words"
-                value="1.5words"
-                :checked="state.draft.settings.clozeBlankWidth === '1.5words'"
-                @change="state.draft.settings.clozeBlankWidth = '1.5words'"
-              />
-              <label for="setBlankWidth1Point5Words">1.5格</label>
-              <input
-                type="radio"
-                name="settingsClozeBlankWidth"
-                id="setBlankWidth2Words"
-                value="2words"
-                :checked="state.draft.settings.clozeBlankWidth === '2words'"
-                @change="state.draft.settings.clozeBlankWidth = '2words'"
-              />
-              <label for="setBlankWidth2Words">2格</label>
-              <input
-                type="radio"
-                name="settingsClozeBlankWidth"
-                id="setBlankWidth2Point5Words"
-                value="2.5words"
-                :checked="state.draft.settings.clozeBlankWidth === '2.5words'"
-                @change="state.draft.settings.clozeBlankWidth = '2.5words'"
-              />
-              <label for="setBlankWidth2Point5Words">2.5格</label>
-              <input
-                type="radio"
-                name="settingsClozeBlankWidth"
-                id="setBlankWidth3Words"
-                value="3words"
-                :checked="state.draft.settings.clozeBlankWidth === '3words'"
-                @change="state.draft.settings.clozeBlankWidth = '3words'"
-              />
-              <label for="setBlankWidth3Words">3格</label>
-            </div>
-          </div>
-        </template>
-
-        <div class="form-row">
-          <label>水平间距 (列距)</label>
-          <div class="form-range-wrap">
-            <input
-              type="range"
-              class="form-range"
-              id="inputColGap"
-              min="2"
-              max="16"
-              step="0.5"
-              v-model.number="state.draft.settings.colGap"
-            />
-            <span class="form-range-val" id="valColGap">{{ state.draft.settings.colGap }}mm</span>
-          </div>
-        </div>
-
-        <div class="form-row preset-btn-row">
-          <span class="sub-label">列距预设:</span>
-          <div class="preset-pill-group">
-            <button
-              type="button"
-              class="preset-pill-btn"
-              :class="{ active: state.draft.settings.colGap === 3 }"
-              @click="state.draft.settings.colGap = 3"
-            >紧凑 (3mm)</button>
-            <button
-              type="button"
-              class="preset-pill-btn"
-              :class="{ active: state.draft.settings.colGap === 6 }"
-              @click="state.draft.settings.colGap = 6"
-            >标准 (6mm)</button>
-            <button
-              type="button"
-              class="preset-pill-btn"
-              :class="{ active: state.draft.settings.colGap === 8 }"
-              @click="state.draft.settings.colGap = 8"
-            >宽松 (8mm)</button>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label>垂直间距 (行距)</label>
-          <div class="form-range-wrap">
-            <input
-              type="range"
-              class="form-range"
-              id="inputRowGap"
-              min="2"
-              max="10"
-              step="0.5"
-              v-model.number="state.draft.settings.rowGap"
-            />
-            <span class="form-range-val" id="valRowGap">{{ state.draft.settings.rowGap }}mm</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 模块 5：四线三格专用设置 (默认展开) -->
-    <section
-      class="settings-group collapsible"
-      :class="{ collapsed: isGridCollapsed }"
-      id="groupGrid"
-      data-debug-id="S-005"
-      data-debug-name="四线三格样式设置"
-    >
-      <button type="button" class="group-header" @click="toggleGroup('grid')" :aria-expanded="!isGridCollapsed">
-        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
-          <AppIcon name="tag" :size="14" />
-          四线三格设置
-        </span>
-        <AppIcon class="collapse-arrow" name="arrow-down" :size="14" />
-      </button>
-      <div class="group-body">
+        <!-- 练习格样式 -->
         <div class="form-row">
           <label>练习格样式</label>
-          <div class="segmented-control">
+          <div class="compact-segmented">
             <input
               type="radio"
               name="gridStyle"
@@ -558,8 +269,9 @@
           </div>
         </div>
 
+        <!-- 格子高度 -->
         <div class="form-row">
-          <label>格子高度 (mm)</label>
+          <label>格子高度</label>
           <div class="form-range-wrap">
             <input
               type="range"
@@ -574,9 +286,10 @@
           </div>
         </div>
 
+        <!-- 线条粗细 -->
         <div class="form-row">
           <label>线条粗细</label>
-          <div class="segmented-control">
+          <div class="compact-segmented">
             <input
               type="radio"
               name="gridStroke"
@@ -607,64 +320,66 @@
           </div>
         </div>
 
+        <!-- 线条颜色与封闭竖线 -->
         <div class="form-row">
-          <label>线条颜色</label>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <input
-              type="color"
-              id="inputGridColor"
-              v-model="state.draft.settings.gridColor"
-              style="width:36px; height:26px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;"
-            />
-            <span style="font-size:11.5px; color:#64748b;" id="textGridColor">{{ state.draft.settings.gridColor }}</span>
+          <label>线条与封闭</label>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="display:inline-flex; align-items:center; gap:6px;">
+              <input
+                type="color"
+                id="inputGridColor"
+                v-model="state.draft.settings.gridColor"
+                style="width:32px; height:24px; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;"
+              />
+              <span style="font-size:11px; color:#64748b;" id="textGridColor">{{ state.draft.settings.gridColor }}</span>
+            </div>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                id="checkVerticalLine"
+                v-model="state.draft.settings.showVerticalBorder"
+              />
+              封闭竖线
+            </label>
           </div>
-        </div>
-
-        <div class="form-row">
-          <label>左右闭合竖线</label>
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              id="checkVerticalLine"
-              v-model="state.draft.settings.showVerticalBorder"
-            />
-            显示独立卡片封闭竖线
-          </label>
         </div>
       </div>
     </section>
 
-    <!-- 模块 6：字体与模式设置 (默认折叠) -->
+    <!-- 【分组二：字体与间距】 -->
     <section
-      class="settings-group collapsible"
-      :class="{ collapsed: isTypoCollapsed }"
+      class="settings-group"
       id="groupTypography"
       data-debug-id="S-006"
-      data-debug-name="字体与间距设置"
+      data-debug-name="字体与间距"
     >
-      <button type="button" class="group-header" @click="toggleGroup('typo')" :aria-expanded="!isTypoCollapsed">
-        <span class="group-title" style="display:inline-flex; align-items:center; gap:5px;">
-          <AppIcon name="alphabet" :size="14" />
-          字体与间距设置
-        </span>
-        <AppIcon class="collapse-arrow" name="arrow-down" :size="14" />
-      </button>
+      <div class="group-header">
+        <div class="group-title-wrap">
+          <AppIcon name="alphabet" :size="15" />
+          <span class="group-title">字体与间距</span>
+        </div>
+      </div>
+
       <div class="group-body">
+        <!-- 中文字体 -->
         <div class="form-row">
           <label>中文字体</label>
           <select class="form-select" id="selectFontZh" v-model="state.draft.settings.fontFamilyZh">
             <option value="'KaiTi', '楷体', STKaiti, serif">楷体 (标准范字)</option>
+            <option value="'OPPO Sans', 'OPPOSans', sans-serif">OPPO Sans (本地高清印刷 400/500)</option>
+            <option value="'Noto Sans SC', 'Source Han Sans SC', '思源黑体', sans-serif">思源黑体 (Noto Sans SC)</option>
             <option value="'SimSun', '宋体', serif">宋体</option>
             <option value="'SimHei', '黑体', sans-serif">黑体</option>
             <option value="'FangSong', '仿宋', serif">仿宋</option>
           </select>
         </div>
 
+        <!-- 英文字体 (句子挖空 / 练习示范) -->
         <div class="form-row">
           <label>英文字体</label>
           <select class="form-select" id="selectFontEn" v-model="state.draft.settings.fontFamilyEn">
             <option value="Arial, sans-serif">Arial (清晰无衬线)</option>
-            <option value="'Times New Roman', serif">Times New Roman (衬线)</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman (常规题型默认)</option>
             <option value="'Georgia', serif">Georgia</option>
             <option
               v-for="font in EMBEDDED_HANDWRITING_FONTS"
@@ -675,7 +390,11 @@
             </option>
           </select>
         </div>
+        <p class="field-note">
+          说明：除“句子挖空”跟随所选英文字体外，填空题、选择题、作文题等常规题型均默认强制使用 Times New Roman 规范印刷体；字母专项固定使用 xumin 字体。
+        </p>
 
+        <!-- 字母范字字体 -->
         <div class="form-row font-guide-row">
           <label>字母范字字体</label>
           <select class="form-select" id="selectAlphabetGuideFont" v-model="state.draft.settings.alphabetGuideFont">
@@ -690,12 +409,12 @@
           <div class="font-preview-strip" :style="{ fontFamily: state.draft.settings.alphabetGuideFont }">
             Aa Bb Gg Jj Pp Qq Yy
           </div>
-          <p class="field-help">仅控制字母专项格内范字；“★四线三格”字体已内置，但因字形自带格线，不与网站格线重复叠加。</p>
         </div>
 
+        <!-- 字间距 (加宽 0.8px 为默认) -->
         <div class="form-row">
           <label>字间距</label>
-          <div class="segmented-control">
+          <div class="compact-segmented">
             <input
               type="radio"
               name="letterSpacing"
@@ -710,10 +429,10 @@
               name="letterSpacing"
               id="spWide"
               value="0.8px"
-              :checked="state.draft.settings.letterSpacing === '0.8px'"
+              :checked="state.draft.settings.letterSpacing === '0.8px' || !state.draft.settings.letterSpacing"
               @change="state.draft.settings.letterSpacing = '0.8px'"
             />
-            <label for="spWide">加宽</label>
+            <label for="spWide">加宽 (默认)</label>
             <input
               type="radio"
               name="letterSpacing"
@@ -725,52 +444,301 @@
             <label for="spExtra">宽松</label>
           </div>
         </div>
+
+        <!-- 提示字号 (题号/释义) -->
+        <div class="form-row">
+          <label>提示字号</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="inputPromptFontSize"
+              min="7"
+              max="20"
+              step="0.5"
+              :value="state.draft.settings.promptFontSize"
+              @input="onPromptFontSizeInput"
+            />
+            <span class="form-range-val" id="valPromptFontSize">{{ state.draft.settings.promptFontSize }}pt</span>
+          </div>
+        </div>
+
+        <!-- 行距 (垂直间距) -->
+        <div class="form-row">
+          <label>垂直行距</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="inputRowGap"
+              min="2"
+              max="10"
+              step="0.5"
+              v-model.number="state.draft.settings.rowGap"
+            />
+            <span class="form-range-val" id="valRowGap">{{ state.draft.settings.rowGap }}mm</span>
+          </div>
+        </div>
+
+        <!-- 列距 (水平间距) -->
+        <div class="form-row">
+          <label>水平列距</label>
+          <div class="form-range-wrap">
+            <input
+              type="range"
+              class="form-range"
+              id="inputColGap"
+              min="2"
+              max="16"
+              step="0.5"
+              v-model.number="state.draft.settings.colGap"
+            />
+            <span class="form-range-val" id="valColGap">{{ state.draft.settings.colGap }}mm</span>
+          </div>
+        </div>
+
+        <!-- 列距预设 -->
+        <div class="form-row">
+          <label>列距预设</label>
+          <div class="grid-button-group">
+            <button
+              type="button"
+              class="grid-btn"
+              :class="{ active: state.draft.settings.colGap === 3 }"
+              @click="state.draft.settings.colGap = 3"
+            >紧凑 (3mm)</button>
+            <button
+              type="button"
+              class="grid-btn"
+              :class="{ active: state.draft.settings.colGap === 6 }"
+              @click="state.draft.settings.colGap = 6"
+            >标准 (6mm)</button>
+            <button
+              type="button"
+              class="grid-btn"
+              :class="{ active: state.draft.settings.colGap === 8 }"
+              @click="state.draft.settings.colGap = 8"
+            >宽松 (8mm)</button>
+          </div>
+        </div>
+
+        <!-- 中文释义位置 (单词题) -->
+        <div class="form-row" v-if="state.draft.settings.dictMode !== 'cloze'">
+          <label>中文释义位置</label>
+          <div class="compact-segmented">
+            <input
+              type="radio"
+              name="zhPosition"
+              id="zhPosTop"
+              value="top"
+              :checked="state.draft.settings.zhPosition === 'top'"
+              @change="state.draft.settings.zhPosition = 'top'"
+            />
+            <label for="zhPosTop">格子上方</label>
+            <input
+              type="radio"
+              name="zhPosition"
+              id="zhPosLeft"
+              value="left"
+              :checked="state.draft.settings.zhPosition === 'left'"
+              @change="state.draft.settings.zhPosition = 'left'"
+            />
+            <label for="zhPosLeft">格子左侧</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 【分组三：按题型列数配置】 -->
+    <section
+      class="settings-group"
+      id="groupQuestionColumns"
+      data-debug-id="S-003"
+      data-debug-name="按题型列数配置"
+    >
+      <div class="group-header">
+        <div class="group-title-wrap">
+          <AppIcon name="settings" :size="15" />
+          <span class="group-title">按题型列数配置</span>
+        </div>
+        <button
+          type="button"
+          class="reset-columns-btn"
+          title="将所有题型恢复为推荐默认列数"
+          @click="restoreDefaultColumns"
+        >
+          恢复默认
+        </button>
+      </div>
+
+      <div class="group-body">
+        <p class="field-note" style="margin-top: -4px; margin-bottom: 4px;">
+          一键切换各题型的全局默认列数，试卷题目排版将立即按此规格流式排布：
+        </p>
+
+        <!-- 单词默写 -->
+        <div class="column-config-row">
+          <span class="column-config-label">单词默写</span>
+          <div class="grid-button-group col-btn-group">
+            <button
+              v-for="c in [1, 2, 3, 4, 5]"
+              :key="c"
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.wordDictation === c }"
+              @click="setQTypeColumns('word-dictation', c)"
+            >
+              {{ c }}列
+            </button>
+          </div>
+        </div>
+
+        <!-- 句子默写 -->
+        <div class="column-config-row">
+          <span class="column-config-label">句子默写</span>
+          <div class="grid-button-group col-btn-group">
+            <button
+              v-for="c in [1, 2, 3, 4]"
+              :key="c"
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.sentenceDictation === c }"
+              @click="setQTypeColumns('sentence-dictation', c)"
+            >
+              {{ c }}列
+            </button>
+          </div>
+        </div>
+
+        <!-- 句子挖空 -->
+        <div class="column-config-row">
+          <span class="column-config-label">句子挖空</span>
+          <div class="grid-button-group col-btn-group">
+            <button
+              v-for="c in [1, 2, 3, 4]"
+              :key="c"
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.sentenceCloze === c }"
+              @click="setQTypeColumns('sentence-cloze', c)"
+            >
+              {{ c }}列
+            </button>
+          </div>
+        </div>
+
+        <!-- 选择题 -->
+        <div class="column-config-row">
+          <span class="column-config-label">选择题</span>
+          <div class="grid-button-group col-btn-group">
+            <button
+              v-for="c in [1, 2, 3, 4]"
+              :key="c"
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.choice === c }"
+              @click="setQTypeColumns('choice', c)"
+            >
+              {{ c }}列
+            </button>
+          </div>
+        </div>
+
+        <!-- 填空题 -->
+        <div class="column-config-row">
+          <span class="column-config-label">填空题</span>
+          <div class="grid-button-group col-btn-group">
+            <button
+              v-for="c in [1, 2, 3, 4]"
+              :key="c"
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.inlineFill === c }"
+              @click="setQTypeColumns('inline-fill', c)"
+            >
+              {{ c }}列
+            </button>
+          </div>
+        </div>
+
+        <!-- 字母专项 -->
+        <div class="column-config-row">
+          <span class="column-config-label">字母专项</span>
+          <div class="grid-button-group col-btn-group">
+            <button
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.alphabet === 2 }"
+              @click="setQTypeColumns('alphabet', 2)"
+            >
+              2列 (右侧)
+            </button>
+            <button
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.alphabet === 4 }"
+              @click="setQTypeColumns('alphabet', 4)"
+            >
+              4列 (推荐)
+            </button>
+            <button
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.alphabet === 5 }"
+              @click="setQTypeColumns('alphabet', 5)"
+            >
+              5列 (紧凑)
+            </button>
+          </div>
+        </div>
+
+        <!-- 英语作文 -->
+        <div class="column-config-row">
+          <span class="column-config-label">英语作文</span>
+          <div class="grid-button-group col-btn-group">
+            <button
+              v-for="c in [1, 2]"
+              :key="c"
+              type="button"
+              class="grid-btn"
+              :class="{ active: currentColumns.composition === c }"
+              @click="setQTypeColumns('english-composition', c)"
+            >
+              {{ c }}列
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { NInput } from 'naive-ui';
 import { state } from '../stores/appStore.js';
+import { DEFAULT_LAYOUT_DEFAULTS } from '../question-types/registry.js';
 import {
   ALPHABET_GUIDE_FONT_OPTIONS,
   EMBEDDED_HANDWRITING_FONTS
 } from '../core/handwritingFonts.js';
 import AppIcon from './AppIcon.vue';
 
-const isPageCollapsed = ref(true);
-const isWordCollapsed = ref(false);
-const isGridCollapsed = ref(false);
-const isTypoCollapsed = ref(true);
-
-const titleFontSizeNum = computed(() => parseFloat(state.draft.settings.titleFontSize) || 18);
-
-function toggleGroup(groupName) {
-  if (groupName === 'page') {
-    isPageCollapsed.value = !isPageCollapsed.value;
-  } else if (groupName === 'word') {
-    isWordCollapsed.value = !isWordCollapsed.value;
-  } else if (groupName === 'grid') {
-    isGridCollapsed.value = !isGridCollapsed.value;
-  } else if (groupName === 'typo') {
-    isTypoCollapsed.value = !isTypoCollapsed.value;
+function onPaperSizeChange(size) {
+  state.draft.settings.paperSize = size;
+  if (size === 'A4') {
+    state.draft.settings.orientation = 'portrait';
+    state.draft.settings.splitFold = false;
+  } else if (['B4', '8K', 'A3'].includes(size)) {
+    state.draft.settings.orientation = 'landscape';
   }
 }
 
-function onPaperSizeChange(size) {
-  state.draft.settings.paperSize = size;
-}
-
-function onTitleFontSizeInput(e) {
-  const val = parseFloat(e.target.value);
-  state.draft.settings.titleFontSize = `${val}pt`;
-}
-
-function onPromptFontSizeInput(e) {
-  const val = parseFloat(e.target.value);
-  state.draft.settings.promptFontSize = val;
+function onOrientationChange(orient) {
+  state.draft.settings.orientation = orient;
+  if (orient === 'portrait') {
+    state.draft.settings.splitFold = false;
+  }
 }
 
 function setMarginPreset(h, v) {
@@ -784,200 +752,344 @@ function onCopiesChange(count) {
     state.draft.settings.wordsPerPage = Math.max(state.draft.settings.wordsPerPage || 9, state.draft.items.length);
   }
 }
+
+function onPromptFontSizeInput(e) {
+  const val = parseFloat(e.target.value);
+  state.draft.settings.promptFontSize = val;
+}
+
+const currentColumns = computed(() => {
+  const d = state.draft.settings.layoutDefaults || DEFAULT_LAYOUT_DEFAULTS;
+  let alphaCols = 4;
+  if (state.draft.settings.alphabetLayout === 'right-2col') alphaCols = 2;
+  else if (state.draft.settings.alphabetLayout === 'bottom-5col') alphaCols = 5;
+
+  return {
+    wordDictation: Number(d.wordDictationColumns) || 3,
+    sentenceDictation: Number(d.sentenceDictationColumns) || 1,
+    sentenceCloze: d.sentenceClozeColumns === 'auto' ? 2 : Number(d.sentenceClozeColumns) || 2,
+    choice: d.choiceColumns === 'auto' ? 2 : Number(d.choiceColumns) || 2,
+    inlineFill: d.inlineFillColumns === 'auto' ? 2 : Number(d.inlineFillColumns) || 2,
+    composition: Number(d.englishCompositionColumns) || 1,
+    alphabet: alphaCols
+  };
+});
+
+function setQTypeColumns(type, cols) {
+  if (!state.draft.settings.layoutDefaults) {
+    state.draft.settings.layoutDefaults = { ...DEFAULT_LAYOUT_DEFAULTS };
+  }
+  if (type === 'word-dictation') {
+    state.draft.settings.layoutDefaults.wordDictationColumns = cols;
+  } else if (type === 'sentence-dictation') {
+    state.draft.settings.layoutDefaults.sentenceDictationColumns = cols;
+  } else if (type === 'sentence-cloze') {
+    state.draft.settings.layoutDefaults.sentenceClozeColumns = cols;
+  } else if (type === 'choice') {
+    state.draft.settings.layoutDefaults.choiceColumns = cols;
+  } else if (type === 'inline-fill') {
+    state.draft.settings.layoutDefaults.inlineFillColumns = cols;
+  } else if (type === 'alphabet') {
+    if (cols === 2) state.draft.settings.alphabetLayout = 'right-2col';
+    else if (cols === 5) state.draft.settings.alphabetLayout = 'bottom-5col';
+    else state.draft.settings.alphabetLayout = 'bottom-4col';
+  } else if (type === 'english-composition') {
+    state.draft.settings.layoutDefaults.englishCompositionColumns = cols;
+  }
+
+  // 同步更新现有该类型题目，使全局实时生效
+  state.draft.items.forEach(item => {
+    if (item.questionType === type) {
+      if (!item.layout) item.layout = {};
+      item.layout.columns = cols;
+    }
+  });
+}
+
+function restoreDefaultColumns() {
+  state.draft.settings.layoutDefaults = { ...DEFAULT_LAYOUT_DEFAULTS };
+  state.draft.settings.alphabetLayout = 'bottom-4col';
+  state.draft.items.forEach(item => {
+    if (item.layout) {
+      delete item.layout.columns;
+    }
+  });
+}
 </script>
 
 <style scoped>
 .settings-pane {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
+  width: 100%;
 }
 
+/* 扁平化分组：顶部小标题 + 底部 1px 浅色分割线，去除嵌套外框和背景 */
 .settings-group {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 14px;
-  box-shadow: 0 1px 3px rgba(38, 51, 47, 0.04);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0 0 18px 0;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border-light, #e2e7e4);
+  box-shadow: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.settings-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 4px;
 }
 
 .group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   user-select: none;
   width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
 }
 
-.settings-group.collapsible .group-header {
-  cursor: pointer;
-  margin-bottom: 0;
-}
-
-.settings-group.collapsible:not(.collapsed) .group-header {
-  margin-bottom: 12px;
+.group-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary, #2f6659);
 }
 
 .group-title {
   font-size: 13.5px;
   font-weight: 700;
-  color: var(--text-main);
+  color: var(--text-main, #26332f);
+  letter-spacing: 0.01em;
 }
 
-.collapse-arrow {
-  color: var(--text-light);
-  transition: transform 0.2s ease;
-  transform: rotate(180deg);
+.reset-columns-btn {
+  border: none;
+  background: transparent;
+  color: var(--primary, #2f6659);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
 }
 
-.settings-group.collapsed .collapse-arrow {
-  transform: rotate(-90deg);
-}
-
-.settings-group.collapsed .group-body {
-  display: none;
+.reset-columns-btn:hover {
+  background: var(--primary-light, #e8f0ed);
 }
 
 .group-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
 }
 
 .form-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13px;
-  gap: 12px;
+  gap: 10px;
+  font-size: 12.5px;
 }
 
-.form-row label {
-  color: var(--text-muted);
+.form-row > label {
+  color: var(--text-muted, #68756f);
   font-weight: 500;
   white-space: nowrap;
+  font-size: 12.5px;
+  flex-shrink: 0;
 }
 
-.segmented-control {
-  display: flex;
-  background: var(--bg-app);
+/* 紧凑型分段控制器 (高度 28px，单行不折行) */
+.compact-segmented {
+  display: inline-flex;
+  height: 28px;
+  box-sizing: border-box;
+  background: var(--bg-app, #f3f5f2);
+  border: 1px solid var(--border-light, #e2e7e4);
   border-radius: 6px;
   padding: 2px;
   gap: 2px;
-  border: 1px solid var(--border-light);
+  white-space: nowrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex-shrink: 0;
 }
 
-.segmented-control input[type="radio"] {
+.compact-segmented input[type="radio"] {
   display: none;
 }
 
-.segmented-control label {
-  padding: 4px 10px;
-  font-size: 12px;
+.compact-segmented label {
+  height: 22px;
+  line-height: 22px;
+  padding: 0 8px;
+  font-size: 11.5px;
   font-weight: 500;
-  color: var(--text-muted);
-  cursor: pointer;
+  color: var(--text-muted, #68756f);
   border-radius: 4px;
+  cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.segmented-control input[type="radio"]:checked + label {
-  background: var(--bg-card);
-  color: var(--primary);
-  font-weight: 600;
+.compact-segmented input[type="radio"]:checked + label {
+  background: #ffffff;
+  color: var(--primary, #2f6659);
+  font-weight: 700;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.cloze-width-control {
-  flex-wrap: wrap;
-  justify-content: flex-end;
+/* 自适应等宽网格按钮 (高度 28px) */
+.grid-button-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
 }
 
+.grid-btn {
+  height: 28px;
+  line-height: 26px;
+  padding: 0 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid var(--border-color, #c9d3ce);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #26332f);
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.grid-btn:hover {
+  border-color: var(--primary, #2f6659);
+  color: var(--primary, #2f6659);
+}
+
+.grid-btn.active {
+  background: var(--primary, #2f6659);
+  border-color: var(--primary, #2f6659);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(47, 102, 89, 0.2);
+}
+
+/* 按题型列数配置单行 */
+.column-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.column-config-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted, #68756f);
+  min-width: 70px;
+  flex-shrink: 0;
+}
+
+.col-btn-group {
+  flex: 1;
+  max-width: 260px;
+}
+
+/* 范围滑动条容器 */
 .form-range-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex: 1;
-  max-width: 220px;
+  max-width: 250px;
 }
 
 .form-range {
   flex: 1;
   height: 5px;
-  accent-color: var(--primary);
+  accent-color: var(--primary, #2f6659);
   cursor: pointer;
 }
 
 .form-range-val {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--primary);
-  min-width: 42px;
+  color: var(--primary, #2f6659);
+  min-width: 44px;
   text-align: right;
   font-family: monospace;
 }
 
+/* 复选框组 */
 .checkbox-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px 12px;
   justify-content: flex-end;
+  flex: 1;
 }
 
 .checkbox-label {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12.5px;
-  color: var(--text-main);
+  font-size: 12px;
+  color: var(--text-main, #26332f);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .checkbox-label input[type="checkbox"] {
-  accent-color: var(--primary);
+  accent-color: var(--primary, #2f6659);
   cursor: pointer;
 }
 
+/* 下拉选择框 */
 .form-select {
-  padding: 5px 10px;
-  font-size: 12.5px;
-  border: 1px solid var(--border-color);
+  padding: 4px 8px;
+  font-size: 12px;
+  height: 28px;
+  border: 1px solid var(--border-color, #c9d3ce);
   border-radius: 6px;
-  background: var(--bg-card);
-  color: var(--text-main);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #26332f);
   cursor: pointer;
   outline: none;
+  flex: 1;
+  max-width: 250px;
+  box-sizing: border-box;
 }
 
 .font-guide-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-}
-
-.font-guide-row .form-select {
-  min-width: 0;
-  width: 100%;
-}
-
-.font-preview-strip,
-.font-guide-row .field-help {
-  grid-column: 1 / -1;
+  gap: 8px;
 }
 
 .font-preview-strip {
-  min-height: 40px;
-  padding: 7px 10px 4px;
+  grid-column: 1 / -1;
+  min-height: 38px;
+  padding: 6px 10px 4px;
   overflow: hidden;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-light, #e2e7e4);
   border-radius: 6px;
   background: linear-gradient(
     to bottom,
@@ -991,52 +1103,17 @@ function onCopiesChange(count) {
     #aabbb5 75%,
     transparent 76%
   );
-  color: var(--primary);
-  font-size: 24px;
+  color: var(--primary, #2f6659);
+  font-size: 22px;
   line-height: 1.15;
   text-align: center;
   white-space: nowrap;
 }
 
-.font-guide-row .field-help {
+.field-note {
   margin: 0;
-  color: var(--text-light);
   font-size: 11px;
-  line-height: 1.45;
-}
-
-.preset-btn-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: -4px;
-}
-
-.preset-pill-group {
-  display: inline-flex;
-  gap: 6px;
-}
-
-.preset-pill-btn {
-  padding: 2px 8px;
-  font-size: 11px;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.preset-pill-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.preset-pill-btn.active {
-  background: var(--primary-light);
-  border-color: var(--primary);
-  color: var(--primary);
-  font-weight: 600;
+  color: var(--text-light, #909b96);
+  line-height: 1.5;
 }
 </style>

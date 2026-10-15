@@ -7,49 +7,50 @@
             <AppIcon name="file-text" :size="16" />
             试卷题目
           </span>
+          <span class="header-hint-tag" title="在列表中双击任意题目可快速二次编辑">
+            双击题目可编辑
+          </span>
         </div>
       </template>
 
       <template #header-extra>
-        <div class="exam-stat-header" id="badgeWordCount" :title="detailedStatusTitle">
-          <span class="stat-main-badge">
-            已添加 {{ state.draft.items.length }} 题
-          </span>
-          <span class="stat-divider">·</span>
-          <span class="stat-breakdown-text">
-            {{ statBreakdownSummary }}
-          </span>
-        </div>
-      </template>
+        <div class="pane-header-actions">
+          <div class="exam-stat-header" id="badgeWordCount" :title="detailedStatusTitle">
+            <span class="stat-main-badge">
+              已添加 {{ state.draft.items.length }} 题
+            </span>
+            <span class="stat-divider">·</span>
+            <span class="stat-breakdown-text">
+              {{ statBreakdownSummary }}
+            </span>
+          </div>
 
-      <!-- 批量列数与快捷操作工具栏 -->
-      <div v-if="state.draft.items.length > 0" class="batch-toolbar">
-        <div class="batch-col-group">
-          <span class="batch-label">批量列数:</span>
-          <button type="button" class="batch-btn" title="批量设为每行 1 题" @click="batchSetColumns(1)">1列</button>
-          <button type="button" class="batch-btn" title="批量设为每行 2 题" @click="batchSetColumns(2)">2列</button>
-          <button type="button" class="batch-btn" title="批量设为每行 3 题" @click="batchSetColumns(3)">3列</button>
-          <button type="button" class="batch-btn" title="批量设为每行 4 题" @click="batchSetColumns(4)">4列</button>
-          <button type="button" class="batch-btn" title="批量设为每行 5 题" @click="batchSetColumns(5)">5列</button>
-          <button type="button" class="batch-btn restore" title="恢复为题型默认列数" @click="batchRestoreDefault()">恢复默认</button>
-        </div>
-
-        <div class="batch-actions-right">
+          <!-- 迁移至顶部标题栏最右侧角落的幽灵清空按钮 -->
           <n-popconfirm
+            :disabled="state.draft.items.length === 0"
             @positive-click="handleClearAll"
             positive-text="确定"
             negative-text="取消"
           >
             <template #trigger>
-              <button type="button" class="batch-btn del" id="btnClearWords" title="清空试卷所有题目">
+              <button
+                type="button"
+                class="header-ghost-clear-btn"
+                id="btnClearExamItems"
+                data-debug-id="Q-007-CLEAR"
+                :disabled="state.draft.items.length === 0"
+                :class="{ 'is-disabled': state.draft.items.length === 0 }"
+                title="清空试卷所有题目"
+                aria-label="清空试卷所有题目"
+              >
                 <AppIcon name="trash" :size="12" />
-                清空
+                <span>清空</span>
               </button>
             </template>
             确定要清空试卷上的全部题目吗？
           </n-popconfirm>
         </div>
-      </div>
+      </template>
 
       <!-- 紧凑试卷题目列表 -->
       <div
@@ -76,20 +77,19 @@
             :key="item.id || index"
             class="word-item-row compact-exam-row word-chip"
             :class="{
-              'has-override-col': Boolean(item.layout?.columns),
               'is-separator-row': item.questionType === 'separator'
             }"
             :data-id="item.id"
             :data-debug-id="'ITEM-' + item.id"
             data-debug-name="试卷题目项"
-            title="双击可编辑该题内容"
+            title="双击题目可编辑"
             @dblclick="openEditModal(index)"
           >
             <!-- 序号与题型前导区 -->
             <div class="row-leading">
               <span class="word-item-index">{{ item.questionType === 'separator' ? '§' : formatIndex(index + 1) }}</span>
-              <span class="question-type-pill" :class="item.questionType || 'word-dictation'">
-                {{ getQuestionTypeLabel(item.questionType) }}
+              <span class="question-type-pill" :class="[item.questionType || 'word-dictation', item.subType ? `subtype-${item.subType}` : '']">
+                {{ getQuestionTypeLabel(item) }}
               </span>
             </div>
 
@@ -127,48 +127,13 @@
               </div>
             </div>
 
-            <!-- 紧凑 1:1 正方形操作按钮组 (28x28px) -->
-            <div class="word-item-actions">
-              <!-- 单题布局弹出选择器：使用原生 button 作为直接触发器，解决坐标飘到 (0, 0) 的 Bug -->
-              <n-popselect
-                :value="item.layout?.columns || 'default'"
-                :options="columnOptions"
-                trigger="click"
-                size="small"
-                @update:value="setColumnsFromSelect(item, $event)"
-              >
-                <button
-                  type="button"
-                  class="word-item-btn"
-                  title="设置该题每行列数（1至5列）"
-                  aria-label="设置该题每行列数（1至5列）"
-                >
-                  <AppIcon name="grid" :size="13" />
-                </button>
-              </n-popselect>
-
-              <!-- 全题型支持二次编辑（点击或双击整行） -->
-              <IconActionButton
-                class="word-item-btn"
-                label="编辑题目内容"
-                icon="edit"
-                :icon-size="13"
-                @click.stop="openEditModal(index)"
-              />
-
-              <IconActionButton
-                class="word-item-btn"
-                label="复制题目"
-                icon="copy"
-                :icon-size="13"
-                @click.stop="duplicateItem(index)"
-              />
-
+            <!-- 紧凑 1:1 正方形操作按钮组 (24x24px)，默认半透明，悬停浮现 -->
+            <div class="word-item-actions" @click.stop @dblclick.stop>
               <IconActionButton
                 class="word-item-btn"
                 label="上移题目"
                 icon="arrow-up"
-                :icon-size="13"
+                :icon-size="12"
                 :disabled="index === 0"
                 @click.stop="moveUp(index)"
               />
@@ -177,7 +142,7 @@
                 class="word-item-btn"
                 label="下移题目"
                 icon="arrow-down"
-                :icon-size="13"
+                :icon-size="12"
                 :disabled="index === state.draft.items.length - 1"
                 @click.stop="moveDown(index)"
               />
@@ -186,7 +151,7 @@
                 class="word-item-btn del"
                 label="删除题目"
                 icon="trash"
-                :icon-size="13"
+                :icon-size="12"
                 @click.stop="removeItem(index)"
               />
             </div>
@@ -245,19 +210,72 @@
         <!-- 句子挖空 -->
         <div v-else-if="editForm.questionType === 'sentence-cloze'" class="edit-form-stack">
           <div class="edit-form-item">
-            <label class="edit-form-label">英文原句与挖空</label>
+            <label class="edit-form-label">英文原句</label>
             <n-input
-              v-model:value="editForm.en"
+              :value="clozeSentenceInput"
               type="textarea"
-              :autosize="{ minRows: 2, maxRows: 4 }"
-              placeholder="使用中括号指定挖空，如 I [like] apples."
+              :autosize="{ minRows: 2, maxRows: 3 }"
+              placeholder="请输入英文句子，如：Ask your teacher for help."
+              @update:value="onClozeSentenceInputChange"
             />
-            <div class="edit-form-help">
-              💡 提示：在需要挖空填词的单词前后加上中括号 [ ]，例如 "Ask [your teacher] for help."
+          </div>
+
+          <!-- 可视化单词点选挖空区 -->
+          <div class="cloze-token-block">
+            <div class="cloze-token-header">
+              <span class="cloze-token-title">快捷点选挖空单词</span>
+              <span class="cloze-token-tip">点击下方单词即可快捷设为挖空或取消挖空（自动剥离标点符号）</span>
+            </div>
+
+            <div class="cloze-word-chips" id="modalClozeChips">
+              <template v-if="clozeWordTokens.length === 0">
+                <span class="cloze-empty-tip">请输入上方英文句子以生成可点击单词</span>
+              </template>
+              <template v-else>
+                <button
+                  v-for="tok in clozeWordTokens"
+                  :key="tok.id"
+                  type="button"
+                  class="cloze-chip-btn"
+                  :class="{ 'is-blank': tok.isBlank }"
+                  :title="tok.isBlank ? '点击取消挖空' : '点击设为挖空'"
+                  @click.stop="toggleClozeToken(tok)"
+                >
+                  {{ tok.text }}
+                  <span v-if="tok.isBlank" class="cloze-chip-badge">挖空</span>
+                </button>
+              </template>
             </div>
           </div>
+
+          <!-- 实时挖空效果预览 -->
+          <div class="cloze-preview-block">
+            <div class="cloze-preview-header">
+              <span class="cloze-preview-title">试卷挖空效果实时预览：</span>
+              <span v-if="!hasClozeBlank" class="cloze-warn-badge">提示：尚未选择挖空词</span>
+            </div>
+            <div class="cloze-preview-content">
+              <template v-if="clozePreviewSegments.length === 0">
+                <span class="cloze-empty-tip">暂无预览</span>
+              </template>
+              <template v-else>
+                <div class="cloze-preview-sentence">
+                  <template v-for="(seg, sIdx) in clozePreviewSegments" :key="sIdx">
+                    <span
+                      v-if="seg.blank"
+                      class="cloze-blank-highlight"
+                    >
+                      ( {{ seg.text.trim() }} )
+                    </span>
+                    <span v-else>{{ seg.text }}</span>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </div>
+
           <div class="edit-form-item">
-            <label class="edit-form-label">中文翻译（置于句子上方）</label>
+            <label class="edit-form-label">中文释义 / 翻译（置于句子上方）</label>
             <n-input
               v-model:value="editForm.zh"
               type="textarea"
@@ -352,11 +370,6 @@
           </div>
         </div>
 
-        <!-- 通用每行列数设置（非隔断类型） -->
-        <div v-if="editForm.questionType !== 'separator'" class="edit-form-item" style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
-          <label class="edit-form-label">该题独立每行列数</label>
-          <n-select v-model:value="editForm.columns" :options="columnOptions" size="small" />
-        </div>
       </div>
 
       <template #footer>
@@ -384,11 +397,16 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { NCard, NPopconfirm, NPopselect, NModal, NInput, NInputNumber, NButton, NSelect, useMessage } from 'naive-ui';
+import { NCard, NPopconfirm, NModal, NInput, NInputNumber, NButton, NSelect, useMessage } from 'naive-ui';
 import { state } from '../stores/appStore.js';
 import { computePageLayout } from '../core/layout.js';
 import { normalizeQuestion } from '../question-types/registry.js';
-import { parseSentenceToSegments } from '../core/tokenizer.js';
+import {
+  parseSentenceToSegments,
+  parseSentenceIntoVisualTokens,
+  getVisualSegments,
+  segmentsToMarkedText
+} from '../core/tokenizer.js';
 import AppIcon from './AppIcon.vue';
 import IconActionButton from './IconActionButton.vue';
 
@@ -396,15 +414,6 @@ const message = useMessage();
 const structuredTypes = ['choice', 'inline-fill', 'english-composition'];
 
 const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
-
-const columnOptions = [
-  { label: '继承题型默认', value: 'default' },
-  { label: '每行 1 题', value: 1 },
-  { label: '每行 2 题', value: 2 },
-  { label: '每行 3 题', value: 3 },
-  { label: '每行 4 题', value: 4 },
-  { label: '每行 5 题', value: 5 }
-];
 
 const sectionColumnOptions = [
   { label: '每行 1 题（整行通栏）', value: 1 },
@@ -429,9 +438,37 @@ const editForm = ref({
   title: '',
   instructions: '',
   lineCount: 8,
-  sectionColumns: 2,
-  columns: 'default'
+  sectionColumns: 2
 });
+
+// 句子挖空可视化切词与点选状态
+const clozeSentenceInput = ref('');
+const clozeTokens = ref([]);
+const clozeWordTokens = computed(() => clozeTokens.value.filter(t => t.isWord));
+const clozePreviewSegments = computed(() => getVisualSegments(clozeTokens.value));
+const hasClozeBlank = computed(() => clozePreviewSegments.value.some(s => s.blank));
+
+function toggleClozeToken(tok) {
+  tok.isBlank = !tok.isBlank;
+}
+
+function onClozeSentenceInputChange(newVal) {
+  const text = newVal || '';
+  clozeSentenceInput.value = text;
+  // 记住当前已设为挖空的单词（忽略大小写）
+  const currentlyBlankWords = new Set(
+    clozeTokens.value.filter(t => t.isWord && t.isBlank).map(t => t.text.toLowerCase())
+  );
+  // 自动重新解析
+  const newTokens = parseSentenceIntoVisualTokens(text);
+  // 保留先前的挖空状态
+  newTokens.forEach(t => {
+    if (t.isWord && currentlyBlankWords.has(t.text.toLowerCase())) {
+      t.isBlank = true;
+    }
+  });
+  clozeTokens.value = newTokens;
+}
 
 const editModalTitle = computed(() => {
   const typeName = getQuestionTypeLabel(editForm.value.questionType);
@@ -454,9 +491,16 @@ function openEditModal(index) {
     title: item.title || '',
     instructions: item.instructions || '',
     lineCount: item.lineCount || 8,
-    sectionColumns: item.sectionColumns || 2,
-    columns: item.layout?.columns || 'default'
+    sectionColumns: item.sectionColumns || 2
   };
+
+  if (item.questionType === 'sentence-cloze') {
+    const rawEn = item.en || '';
+    clozeTokens.value = parseSentenceIntoVisualTokens(rawEn);
+    // 自动剥离用于标记的括号，供纯净原句输入框展示与编辑
+    clozeSentenceInput.value = rawEn.replace(/[[\]{}]/g, '');
+  }
+
   isEditModalOpen.value = true;
 }
 
@@ -473,13 +517,25 @@ function saveEditModal() {
     updated.zh = (editForm.value.zh || '').trim();
     if (type === 'word-dictation') updated.phonetic = (editForm.value.phonetic || '').trim();
   } else if (type === 'sentence-cloze') {
-    updated.en = (editForm.value.en || '').trim();
+    if (!hasClozeBlank.value) {
+      message.warning('请至少点击选择一个单词作为挖空目标！');
+      return;
+    }
+    const finalSegments = getVisualSegments(clozeTokens.value);
+    const finalMarked = segmentsToMarkedText(finalSegments);
+    updated.en = finalMarked;
     updated.zh = (editForm.value.zh || '').trim();
-    updated.segments = parseSentenceToSegments(updated.en);
+    updated.translation = updated.zh;
+    updated.segments = finalSegments;
   } else if (type === 'alphabet') {
     updated.prompt = (editForm.value.prompt || '').trim();
     if (editForm.value.char) updated.char = editForm.value.char.trim();
     if (editForm.value.zh) updated.zh = editForm.value.zh.trim();
+    if (original.subType) updated.subType = original.subType;
+    if (original.alphabetType) updated.alphabetType = original.alphabetType;
+    if (original.alphaData) updated.alphaData = original.alphaData;
+    if (original.neighborData) updated.neighborData = original.neighborData;
+    if (original.caseData) updated.caseData = original.caseData;
   } else if (type === 'choice') {
     updated.stem = (editForm.value.stem || '').trim();
     updated.options = editForm.value.options.map(opt => ({ ...opt, text: (opt.text || '').trim() }));
@@ -492,13 +548,6 @@ function saveEditModal() {
   } else if (type === 'separator') {
     updated.title = (editForm.value.title || '').trim();
     updated.sectionColumns = Number(editForm.value.sectionColumns) || 2;
-  }
-
-  if (editForm.value.columns === 'default' || !editForm.value.columns) {
-    if (updated.layout) delete updated.layout.columns;
-  } else {
-    if (!updated.layout) updated.layout = {};
-    updated.layout.columns = Number(editForm.value.columns);
   }
 
   state.draft.items[idx] = updated;
@@ -519,14 +568,22 @@ const statBreakdownSummary = computed(() => {
   if (items.length === 0) return '空画布';
   const counts = {};
   items.forEach(it => {
-    const t = it.questionType || 'word-dictation';
+    let t = it.questionType || 'word-dictation';
+    if (t === 'alphabet') {
+      const sub = it.subType || it.alphabetType;
+      if (sub === 'neighbor' || it.neighborData) t = 'alpha-neighbor';
+      else if (sub === 'case' || it.caseData) t = 'alpha-case';
+      else t = 'alpha-seq';
+    }
     counts[t] = (counts[t] || 0) + 1;
   });
   const parts = [];
   if (counts['word-dictation']) parts.push(`单词${counts['word-dictation']}`);
   if (counts['sentence-cloze']) parts.push(`挖空${counts['sentence-cloze']}`);
   if (counts['sentence-dictation']) parts.push(`句子${counts['sentence-dictation']}`);
-  if (counts['alphabet']) parts.push(`字母${counts['alphabet']}`);
+  if (counts['alpha-seq']) parts.push(`字母默写${counts['alpha-seq']}`);
+  if (counts['alpha-neighbor']) parts.push(`字母邻居${counts['alpha-neighbor']}`);
+  if (counts['alpha-case']) parts.push(`大小写${counts['alpha-case']}`);
   if (counts['separator']) parts.push(`隔断${counts['separator']}`);
   if (counts['choice']) parts.push(`选择${counts['choice']}`);
   if (counts['inline-fill']) parts.push(`填空${counts['inline-fill']}`);
@@ -543,7 +600,17 @@ function formatIndex(num) {
   return num < 10 ? `0${num}.` : `${num}.`;
 }
 
-function getQuestionTypeLabel(type) {
+function getQuestionTypeLabel(itemOrType) {
+  if (typeof itemOrType === 'object' && itemOrType !== null) {
+    if (itemOrType.questionType === 'alphabet') {
+      const sub = itemOrType.subType || itemOrType.alphabetType;
+      if (sub === 'neighbor' || itemOrType.neighborData) return '字母邻居';
+      if (sub === 'case' || itemOrType.caseData) return '大小写';
+      if (sub === 'sequence' || itemOrType.alphaData) return '字母默写';
+      return '字母';
+    }
+    return getQuestionTypeLabel(itemOrType.questionType);
+  }
   const map = {
     'word-dictation': '单词',
     'sentence-cloze': '挖空',
@@ -554,7 +621,7 @@ function getQuestionTypeLabel(type) {
     'inline-fill': '填空',
     'english-composition': '作文'
   };
-  return map[type] || '试题';
+  return map[itemOrType] || '试题';
 }
 
 function getItemPrimaryText(item) {
@@ -580,34 +647,6 @@ function getItemSecondaryText(item) {
 function formatOptionsSummary(options) {
   if (!Array.isArray(options)) return '';
   return options.map(o => `${o.label}.${o.text}`).join('   ');
-}
-
-function setColumnsFromSelect(item, val) {
-  if (!item.layout) item.layout = {};
-  if (val === 'default' || !val) {
-    delete item.layout.columns;
-    message.success('已恢复为题型默认列数');
-  } else {
-    item.layout.columns = Number(val);
-    message.success(`已设为每行 ${val} 题`);
-  }
-}
-
-function batchSetColumns(cols) {
-  let count = 0;
-  state.draft.items.forEach(item => {
-    if (!item.layout) item.layout = {};
-    item.layout.columns = cols;
-    count++;
-  });
-  message.success(`已将全部 ${count} 道题目设为每行 ${cols} 题`);
-}
-
-function batchRestoreDefault() {
-  state.draft.items.forEach(item => {
-    if (item.layout) delete item.layout.columns;
-  });
-  message.success('已将全部题目恢复为题型默认列数');
 }
 
 function moveUp(index) {
@@ -666,6 +705,17 @@ function switchToTab(tabKey) {
   gap: 8px;
 }
 
+.header-hint-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--primary);
+  background: var(--primary-light, #f0fdf4);
+  padding: 1px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--primary-border, #bbf7d0);
+  letter-spacing: 0.01em;
+}
+
 .title-with-icon {
   display: inline-flex;
   align-items: center;
@@ -673,6 +723,12 @@ function switchToTab(tabKey) {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-main);
+}
+
+.pane-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .exam-stat-header {
@@ -701,64 +757,33 @@ function switchToTab(tabKey) {
   color: var(--text-muted);
 }
 
-.batch-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  background: var(--bg-app);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  margin-bottom: 10px;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.batch-col-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.batch-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.batch-btn {
-  padding: 3px 6px;
-  font-size: 11px;
-  font-weight: 500;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-main);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.batch-btn:hover {
-  background: var(--primary-light);
-  border-color: var(--primary-border);
-  color: var(--primary);
-}
-
-.batch-btn.restore {
-  font-size: 10.5px;
-  color: var(--text-muted);
-}
-
-.batch-btn.del {
+.header-ghost-clear-btn {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  color: var(--danger);
-  border-color: rgba(197, 82, 74, 0.3);
+  padding: 3px 7px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
 }
 
-.batch-btn.del:hover {
-  background: var(--color-danger-light);
+.header-ghost-clear-btn:hover:not(:disabled) {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.header-ghost-clear-btn:disabled,
+.header-ghost-clear-btn.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* 紧凑列表容器 */
@@ -782,6 +807,7 @@ function switchToTab(tabKey) {
   gap: 8px;
   transition: background 0.15s ease;
   user-select: none;
+  cursor: pointer;
 }
 
 .compact-exam-row:last-child {
@@ -898,28 +924,38 @@ function switchToTab(tabKey) {
   padding: 0 4px;
 }
 
-/* 1:1 正方形操作按钮组 (28x28px) */
+/* 紧凑 1:1 正方形操作按钮组 (24x24px)，默认半透明，悬停浮现 */
 .word-item-actions {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   flex-shrink: 0;
+  opacity: 0.15;
+  transition: opacity 0.15s ease;
+}
+
+.compact-exam-row:hover .word-item-actions,
+.compact-exam-row:focus-within .word-item-actions,
+.word-item-actions:hover {
+  opacity: 1;
 }
 
 .word-item-btn {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 5px !important;
+  border-radius: 4px !important;
   border: 1px solid var(--border-color) !important;
   background: var(--bg-card) !important;
   color: var(--text-muted) !important;
   cursor: pointer !important;
   transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
 }
 
 .word-item-btn:hover:not(:disabled) {
@@ -929,7 +965,7 @@ function switchToTab(tabKey) {
 }
 
 .word-item-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.25;
   cursor: not-allowed;
 }
 
@@ -1038,5 +1074,148 @@ function switchToTab(tabKey) {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 句子挖空二次编辑 - 可视化单词点选与实时预览 */
+.cloze-token-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-app);
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.cloze-token-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cloze-token-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.cloze-token-tip {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.cloze-word-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  background: var(--bg-card);
+  border-radius: 6px;
+  border: 1px dashed var(--border-color);
+  min-height: 42px;
+  align-items: center;
+}
+
+.cloze-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 5px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  line-height: 1.3;
+}
+
+.cloze-chip-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light, #f0fdf4);
+  transform: translateY(-1px);
+}
+
+.cloze-chip-btn.is-blank {
+  background: var(--primary, #2f6659);
+  color: #ffffff;
+  border-color: var(--primary, #2f6659);
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(47, 102, 89, 0.25);
+}
+
+.cloze-chip-btn.is-blank:hover {
+  background: var(--primary-hover, #245247);
+  border-color: var(--primary-hover, #245247);
+  color: #ffffff;
+}
+
+.cloze-chip-badge {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.cloze-preview-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-app);
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.cloze-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cloze-preview-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.cloze-warn-badge {
+  font-size: 11px;
+  color: var(--danger, #ef4444);
+}
+
+.cloze-preview-content {
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  min-height: 36px;
+}
+
+.cloze-preview-sentence {
+  font-size: 13.5px;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+.cloze-blank-highlight {
+  display: inline-block;
+  color: var(--primary, #2f6659);
+  font-weight: 700;
+  border-bottom: 2px solid var(--primary, #2f6659);
+  padding: 0 4px;
+  margin: 0 2px;
+}
+
+.cloze-empty-tip {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 </style>

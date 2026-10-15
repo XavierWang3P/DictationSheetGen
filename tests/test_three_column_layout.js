@@ -2,7 +2,10 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
-const ARTIFACT_DIR = 'C:\\Users\\XW\\.gemini\\antigravity\\brain\\71946fdd-6b55-44de-ac42-a8aa7a68a28b';
+const ARTIFACT_DIR = 'C:\\Users\\XW\\.gemini\\antigravity\\brain\\846c1c6e-b112-4a0a-a0fa-76717b957e26';
+if (!fs.existsSync(ARTIFACT_DIR)) {
+  fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
+}
 
 async function runThreeColumnTest() {
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', [
@@ -49,6 +52,13 @@ async function runThreeColumnTest() {
 
     await new Promise(resolve => ws.onopen = resolve);
     console.log('=== 开始执行三栏布局 (Three-Column Layout) 与句子底部空间回归验证 ===\n');
+
+    // 等待页面挂载完成
+    for (let i = 0; i < 30; i++) {
+      const ready = await evalExpr(`!!document.getElementById('sidebarPanel')`);
+      if (ready) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
 
     // 1. 验证三栏布局初始几何结构
     const initialColumns = await evalExpr(`(() => {

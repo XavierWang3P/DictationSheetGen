@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { generateLetterNeighborsItems, generateCaseConversionItems } from './src/core/alphabet.js';
-import { parseSentenceToSegments } from './src/core/tokenizer.js';
-import { computePageLayout, renderCopySlipHtml, DEFAULT_SETTINGS } from './src/core/layout.js';
-import { normalizeQuestion, getQuestionTypeDefinition } from './src/question-types/registry.js';
+import { generateLetterNeighborsItems, generateCaseConversionItems } from '../src/core/alphabet.js';
+import { parseSentenceToSegments } from '../src/core/tokenizer.js';
+import { computePageLayout, renderCopySlipHtml, DEFAULT_SETTINGS } from '../src/core/layout.js';
+import { normalizeQuestion, getQuestionTypeDefinition } from '../src/question-types/registry.js';
 
 console.log('=== 开始执行 v2.4.1 八大问题与版式功能专项测试 ===\n');
 

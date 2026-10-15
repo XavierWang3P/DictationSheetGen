@@ -6,14 +6,14 @@ import {
   normalizeQuestion,
   resolveQuestionColumns,
   shouldUseFullRow
-} from './src/question-types/registry.js';
-import { calculateWritingGridWidth } from './src/core/writingGridWidth.js';
+} from '../src/question-types/registry.js';
+import { calculateWritingGridWidth } from '../src/core/writingGridWidth.js';
 import {
   DEFAULT_SETTINGS,
   computePageLayout,
   formatClozePrompt,
   renderPracticeSheetHtml
-} from './src/core/layout.js';
+} from '../src/core/layout.js';
 
 function test(name, fn) {
   try {

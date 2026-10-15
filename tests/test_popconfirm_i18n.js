@@ -13,7 +13,7 @@ async function testPopconfirmI18n() {
     'file:///d:/DictationSheetGen/dist/index.html'
   ]);
 
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 3500));
 
   try {
     const res = await fetch('http://127.0.0.1:9260/json');

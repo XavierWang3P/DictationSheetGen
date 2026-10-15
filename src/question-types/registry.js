@@ -64,6 +64,7 @@ function baseQuestion(data, type) {
     id,
     sourceId: data?.sourceId || null,
     questionType: type,
+    subType: data?.subType || data?.alphabetType || null,
     layout: data?.layout && typeof data.layout === 'object'
       ? { ...data.layout }
       : {},
@@ -77,6 +78,7 @@ function normalizeLegacyText(data, type) {
   const zh = String(data?.zh || data?.translation || '').trim();
   return {
     ...base,
+    subType: data?.subType || data?.alphabetType || null,
     type: data?.type || (type.startsWith('sentence') ? 'sentence' : 'word'),
     en,
     zh,
@@ -107,7 +109,25 @@ function normalizeCloze(data) {
 }
 
 function normalizeAlphabet(data) {
-  return normalizeLegacyText(data, 'alphabet');
+  const base = normalizeLegacyText(data, 'alphabet');
+  let subType = data?.subType || data?.alphabetType;
+  if (!subType) {
+    if (data?.neighborData || data?.id?.startsWith('neighbor') || (data?.zh && data?.zh.includes('邻居'))) {
+      subType = 'neighbor';
+    } else if (data?.caseData || data?.id?.startsWith('case')) {
+      subType = 'case';
+    } else {
+      subType = 'sequence';
+    }
+  }
+  return {
+    ...base,
+    subType,
+    alphabetType: subType,
+    alphaData: data?.alphaData || null,
+    neighborData: data?.neighborData || null,
+    caseData: data?.caseData || null
+  };
 }
 
 function optionLabel(index, style) {
@@ -121,7 +141,7 @@ function normalizeChoice(data = {}) {
   const labelStyle = ['alpha-upper', 'numeric', 'true-false'].includes(data.labelStyle) ? data.labelStyle : 'alpha-upper';
   const targetCount = labelStyle === 'true-false'
     ? 2
-    : Math.min(6, Math.max(2, Number(data.optionCount) || data.options?.length || 4));
+    : Math.min(6, Math.max(2, Number(data.optionCount) || data.options?.length || 3));
   const sourceOptions = Array.isArray(data.options) ? data.options : [];
   const options = Array.from({ length: targetCount }, (_, index) => {
     const source = sourceOptions[index] || {};
@@ -141,7 +161,7 @@ function normalizeChoice(data = {}) {
     stem: String(data.stem || ''),
     selectionMode,
     labelStyle,
-    optionLayout: ['auto', 'single', 'double', 'inline'].includes(data.optionLayout) ? data.optionLayout : 'auto',
+    optionLayout: ['auto', 'single', 'double', 'three', 'inline'].includes(data.optionLayout) ? data.optionLayout : 'auto',
     options,
     answers
   };
@@ -185,7 +205,6 @@ function normalizeComposition(data = {}) {
     lineCount: Math.min(40, Math.max(3, Number(data.lineCount) || 10)),
     lineHeight: Math.min(18, Math.max(8, Number(data.lineHeight) || 11)),
     showTitleArea: data.showTitleArea !== false,
-    continuationMode: data.continuationMode === 'repeat' ? 'repeat' : 'label',
     compositionFragment: data.compositionFragment ? { ...data.compositionFragment } : null
   };
 }
@@ -322,7 +341,11 @@ export const questionTypeRegistry = {
       if (item.options.length < 2 || item.options.length > 6) errors.push('选项数量必须为2至6个');
       return { valid: errors.length === 0, errors };
     },
-    estimateHeight: (item, context) => 9 + Math.ceil(item.options.length / (resolveQuestionColumns(item, context.settings) === 2 ? 2 : 1)) * 6,
+    estimateHeight: (item, context) => {
+      const maxOptLen = Math.max(0, ...item.options.map((o) => (o.text || '').length));
+      const cols = (item.options.length === 3 && maxOptLen <= 14) ? 3 : (resolveQuestionColumns(item, context.settings) === 2 ? 2 : 1);
+      return 9 + Math.ceil(item.options.length / cols) * 6;
+    },
     defaultLayout: { columns: 'auto' },
     migrate: normalizeChoice,
     renderPreview: delegateRenderer('renderChoice'),
@@ -418,13 +441,26 @@ export function resolveQuestionColumns(item, settings = {}) {
   if (type === 'sentence-dictation') return defaults.sentenceDictationColumns;
   if (type === 'english-composition') return defaults.englishCompositionColumns || 1;
   if (type === 'alphabet') {
-    if (item?.neighborData?.layoutStyle === 'bottom-5col' || item?.caseData?.layoutStyle === 'bottom-5col') return 5;
-    if (item?.neighborData?.layoutStyle === 'bottom-4col' || item?.caseData?.layoutStyle === 'bottom-4col') return 4;
-    if (item?.neighborData?.layoutStyle === 'right-2col' || item?.caseData?.layoutStyle === 'right-2col') return 2;
-    if (settings.alphabetLayout === 'bottom-5col') return 5;
-    if (settings.alphabetLayout === 'bottom-4col') return 4;
-    if (settings.alphabetLayout === 'right-2col') return 2;
-    return 4;
+    const subType = item?.subType || item?.alphabetType || (item?.neighborData ? 'neighbor' : (item?.caseData ? 'case' : 'sequence'));
+    if (subType === 'neighbor') {
+      if (item?.neighborData?.layoutStyle === 'bottom-5col') return 5;
+      if (item?.neighborData?.layoutStyle === 'bottom-4col') return 4;
+      if (item?.neighborData?.layoutStyle === 'right-2col') return 2;
+      if (settings.alphabetLayout === 'bottom-5col') return 5;
+      if (settings.alphabetLayout === 'bottom-4col') return 4;
+      if (settings.alphabetLayout === 'right-2col') return 2;
+      return 4;
+    }
+    if (subType === 'case') {
+      if (item?.caseData?.layoutStyle === 'bottom-5col') return 5;
+      if (item?.caseData?.layoutStyle === 'bottom-4col') return 4;
+      if (item?.caseData?.layoutStyle === 'right-2col') return 2;
+      if (settings.alphabetLayout === 'bottom-5col') return 5;
+      if (settings.alphabetLayout === 'bottom-4col') return 4;
+      if (settings.alphabetLayout === 'right-2col') return 2;
+      return 4;
+    }
+    return 1;
   }
 
   let value = 'auto';

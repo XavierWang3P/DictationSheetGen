@@ -98,19 +98,21 @@ export const DEFAULT_CLOZE_WORDS_RAW = [
 export const PAPER_SIZES = {
   A4: { width: 210, height: 297, name: 'A4' },
   B4: { width: 257, height: 364, name: 'B4' },
-  '8K': { width: 260, height: 370, name: '8K' }
+  '8K': { width: 260, height: 370, name: '8K' },
+  A3: { width: 297, height: 420, name: 'A3' }
 };
 
 export const DEFAULT_SETTINGS = {
-  paperSize: 'A4',            // 'A4' | 'B4' | '8K'
+  paperSize: 'A4',            // 'A4' | 'B4' | '8K' | 'A3'
   orientation: 'portrait',     // 'portrait' | 'landscape'
+  splitFold: false,           // 大型纸张横向对半折（左右双页拼版）
   copiesPerPage: 3,           // 1 | 2 | 3 (默认一页 3 份)
   pageMargin: 8,              // mm (4-16)
   pageMarginHorizontal: 12,   // mm (4-24)
   dividerStyle: 'dashed',     // 'dashed' | 'solid' | 'none'
   showCutGuide: false,        // 不显示裁剪辅助线
   title: 'Unit 1 黑体词默写',
-  titleFontSize: '18pt',      // 滑动调整 (12-32pt)
+  titleFontSize: '18pt',      // 固定 18pt
   titleAlign: 'center',       // 'center'
   showStudentName: true,
   showStudentClass: true,
@@ -141,7 +143,7 @@ export const DEFAULT_SETTINGS = {
   alphabetLayout: 'bottom-4col', // 字母左右邻居与大小写转换默认每行4题
   alphabet26Rows: 3,
   autoOptimizeCopies: true,
-  letterSpacing: '0',
+  letterSpacing: '0.8px',
   showAnswerPage: false
 };
 
@@ -499,7 +501,7 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
       if (!zhText || clozeZhPosition === 'hide') {
         return `<div class="cloze-position-layout cloze-layout-hide">${englishHtml}</div>`;
       }
-      const chineseHtml = `<span class="cloze-zh pos-${clozeZhPosition}">(${escapeHtml(zhText)})</span>`;
+      const chineseHtml = `<span class="cloze-zh pos-${clozeZhPosition}">${escapeHtml(zhText)}</span>`;
       if (clozeZhPosition === 'above') {
         return `<div class="cloze-position-layout cloze-layout-above">${chineseHtml}${englishHtml}</div>`;
       }
@@ -510,7 +512,7 @@ export function formatClozePrompt(itemOrEn, modeOrZh, maybeModeOrOpts, options =
     }
     let zhHtml = '';
     if (zhText && clozeZhPosition !== 'hide') {
-      zhHtml = `<span class="cloze-zh pos-${clozeZhPosition}">(${escapeHtml(zhText)})</span>`;
+      zhHtml = `<span class="cloze-zh pos-${clozeZhPosition}">${escapeHtml(zhText)}</span>`;
     }
 
     if (clozeZhPosition === 'below') {
@@ -671,49 +673,76 @@ export function computePageLayout(items, settings) {
   const curPaperKey = s.paperSize || 'A4';
   const pDim = PAPER_SIZES[curPaperKey] || PAPER_SIZES.A4;
   const isLand = (s.orientation === 'landscape');
+  const isSplitFold = Boolean(s.splitFold && isLand);
   const pageWidthMm = isLand ? pDim.height : pDim.width;
   const pageHeightMm = isLand ? pDim.width : pDim.height;
-  const copiesPerPage = Math.max(1, parseInt(s.copiesPerPage, 10) || 3);
+  const copiesPerPage = isSplitFold ? 1 : Math.max(1, parseInt(s.copiesPerPage, 10) || 3);
 
   // 迁移所有题目为规范格式
   const migratedItems = rawWords.map(w => migrateDraftItem(w, s.dictMode));
 
-  // 检查是否为 26 字母全默写
-  const isAlpha26 = (s.dictMode === 'alphabet' && migratedItems.length === 26 && migratedItems[0]?.alphaData);
-  if (isAlpha26) {
+  // 检查是否首部包含完整的 26 字母默写组 (严格基于 subType/alphaData，杜绝 dictMode 全局状态污染)
+  const isSeqItem = (it) => it && (it.subType === 'sequence' || it.alphabetType === 'sequence' || it.alphaData);
+  let seqBlockStart = -1;
+  for (let i = 0; i <= migratedItems.length - 26; i++) {
+    if (migratedItems.slice(i, i + 26).every(isSeqItem)) {
+      seqBlockStart = i;
+      break;
+    }
+  }
+
+  if (migratedItems.length === 26 && seqBlockStart === 0) {
     return {
       paperDim: pDim,
       isLandscape: isLand,
+      isSplitFold: false,
       pageWidthMm,
       pageHeightMm,
       wordsPerPage: 26,
       capacity: 26,
       copiesPerPage: 1,
       totalPages: 1,
+      pageCount: 1,
       totalItems: 26,
-      pageChunks: [{ pageIndex: 0, items: migratedItems.map((item, i) => ({ overallIndex: i + 1, item })) }]
+      pageChunks: [{ pageIndex: 0, items: migratedItems.map((item, i) => ({ overallIndex: i + 1, item, isFullWidth: true, gridSpan: 60 })) }]
     };
+  }
+
+  const initialChunks = [];
+  let remainingMigratedItems = migratedItems;
+  let offsetIndex = 0;
+  if (seqBlockStart === 0) {
+    initialChunks.push({
+      pageIndex: 0,
+      items: migratedItems.slice(0, 26).map((item, i) => ({ overallIndex: i + 1, item, isFullWidth: true, gridSpan: 60 }))
+    });
+    remainingMigratedItems = migratedItems.slice(26);
+    offsetIndex = 26;
   }
 
   // 计算每份试卷的最大可用物理高度 (mm)
   const pageMargin = Number(s.pageMargin || 8);
   const pageMarginHorizontal = Number(s.pageMarginHorizontal ?? 12);
+  const foldSeamMm = isSplitFold ? 16 : 0;
   const netPageHeightMm = pageHeightMm - (pageMargin * 2);
-  const dividerHeightMm = (copiesPerPage > 1) ? (copiesPerPage - 1) * 2.5 : 0;
-  const copyHeightMm = (netPageHeightMm - dividerHeightMm) / copiesPerPage;
-  const headerHeightMm = (copiesPerPage > 1) ? 14 : 22;
-  const copyPaddingMm = (copiesPerPage > 1) ? 3 : 8;
+  const dividerHeightMm = (!isSplitFold && copiesPerPage > 1) ? (copiesPerPage - 1) * 2.5 : 0;
+  const copyHeightMm = isSplitFold ? netPageHeightMm : (netPageHeightMm - dividerHeightMm) / copiesPerPage;
+  const headerHeightMm = isSplitFold ? 16 : ((copiesPerPage > 1) ? 14 : 22);
+  const copyPaddingMm = isSplitFold ? 4 : ((copiesPerPage > 1) ? 3 : 8);
   const maxAvailableHeightMm = Math.max(30, copyHeightMm - headerHeightMm - copyPaddingMm + 1.5);
 
-  const effectiveRowGap = (copiesPerPage > 1)
+  const effectiveRowGap = (!isSplitFold && copiesPerPage > 1)
     ? Math.min(copiesPerPage >= 3 ? 2.0 : 2.5, Number(s.rowGap) || 3.5)
     : (Number(s.rowGap) || 3.5);
 
   const gridUnits = 60;
-  const contentWidthMm = Math.max(40, pageWidthMm - (pageMarginHorizontal * 2));
+  const contentWidthMm = isSplitFold
+    ? Math.max(40, (pageWidthMm - (pageMarginHorizontal * 2) - foldSeamMm) / 2)
+    : Math.max(40, pageWidthMm - (pageMarginHorizontal * 2));
   const expandedItems = [];
-  let displaySeq = 0;
-  migratedItems.forEach((item, originalIndex) => {
+  let displaySeq = offsetIndex;
+  remainingMigratedItems.forEach((item, idx) => {
+    const originalIndex = offsetIndex + idx;
     const isSep = item.questionType === 'separator';
     const displayIndex = isSep ? null : ++displaySeq;
     if (item.questionType !== 'english-composition') {
@@ -753,7 +782,7 @@ export function computePageLayout(items, settings) {
   });
 
   // 智能行进流式分页算法
-  const pageChunks = [];
+  const pageChunks = [...initialChunks];
   let currentPageItems = [];
   let currentUsedHeightMm = 0;
   let currentGridOccupied = 0;
@@ -873,7 +902,7 @@ export function computePageLayout(items, settings) {
     const itemHeightMm = estimateQuestionHeightMm(item, { ...s, _availableItemWidthMm: availableItemWidthMm }, copiesPerPage);
     let placement = simulatePlacement(gridSpan, itemHeightMm);
     const exceedsHeight = currentPageItems.length > 0 && placement.total > maxAvailableHeightMm;
-    const exceedsCapacity = !canFitAllInSinglePage && (currentPageItems.length >= userCapacity) && !isAlpha26;
+    const exceedsCapacity = !canFitAllInSinglePage && (currentPageItems.length >= userCapacity);
 
     if (exceedsHeight || exceedsCapacity) {
       pageChunks.push({ pageIndex: pageChunks.length, items: currentPageItems });
@@ -906,16 +935,20 @@ export function computePageLayout(items, settings) {
     });
   }
 
+  const physicalPages = isSplitFold ? Math.max(1, Math.ceil(pageChunks.length / 2)) : pageChunks.length;
+
   return {
     paperDim: pDim,
     isLandscape: isLand,
+    isSplitFold,
     pageWidthMm,
     pageHeightMm,
     wordsPerPage: userCapacity,
     capacity: userCapacity,
     copiesPerPage,
-    totalPages: pageChunks.length,
-    pageCount: pageChunks.length,
+    totalPages: physicalPages,
+    pageCount: physicalPages,
+    totalHalfPages: pageChunks.length,
     totalItems: migratedItems.length,
     gridUnits,
     contentWidthMm,
@@ -952,8 +985,9 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
   const effectiveGridHeight = copies > 1 ? Math.min(multiCopyGridLimit, s.gridHeight || 12) : (s.gridHeight || 12);
   const availableWidthPx = Math.max(48, (entry.availableWidthMm || 180) * 3.7795275591);
   const fontSizePx = (Number(effectivePromptSize) || 14) * 1.333333;
+  const standardEnglishFont = "'Times New Roman', Times, serif";
   const measurementOptions = {
-    fontFamily: s.fontFamilyEn || 'Arial, sans-serif',
+    fontFamily: standardEnglishFont,
     fontSize: fontSizePx,
     letterSpacing: parseFloat(s.letterSpacing) || 0,
     availableWidth: availableWidthPx,
@@ -1007,7 +1041,7 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
       if (teacherMode) {
         const questionText = (item.en || '').replace(/\[[^\]]+\]|\{[^}]+\}/g, '_____');
         const zhText = item.overrideZh || item.zh || item.translation || '';
-        const questionHtml = `<span class="teacher-question-english">${escapeHtml(questionText)}</span>${zhText ? `<span class="teacher-question-zh">（${escapeHtml(zhText)}）</span>` : ''}`;
+        const questionHtml = `<span class="teacher-question-english">${escapeHtml(questionText)}</span>${zhText ? `<span class="teacher-question-zh"> ${escapeHtml(zhText)}</span>` : ''}`;
         return {
           promptHtml: createTeacherQuestionAnswerHtml(questionHtml, (item.en || '').replace(/[\[\]{}]/g, '')),
           practiceHtml: '',
@@ -1034,51 +1068,94 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
       };
     },
     renderAlphabet(item) {
+      const subType = item.subType || item.alphabetType || (item.neighborData ? 'neighbor' : (item.caseData ? 'case' : 'sequence'));
       const promptText = item.prompt || item.zh || item.en;
       if (teacherMode) {
         return {
-          promptHtml: createTeacherQuestionAnswerHtml(escapeHtml(promptText), item.answer || item.en || ''),
+          promptHtml: createTeacherQuestionAnswerHtml(`<span class="alphabet-prompt-text" style="font-family:'Xumin Regular', 'xumin', cursive;">${escapeHtml(promptText)}</span>`, item.answer || item.en || ''),
           practiceHtml: '',
-          classes: ['is-alphabet-card', 'is-teacher-answer-card']
+          classes: ['is-alphabet-card', `subtype-${subType}`, 'is-teacher-answer-card']
         };
       }
       let gridHtml = '';
-      if (item.neighborData || item.id?.startsWith('neighbor') || (item.zh && item.zh.includes('邻居'))) {
+      if (subType === 'neighbor' || item.neighborData || item.id?.startsWith('neighbor') || (item.zh && item.zh.includes('邻居'))) {
         gridHtml = createNeighborPracticeGridSvg(item, { gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', alphabetGuideFont: s.alphabetGuideFont });
-      } else if (item.caseData || item.id?.startsWith('case')) {
+      } else if (subType === 'case' || item.caseData || item.id?.startsWith('case')) {
         gridHtml = createCasePracticeGridSvg(item, { gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', alphabetGuideFont: s.alphabetGuideFont, isTeacher: !!s._teacherMode });
+      } else if (subType === 'sequence' || item.alphaData) {
+        const aData = item.alphaData || {};
+        const isPreprinted = !aData.isBlank && aData.subMode === 'gap';
+        const guideChar = aData.targetEn || item.en || '';
+        gridHtml = createSingleAlphabetGridSvg({
+          gridHeightMm: effectiveGridHeight,
+          strokeWidth: s.gridStroke || 0.85,
+          lineColor: s.gridColor || '#cbd5e1',
+          guideText: (isPreprinted || s._teacherMode) ? guideChar : '',
+          alphabetGuideFont: s.alphabetGuideFont
+        });
       } else {
         gridHtml = createPracticeGridSvg({ gridStyle: s.gridStyle, gridLines: s.gridLinesPerWord || 1, gridHeightMm: effectiveGridHeight, strokeWidth: s.gridStroke || 0.85, lineColor: s.gridColor || '#cbd5e1', showVertical: s.showVerticalBorder });
       }
-      const isHorizontalGrid = (item.layout?.gridPosition === 'right') ||
+      const isHorizontalGrid = (subType !== 'sequence') && (
+        (item.layout?.gridPosition === 'right') ||
         (item.caseData?.layoutStyle === 'right-2col') ||
         (item.neighborData?.layoutStyle === 'right-2col') ||
-        (!item.layout?.gridPosition && s.alphabetLayout === 'right-2col' && item.layout?.gridPosition !== 'below');
+        (!item.layout?.gridPosition && s.alphabetLayout === 'right-2col' && item.layout?.gridPosition !== 'below')
+      );
       return {
-        promptHtml: `<span class="meaning-text entry-zh-hint">${escapeHtml(promptText)}</span>`,
+        promptHtml: `<span class="meaning-text entry-zh-hint alphabet-prompt-text" style="font-family:'Xumin Regular', 'xumin', cursive;">${escapeHtml(promptText)}</span>`,
         practiceHtml: gridHtml,
-        classes: ['is-alphabet-card', isHorizontalGrid ? 'meaning-left' : '']
+        classes: ['is-alphabet-card', `subtype-${subType}`, isHorizontalGrid ? 'meaning-left' : '']
       };
     },
     renderChoice(item) {
+      const maxOptLen = Math.max(0, ...item.options.map((option) => (option.text || '').length));
+      let optionLayout = item.optionLayout;
+      if (optionLayout === 'auto') {
+        if (maxOptLen > 18) {
+          optionLayout = 'single';
+        } else if (item.options.length === 3 && maxOptLen <= 14) {
+          optionLayout = 'three';
+        } else if (item.options.length <= 3) {
+          optionLayout = maxOptLen <= 14 ? 'three' : 'double';
+        } else if (item.options.length === 4) {
+          optionLayout = maxOptLen > 12 ? 'single' : 'double';
+        } else {
+          optionLayout = 'double';
+        }
+      } else if (optionLayout === 'inline' && item.options.length === 3) {
+        optionLayout = 'three';
+      }
+
+      const hasLeadingBracket = /^\s*[\(（]/.test(item.stem || '');
+      const bracketHtml = hasLeadingBracket ? '' : '<span class="choice-bracket">（&nbsp;&nbsp;&nbsp;）</span>';
+
       if (teacherMode) {
         const answerText = item.options
           .filter((option) => item.answers.includes(option.id))
           .map((option) => `${option.label}. ${option.text}`)
           .join('；');
+        const answerLabels = item.options
+          .filter((option) => item.answers.includes(option.id))
+          .map((option) => option.label)
+          .join('');
+        const teacherBracketHtml = hasLeadingBracket ? '' : (answerLabels
+          ? `<span class="choice-bracket teacher-bracket">（ <strong style="color:var(--primary, #2f6659);">${escapeHtml(answerLabels)}</strong> ）</span>`
+          : '<span class="choice-bracket">（&nbsp;&nbsp;&nbsp;）</span>');
         return {
-          promptHtml: createTeacherQuestionAnswerHtml(`<span class="teacher-question-english">${escapeHtml(item.stem)}</span>`, answerText),
+          promptHtml: createTeacherQuestionAnswerHtml(`<span class="teacher-question-english">${teacherBracketHtml}${escapeHtml(item.stem)}</span>`, answerText),
           practiceHtml: '',
           classes: ['is-choice-card', 'is-teacher-answer-card']
         };
       }
-      const optionLayout = item.optionLayout === 'auto'
-        ? (item.options.some((option) => option.text.length > 18) ? 'single' : (item.options.length <= 3 ? 'inline' : 'double'))
-        : item.optionLayout;
       const options = item.options.map((option) => {
         return `<span class="choice-option"><span class="choice-label">${escapeHtml(option.label)}.</span><span>${escapeHtml(option.text)}</span></span>`;
       }).join('');
-      return { promptHtml: `<span class="meaning-text choice-stem">${escapeHtml(item.stem)}</span>`, practiceHtml: `<div class="choice-options layout-${optionLayout}">${options}</div>`, classes: ['is-choice-card'] };
+      return {
+        promptHtml: `${bracketHtml}<span class="meaning-text choice-stem">${escapeHtml(item.stem)}</span>`,
+        practiceHtml: `<div class="choice-options layout-${optionLayout}">${options}</div>`,
+        classes: ['is-choice-card']
+      };
     },
     renderInlineFill(item) {
       const blankMap = new Map(item.blanks.map((blank) => [blank.id, blank]));
@@ -1108,7 +1185,7 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
     renderComposition(item) {
       const fragment = item.compositionFragment;
       const lineCount = fragment?.lineCount || item.lineCount;
-      const continuation = fragment?.isContinuation ? (item.continuationMode === 'repeat' ? item.title : '续写') : item.title;
+      const continuation = item.title;
       const heading = item.showTitleArea ? `<div class="composition-heading"><strong>${escapeHtml(continuation || '英语作文')}</strong>${fragment ? `<span class="composition-part">第 ${fragment.part} 页</span>` : ''}</div>` : '';
       const instructions = !fragment?.isContinuation && item.instructions ? `<div class="composition-instructions">${escapeHtml(item.instructions)}</div>` : '';
       if (teacherMode) {
@@ -1145,7 +1222,10 @@ function makeQuestionRenderContext(s, copies, effectivePromptSize, entry, teache
 // 单联 HTML 生成 (纯函数，支持混合题型精准渲染)
 export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSize) {
   const copies = Math.max(1, parseInt(s.copiesPerPage, 10) || 1);
-  const isAlpha26 = (s.dictMode === 'alphabet' && chunk.items.length === 26 && chunk.items[0]?.item?.alphaData);
+  const isAlpha26 = (chunk.items.length === 26 && chunk.items.every(entry => {
+    const it = entry?.item;
+    return it?.subType === 'sequence' || it?.alphabetType === 'sequence' || it?.alphaData;
+  })) || (s.dictMode === 'alphabet' && chunk.items.length === 26 && chunk.items[0]?.item?.alphaData);
 
   let cardsHtml = '';
   let alpha26RowsHtml = '';
@@ -1179,21 +1259,18 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
         const cellLabel = (aData.caseStyle === 'upper')
           ? (aData.upper || '')
           : (aData.caseStyle === 'lower' ? (aData.lower || '') : `${aData.upper || ''}${aData.lower || ''}`);
-        const showCellHint = s._teacherMode || (!aData.isBlank && aData.subMode === 'gap');
-        const hintHtml = showCellHint ? `<span class="alpha-cell-hint">${escapeHtml(cellLabel)}</span>` : '';
 
         cellsHtml += `
           <div class="word-card alpha-26-cell" data-id="${safeCardId}" data-debug-id="ITEM-${safeCardId}" data-debug-name="字母格 #${overallIndex} (${escapeHtml(cellLabel)})" data-debug-component="PracticeGridSvg" data-debug-file="src/core/layout.js">
             <div class="alpha-cell-top">
               <span class="word-num entry-index">${overallIndex}.</span>
-              ${hintHtml}
             </div>
             <div class="alpha-cell-grid">
               ${createSingleAlphabetGridSvg({
                 gridHeightMm: effectiveGridHeight,
                 strokeWidth: s.gridStroke || 0.85,
                 lineColor: s.gridColor || '#cbd5e1',
-                guideText: isPreprinted ? guideChar : '',
+                guideText: (isPreprinted || s._teacherMode) ? guideChar : '',
                 alphabetGuideFont: s.alphabetGuideFont
               })}
             </div>
@@ -1206,7 +1283,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
           cellsHtml += `
             <div class="alpha-26-cell alpha-dummy-cell">
               <div class="alpha-cell-top">
-                <span class="alpha-cell-hint" style="color:#cbd5e1;margin-left:auto;">★</span>
+                <span class="alpha-dummy-star">★</span>
               </div>
               <div class="alpha-cell-grid">
                 ${createSingleAlphabetGridSvg({
@@ -1223,7 +1300,7 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
         cellsHtml += `
           <div class="alpha-26-cell alpha-dummy-cell">
             <div class="alpha-cell-top">
-              <span class="alpha-cell-hint" style="color:#cbd5e1;margin-left:auto;">★</span>
+              <span class="alpha-dummy-star">★</span>
             </div>
             <div class="alpha-cell-grid">
               ${createSingleAlphabetGridSvg({
@@ -1254,15 +1331,25 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
       const zhMeaningHtml = rendered.promptHtml || '';
       const practiceGridHtml = rendered.practiceHtml || '';
 
-      const isAlphabetHorizontal = (item.neighborData || item.caseData || qType === 'alphabet') &&
+      const isAlphabet = qType === 'alphabet';
+      const subType = isAlphabet ? (item.subType || item.alphabetType || (item.neighborData ? 'neighbor' : (item.caseData ? 'case' : 'sequence'))) : (item.subType || '');
+      const isNeighbor = isAlphabet && (subType === 'neighbor' || Boolean(item.neighborData) || (item.zh && item.zh.includes('邻居')));
+      const isCase = isAlphabet && (subType === 'case' || Boolean(item.caseData));
+      const isSequence = isAlphabet && (subType === 'sequence' || Boolean(item.alphaData));
+
+      const isAlphabetHorizontal = (isNeighbor || isCase || isAlphabet) &&
+        (subType !== 'sequence') &&
         (item.layout?.gridPosition === 'right' || item.caseData?.layoutStyle === 'right-2col' || item.neighborData?.layoutStyle === 'right-2col' || (!item.layout?.gridPosition && s.alphabetLayout === 'right-2col' && item.layout?.gridPosition !== 'below'));
 
       const cardClasses = [
         'word-card',
         'word-entry-item',
         `type-${qType}`,
+        subType ? `subtype-${subType}` : '',
         ...(rendered.classes || []),
-        (item.neighborData || item.id?.startsWith('neighbor') || (item.zh && item.zh.includes('邻居'))) ? 'is-neighbor-card' : '',
+        isNeighbor ? 'is-neighbor-card' : '',
+        isCase ? 'is-case-card' : '',
+        isSequence ? 'is-sequence-card' : '',
         ((s.zhPosition === 'left' && qType === 'word-dictation') || isAlphabetHorizontal) ? 'meaning-left' : '',
         isFullWidth ? 'is-full-width' : ''
       ].filter(Boolean).join(' ');
@@ -1324,7 +1411,17 @@ export function renderCopySlipHtml(chunk, pageIdx, copyIdx, s, effectivePromptSi
   const safeTitleAlign = escapeHtml(s.titleAlign || 'center');
 
   let headerHtml = '';
-  if (copies > 1) {
+  if (s.isContinuationHalf) {
+    headerHtml = `
+      <div class="sheet-header sheet-header-compact sheet-header-continuation">
+        <div class="sheet-header-top-row">
+          <h2 class="sheet-title-text" style="font-size:12pt; text-align:${safeTitleAlign}; width:100%; font-family:${safeFontFamily};">
+            ${escapeHtml(s.title || '英语练习')}
+          </h2>
+        </div>
+      </div>
+    `;
+  } else if (copies > 1) {
     headerHtml = `
       <div class="sheet-header sheet-header-compact">
         <div class="sheet-header-top-row">
@@ -1399,6 +1496,68 @@ export function renderPracticeSheetHtml(layout, settings) {
   let pagesHtml = '';
   const pageSets = [{ teacherMode: false, className: 'student-sheet-page' }];
   if (s.showAnswerPage) pageSets.push({ teacherMode: true, className: 'teacher-answer-page' });
+
+  if (layout.isSplitFold) {
+    pageSets.forEach((pageSet, setIndex) => {
+      const chunks = layout.pageChunks;
+      const physicalSheetCount = Math.max(1, Math.ceil(chunks.length / 2));
+      for (let sIdx = 0; sIdx < physicalSheetCount; sIdx++) {
+        const leftChunk = chunks[sIdx * 2];
+        const rightChunk = chunks[sIdx * 2 + 1];
+        const isLastPage = (setIndex === pageSets.length - 1) && (sIdx === physicalSheetCount - 1);
+        const renderSettingsLeft = {
+          ...s,
+          _teacherMode: pageSet.teacherMode,
+          title: pageSet.teacherMode ? `${s.title || '英语练习'}（教师答案）` : s.title,
+          isContinuationHalf: false
+        };
+        const renderSettingsRight = {
+          ...s,
+          _teacherMode: pageSet.teacherMode,
+          title: pageSet.teacherMode ? `${s.title || '英语练习'}（教师答案·续）` : `${s.title || '英语练习'}（续）`,
+          isContinuationHalf: true,
+          showStudentName: false,
+          showStudentClass: false,
+          showStudentNo: false,
+          showStudentDate: false,
+          showStudentScore: false
+        };
+
+        const leftHtml = renderCopySlipHtml(leftChunk, sIdx * 2, 0, renderSettingsLeft, effectivePromptSize);
+        const rightHtml = rightChunk
+          ? renderCopySlipHtml(rightChunk, sIdx * 2 + 1, 0, renderSettingsRight, effectivePromptSize)
+          : '<div class="split-half-empty"><span class="empty-note">（以下空白）</span></div>';
+
+        pagesHtml += `
+          <div class="sheet-page landscape is-split-fold ${pageSet.className} ${isLastPage ? 'is-last-page' : ''}" style="
+            width: ${pageWidthMm}mm;
+            height: ${pageHeightMm}mm;
+            min-height: ${pageHeightMm}mm;
+            max-height: ${pageHeightMm}mm;
+            font-family: ${s.fontFamilyZh};
+            --font-en: ${safePageFontEn};
+            padding: ${Number(s.pageMargin || 8)}mm ${Number(s.pageMarginHorizontal ?? 12)}mm;
+          ">
+            <div class="split-fold-container">
+              <div class="split-half-pane split-half-left">
+                ${leftHtml}
+                <div class="half-page-footer">第 ${sIdx * 2 + 1} 页</div>
+              </div>
+              <div class="split-fold-seam">
+                <span class="fold-seam-line"></span>
+                <span class="fold-seam-label">对折线</span>
+                <span class="fold-seam-line"></span>
+              </div>
+              <div class="split-half-pane split-half-right">
+                ${rightHtml}
+                <div class="half-page-footer">第 ${sIdx * 2 + 2} 页</div>
+              </div>
+            </div>
+          </div>`;
+      }
+    });
+    return pagesHtml;
+  }
 
   pageSets.forEach((pageSet, setIndex) => {
     layout.pageChunks.forEach((chunk, pageIdx) => {
