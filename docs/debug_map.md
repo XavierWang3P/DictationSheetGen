@@ -15,11 +15,11 @@
 | :--- | :--- | :--- | :--- |
 | **H-001** | 顶部主导航与工具栏 | `AppHeader.vue` | `src/components/AppHeader.vue` |
 | **H-002** | 侧边栏展开/折叠按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
-| **H-004** | 导出配置 JSON 按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
-| **H-005** | 导入数据/配置按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
+| **H-004** | 导出 JSON 备份按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
+| **H-005** | 恢复备份按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
 | **H-006** | 恢复默认出厂设置按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
 | **H-007** | 打印 / 导出 PDF 按钮 | `AppHeader.vue` | `src/components/AppHeader.vue` |
-| **T-001** | 侧边栏工作区导航 Tab 栏（题目录入/试卷题目/备课资源库/试卷排版） | `SidebarTabs.vue` | `src/components/SidebarTabs.vue` |
+| **T-001** | 侧边栏工作区导航 Tab 栏（题目录入/试卷题目/题库） | `SidebarTabs.vue` | `src/components/SidebarTabs.vue` |
 | **Q-001** | 统一题目录入面板 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
 | **Q-002** | 题型选择器（全题型） | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |
 | **Q-003** | 题目快速录入文本框 | `QuickInputPane.vue` | `src/components/QuickInputPane.vue` |

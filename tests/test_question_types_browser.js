@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function run() {
   console.log('=== 开始执行 v2.4.0 题型注册、布局、打印与PDF浏览器验收 ===\n');
@@ -9,7 +10,7 @@ async function run() {
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1800,1500',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   let response = null;
@@ -24,8 +25,8 @@ async function run() {
 
   try {
     const tabs = await response.json();
-    const target = tabs.find((tab) => tab.url.includes('DictationSheetGen'));
-    if (!target) throw new Error('未找到 DictationSheetGen 页面');
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
+    if (!target) throw new Error('未找到目标测试页面');
     const ws = new WebSocket(target.webSocketDebuggerUrl);
     await new Promise((resolve) => { ws.onopen = resolve; });
 

@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function runTests() {
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', [
@@ -8,7 +9,7 @@ async function runTests() {
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1600,1400',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   let res = null;
@@ -23,7 +24,7 @@ async function runTests() {
 
   try {
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('Target tab not found');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);

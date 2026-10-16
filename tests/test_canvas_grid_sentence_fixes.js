@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function runCanvasGridSentenceFixesTest() {
   console.log('=== 开始执行画布渲染、四线三格高度联动与句子题目防遮挡专项测试 ===\n');
@@ -10,18 +11,19 @@ async function runCanvasGridSentenceFixesTest() {
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1600,1200',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 2000));
 
+  let ws = null;
   try {
     const res = await fetch('http://127.0.0.1:9266/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到目标测试页面');
 
-    const ws = new WebSocket(target.webSocketDebuggerUrl);
+    ws = new WebSocket(target.webSocketDebuggerUrl);
 
     let msgId = 1;
     function evalExpr(expr) {
@@ -277,6 +279,7 @@ async function runCanvasGridSentenceFixesTest() {
     console.log('==================================================');
 
   } finally {
+    try { ws?.close(); } catch {}
     edge.kill();
   }
 }

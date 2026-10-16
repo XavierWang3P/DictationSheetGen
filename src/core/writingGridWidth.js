@@ -1,15 +1,20 @@
 const measurementCache = new Map();
+const MAX_CACHE_ENTRIES = 2000;
+let browserCanvas = null;
+let browserContext = null;
 
 function getBrowserMeasureText(fontFamily, fontSize, fontWeight, letterSpacing) {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
     return null;
   }
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  if (!context) return null;
-  context.font = `${fontWeight || 400} ${fontSize}px ${fontFamily || "'Times New Roman', Times, serif"}`;
+  if (!browserContext) {
+    browserCanvas = document.createElement('canvas');
+    browserContext = browserCanvas.getContext('2d');
+  }
+  if (!browserContext) return null;
+  browserContext.font = `${fontWeight || 400} ${fontSize}px ${fontFamily || "'Times New Roman', Times, serif"}`;
   return (text) => {
-    const base = context.measureText(text).width;
+    const base = browserContext.measureText(text).width;
     const spacing = Math.max(0, Number(letterSpacing) || 0) * Math.max(0, text.length - 1);
     return base + spacing;
   };
@@ -46,6 +51,9 @@ export function measureAnswerText({
   const width = browserMeasure
     ? browserMeasure(value)
     : fallbackMeasure(value, fontSize) + (Math.max(0, Number(letterSpacing) || 0) * Math.max(0, value.length - 1));
+  if (measurementCache.size >= MAX_CACHE_ENTRIES) {
+    measurementCache.delete(measurementCache.keys().next().value);
+  }
   measurementCache.set(key, width);
   return width;
 }

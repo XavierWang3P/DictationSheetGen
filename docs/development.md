@@ -9,7 +9,11 @@
 ```text
 DictationSheetGen/
 ├── dist/
-│   └── index.html                 # 离线单文件打包产物（零外部网络依赖）
+│   ├── index.html                 # 离线入口（可通过 file:// 双击打开）
+│   ├── css/                       # 构建后的独立样式
+│   ├── js/                        # 构建后的经典脚本
+│   ├── fonts/                     # OPPO Sans 与书写字体
+│   └── img/                       # Logo 与图标资源
 ├── docs/
 │   ├── debug_map.md               # 全网组件 Debug 语义编号映射表
 │   ├── development.md             # 开发者指南（本文档）
@@ -37,6 +41,8 @@ DictationSheetGen/
 │   │   └── app.css                # 聚合入口
 │   ├── stores/
 │   │   └── appStore.js            # 全局响应式状态（草稿、词库、排版参数）
+│   ├── testing/
+│   │   └── browserTestBridge.js   # 仅在 ?__test=1 时暴露测试接口
 │   ├── components/                # Vue 视图组件
 │   │   ├── AppHeader.vue          # 顶部品牌导航栏、Logo 与打印导出入口
 │   │   ├── AppIcon.vue            # 统一线性 SVG 图标封装
@@ -48,31 +54,18 @@ DictationSheetGen/
 │   │   ├── QuestionListPane.vue   # 紧凑试卷题目清单（1~5列 Popselect 与批量工具栏）
 │   │   ├── QuickInputPane.vue     # 题目录入中心（混合切词挖空与各题型入口）
 │   │   ├── SettingsPane.vue       # 试卷版式设置（纸张、分栏默认值、四线格参数）
-│   │   ├── SidebarTabs.vue        # 教师出题流四步工作区导航
+│   │   ├── SidebarTabs.vue        # 题目录入、试卷题目与题库导航
 │   │   ├── VisualClozePane.vue    # 可视化挖空兼容层
 │   │   └── WordLibraryPane.vue    # 备课资源库（单元分组、搜索、Excel 导入）
 │   ├── App.vue                    # 应用根组件、双栏框架与底部版权信息
 │   └── main.js                    # 应用启动入口
-├── test_acceptance.js             # 基础验收测试套件（7 大标准）
-├── test_alphabet.js               # 英文字母专项测试
-├── test_app_footer.js             # 底部版权与社交渠道测试
-├── test_architecture_fix.js       # 事件独立性与 DOM 树健康测试
-├── test_cloze_features.js         # 句子挖空布局与中文位置测试
-├── test_delete_group.js           # 词库分组删除与解散测试
-├── test_empty_startup.js          # 首屏干净画布测试
-├── test_excel_import.js           # 表格与剪贴板导入测试
-├── test_handwriting_fonts.js      # 手写字体度量与四线格基线测试
-├── test_handwriting_fonts_browser.js # 浏览器端手写体渲染测试
-├── test_naive_ui_audit.js         # Naive UI 组件库规范审计测试
-├── test_phase2.js                 # 存储层迁移与导入校验测试
-├── test_phase3.js                 # 词库与可视化挖空测试
-├── test_popconfirm_i18n.js        # 确认气泡国际化测试
-├── test_question_types_v240.js    # 题型注册与多列排版单测
-├── test_question_types_browser.js # 真实浏览器多题型与双面打印测试
-├── test_v230_refactor.js          # 架构升级核心维度回归测试
-├── test_word_grouping.js          # 单元词汇分组与筛选测试
+├── scripts/
+│   └── run-tests.mjs              # 自动发现并串行执行全部测试
+├── tests/
+│   ├── helpers/edgeCdp.js         # 可回收的 Edge/CDP 浏览器测试工具
+│   └── test_*.js                  # 单元、真实交互、迁移、性能与打印测试
 ├── package.json                   # 项目依赖与自动化脚本
-└── vite.config.js                 # Vite 单文件内联打包配置
+└── vite.config.js                 # Vite 离线多文件打包配置
 ```
 
 ---
@@ -102,7 +95,7 @@ DictationSheetGen/
 项目内置涵盖纯逻辑单元测试与无头浏览器（Microsoft Edge Headless）端到端测试的完整测试流水线：
 
 ```bash
-# 执行全部 18 套自动化测试套件
+# 自动发现并执行全部测试（当前 36 项）
 npm run test:all
 ```
 
@@ -124,11 +117,22 @@ npm run test:all
 | `test_popconfirm_i18n.js` | 确认框无中文以外的语言混入 |
 | `test_empty_startup.js` | 首屏零脏数据启动与空白画布体验 |
 | `test_excel_import.js` | Excel/WPS/CSV 粘贴与文件上传智能识别 |
+| `test_excel_file_parser.js` | 真实 `.xlsx` 文件的动态加载、字段解析与 10 MB 文件上限 |
+| `test_library_persistence_failures.js` | IndexedDB 写入失败回滚、localStorage 镜像失败及空词库/句库刷新保持 |
 | `test_delete_group.js` | 词库分组解散与级联删除安全性 |
 | `test_v230_refactor.js` | 全站 Debug 模式、零 Emoji 线性图标、PDF 消除空白页 |
+| `test_restore_safety.js` | 备份恢复确认、合并去重、事务写入与未知字段保留 |
+| `test_production_isolation.js` | 正式页面真实录入及测试接口隔离 |
+| `test_performance.js` | 200 题真实录入、排序、设置与预览性能 |
+| `test_multifile_distribution.js` | 离线发行目录、相对资源路径与 file:// 入口完整性 |
+| `test_root_offline_launcher.js` | 双击项目根入口后自动进入离线发行版且无脚本错误 |
 
 ---
 
-## 离线单文件打包机制
+## 离线多文件打包机制
 
-通过 `vite-plugin-singlefile` 插件，Vite 在执行 `npm run build` 时将所有脚本、样式表、手写字体文件以及 Base64 矢量资源内联为单一的 `dist/index.html`。该文件大小约为 1.5 MB，可在任何无网络环境的双击即用。
+执行 `npm run build` 后，Vite 将入口、样式、脚本、字体和图片分别输出到 `dist/index.html`、`dist/css/`、`dist/js/`、`dist/fonts/` 与 `dist/img/`。所有引用均为相对路径，不依赖 CDN 或外部网络。
+
+为兼容教师直接双击打开的使用方式，生产入口脚本会在构建后转换为经典 `defer` 脚本，避免浏览器对 `file://` 下 ES 模块的限制。发布或拷贝时必须保留整个 `dist` 文件夹结构，不能只复制 `index.html`。Excel 解析库仍在首次使用导入或模板功能时初始化。
+
+项目根目录的 `index.html` 同时是 Vite 的源码入口。在 `http://` 开发环境中它正常加载 `src/main.js`；通过 `file://` 直接双击时，它会立即跳转到 `dist/index.html`，避免浏览器直接加载源码 ES 模块导致 CORS 错误。

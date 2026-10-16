@@ -23,7 +23,8 @@
           title="在试卷中插入一条题型分隔线"
           @click="showSeparatorModal = true"
         >
-          <AppIcon name="minus" :size="12" /> + 插入分隔线
+          <AppIcon name="cut" :size="13" />
+          插入分隔线
         </button>
       </div>
       <div class="grid-button-group question-type-grid" data-debug-id="Q-002" data-debug-name="题型切换器">
@@ -204,10 +205,11 @@
               <template #icon><AppIcon name="plus" :size="14" /></template>
               添加到试卷
             </n-button>
-            <button id="btnAddVisualToDraft" style="display:none;" aria-hidden="true" @click="handleAppendVisualCloze"></button>
-            <button id="btnAppendText" style="display:none;" aria-hidden="true" @click="handleAppendVisualCloze"></button>
+            <button v-if="isBrowserTestMode" id="btnAddVisualToDraft" style="display:none;" aria-hidden="true" @click="handleAppendVisualCloze"></button>
+            <button v-if="isBrowserTestMode" id="btnAppendText" style="display:none;" aria-hidden="true" @click="handleAppendVisualCloze"></button>
 
             <n-button
+              v-if="currentInputType === 'word-dictation'"
               size="small"
               id="btnSaveVisualToLib"
               @click="handleSaveVisualClozeToLib"
@@ -229,8 +231,8 @@
       <div v-else-if="currentInputType === 'alphabet'" class="alphabet-control-card" id="alphabetControlCard">
         <QuestionEditorShell
           title="英文字母专项设置"
-          tip="规范书写与前后邻居"
-          tooltip="支持 26 字母规范书写、前后左右邻居填空与大小写互换练习"
+          tip="规范书写与前后字母"
+          tooltip="支持 26 个字母规范书写、前后字母填空与大小写转换练习"
         >
           <div class="grid-button-group alpha-type-grid" id="alphabetTypeTabs">
             <button
@@ -240,8 +242,8 @@
               id="tabAlphaSeq"
               @click="alphabetActiveType = 'sequence'"
             >
-              <AppIcon name="alphabet" :size="13" />
-              26个字母默写
+              <AppIcon name="alphabet" :size="14" />
+              <span>26个字母默写</span>
             </button>
             <button
               type="button"
@@ -250,8 +252,8 @@
               id="tabAlphaNeighbors"
               @click="alphabetActiveType = 'neighbors'"
             >
-              <AppIcon name="refresh" :size="13" />
-              字母左右邻居
+              <AppIcon name="swap-horizontal" :size="14" />
+              <span>前后字母</span>
             </button>
             <button
               type="button"
@@ -260,8 +262,8 @@
               id="tabAlphaCase"
               @click="alphabetActiveType = 'case'"
             >
-              <AppIcon name="tag" :size="13" />
-              大小写转换
+              <AppIcon name="repeat" :size="14" />
+              <span>大小写转换</span>
             </button>
           </div>
 
@@ -290,8 +292,9 @@
             </div>
           </div>
 
-          <!-- 子面板 2: 字母左右邻居 -->
+          <!-- 子面板 2: 前后字母 -->
           <div v-if="alphabetActiveType === 'neighbors'" class="alpha-sub-config" id="paneAlphaNeighbors">
+            <p class="alpha-student-hint">给学生的提示：写出中间字母前面和后面的字母。</p>
             <div class="form-row-compact">
               <span class="sub-label">排版样式:</span>
               <div class="compact-segmented">
@@ -419,8 +422,8 @@
             </n-button>
 
             <!-- 兼容隐藏桩 -->
-            <button id="btnAppendText" style="display:none;" aria-hidden="true" @click="handleAppendText"></button>
-            <button id="btnLoadDefaultSample" style="display:none;" aria-hidden="true" @click="handleLoadDefaultCompat"></button>
+            <button v-if="isBrowserTestMode" id="btnAppendText" style="display:none;" aria-hidden="true" @click="handleAppendText"></button>
+            <button v-if="isBrowserTestMode" id="btnLoadDefaultSample" style="display:none;" aria-hidden="true" @click="handleLoadDefaultCompat"></button>
 
             <n-button
               size="small"
@@ -518,7 +521,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { NButton, NPopconfirm, NModal, useMessage } from 'naive-ui';
 import { state, db } from '../stores/appStore.js';
 import {
@@ -544,6 +547,7 @@ import { getQuestionTypesByEditor, createQuestion } from '../question-types/regi
 import AppIcon from './AppIcon.vue';
 import QuestionEditorShell from './QuestionEditorShell.vue';
 import GeneralQuestionEditor from './GeneralQuestionEditor.vue';
+import { isBrowserTestMode } from '../testing/browserTestBridge.js';
 
 const message = useMessage();
 const rawText = ref('');
@@ -617,8 +621,11 @@ async function handleSaveVisualClozeToLib() {
     segments: visualSegments.value,
     updatedAt: Date.now()
   };
+  if (!await db.bulkPut('sentences', [sentenceItem])) {
+    message.error('保存到本地句库失败，句库未更改，请重试');
+    return;
+  }
   state.library.sentences.unshift(sentenceItem);
-  await db.bulkPut('sentences', [sentenceItem]);
   message.success('已成功保存至本地句库！');
 }
 
@@ -768,19 +775,25 @@ function handleGenerateAlphabet() {
 }
 
 async function handleSaveDraftToLib() {
-  if (state.draft.items.length === 0) {
-    message.warning('当前试卷为空，无法存入词库');
+  const wordItems = state.draft.items.filter(item =>
+    item.questionType === 'word-dictation' || (!item.questionType && item.type === 'word')
+  );
+  if (wordItems.length === 0) {
+    message.warning('当前试卷中没有可存入词库的单词默写题');
     return;
   }
-  const res = detectDuplicates(state.library.words, state.draft.items);
+  const res = detectDuplicates(state.library.words, wordItems);
   if (res.unique.length === 0) {
-    message.info('当前试卷所有题目在本地词库中均已存在，无需重复保存');
+    message.info('当前试卷中的单词在本地词库中均已存在，无需重复保存');
+    return;
+  }
+  if (!await db.bulkPut('words', res.unique)) {
+    message.error('保存到本地词库失败，词库未更改，请重试');
     return;
   }
   res.unique.forEach(w => state.library.words.push(w));
-  await db.bulkPut('words', res.unique);
   const dupTip = res.duplicates.length > 0 ? `（自动跳过 ${res.duplicates.length} 条重复词条）` : '';
-  message.success(`已将 ${res.unique.length} 条题目存入本地词库${dupTip}！`);
+  message.success(`已将 ${res.unique.length} 个单词存入本地词库${dupTip}`);
 }
 
 function handleClear() {
@@ -810,19 +823,25 @@ function switchToTab(tabKey) {
   state.ui.activeView = tabKey;
 }
 
-onMounted(() => {
-  window.addEventListener('edit-question', (e) => {
-    const idx = e.detail;
-    if (idx >= 0 && idx < state.draft.items.length) {
-      editingIndex.value = idx;
-      const it = state.draft.items[idx];
-      currentInputType.value = it.questionType;
-      if (it.questionType === 'alphabet') {
-        const sub = it.subType || it.alphabetType || (it.neighborData ? 'neighbors' : (it.caseData ? 'case' : 'sequence'));
-        alphabetActiveType.value = (sub === 'neighbor' || sub === 'neighbors') ? 'neighbors' : (sub === 'case' ? 'case' : 'sequence');
-      }
+function handleEditQuestionEvent(e) {
+  const idx = e.detail;
+  if (idx >= 0 && idx < state.draft.items.length) {
+    editingIndex.value = idx;
+    const it = state.draft.items[idx];
+    currentInputType.value = it.questionType;
+    if (it.questionType === 'alphabet') {
+      const sub = it.subType || it.alphabetType || (it.neighborData ? 'neighbors' : (it.caseData ? 'case' : 'sequence'));
+      alphabetActiveType.value = (sub === 'neighbor' || sub === 'neighbors') ? 'neighbors' : (sub === 'case' ? 'case' : 'sequence');
     }
-  });
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('edit-question', handleEditQuestionEvent);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('edit-question', handleEditQuestionEvent);
 });
 </script>
 
@@ -895,6 +914,16 @@ onMounted(() => {
 .alpha-type-grid {
   grid-template-columns: repeat(3, 1fr) !important;
   gap: 6px !important;
+}
+
+.alpha-type-grid > .grid-btn {
+  gap: 7px;
+  padding-inline: 7px;
+  line-height: 1.2;
+}
+
+.alpha-type-grid > .grid-btn :deep(.app-icon) {
+  margin: 0;
 }
 
 .separator-cols-grid {
@@ -1048,6 +1077,16 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.alpha-student-hint {
+  margin: 0 0 2px;
+  padding: 7px 9px;
+  border-left: 3px solid var(--primary-border);
+  background: var(--primary-light);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  line-height: 1.45;
 }
 
 /* 底部引导横幅 */

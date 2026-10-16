@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function testExcelImport() {
   console.log('=== 开始验证 Excel / 剪贴板表格批量导入特性 (v2.2.8) ===\n');
@@ -10,7 +11,7 @@ async function testExcelImport() {
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1600,1400',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 2000));
@@ -18,7 +19,7 @@ async function testExcelImport() {
   try {
     const res = await fetch('http://127.0.0.1:9265/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到目标测试页面');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -79,12 +80,20 @@ async function testExcelImport() {
       const btnCsvTpl = document.getElementById('btnDownloadCsvTpl');
       const tabPaste = document.getElementById('tabImportPaste');
 
+      window.__excelTemplateErrors = [];
+      window.addEventListener('unhandledrejection', (event) => {
+        window.__excelTemplateErrors.push(String(event.reason || 'unknown rejection'));
+      }, { once: true });
+      btnExcelTpl?.click();
+      await new Promise(r => setTimeout(r, 1200));
+
       return {
         success: true,
         modalTitle: modalTitle ? modalTitle.textContent.trim() : null,
         hasExcelTplBtn: !!btnExcelTpl,
         hasCsvTplBtn: !!btnCsvTpl,
-        hasTabPaste: !!tabPaste
+        hasTabPaste: !!tabPaste,
+        templateErrors: window.__excelTemplateErrors
       };
     })()`);
     console.log('-> 结果:', JSON.stringify(r1, null, 2));
@@ -94,7 +103,8 @@ async function testExcelImport() {
       r1.modalTitle.includes('批量导入单词库') &&
       r1.hasExcelTplBtn &&
       r1.hasCsvTplBtn &&
-      r1.hasTabPaste
+      r1.hasTabPaste &&
+      r1.templateErrors.length === 0
     );
     console.log('-> 判定:', pass1 ? '✅ PASS' : '❌ FAIL', '\n');
 

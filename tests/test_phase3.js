@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function runPhase3Tests() {
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', [
@@ -8,7 +9,7 @@ async function runPhase3Tests() {
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1600,1400',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 2000));
@@ -16,7 +17,7 @@ async function runPhase3Tests() {
   try {
     const res = await fetch('http://127.0.0.1:9252/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('Target tab not found');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -57,7 +58,7 @@ async function runPhase3Tests() {
     console.log('=== 开始执行 Phase 3 词库与可视化挖空自动化测试 ===\n');
 
     // 1. 测试四工作区 Tab 切换
-    const rTabs = await evalExpr(`(() => {
+    const rTabs = await evalExpr(`(async () => {
       const tabBtns = document.querySelectorAll('.sidebar-tab-btn');
       const paneQuick = document.getElementById('paneQuick');
       const paneWordLib = document.getElementById('paneWordLib');
@@ -70,21 +71,25 @@ async function runPhase3Tests() {
       // 切换到本地词库
       const btnLib = Array.from(tabBtns).find(b => b.getAttribute('data-tab') === 'paneWordLib');
       btnLib.click();
+      await new Promise(requestAnimationFrame);
       const libActive = paneWordLib.classList.contains('active') && !paneQuick.classList.contains('active');
 
       // 切换到可视化挖空
       const btnCloze = Array.from(tabBtns).find(b => b.getAttribute('data-tab') === 'paneClozeVisual');
       btnCloze.click();
+      await new Promise(requestAnimationFrame);
       const clozeActive = paneClozeVisual.classList.contains('active') && !paneWordLib.classList.contains('active');
 
       // 切换到版式设置
       const btnSettings = Array.from(tabBtns).find(b => b.getAttribute('data-tab') === 'paneSettings');
       btnSettings.click();
+      await new Promise(requestAnimationFrame);
       const settingsActive = paneSettings.classList.contains('active') && !paneClozeVisual.classList.contains('active');
 
       // 切回快速录入
       const btnQuick = Array.from(tabBtns).find(b => b.getAttribute('data-tab') === 'paneQuick');
       btnQuick.click();
+      await new Promise(requestAnimationFrame);
       const restoredQuickActive = paneQuick.classList.contains('active');
 
       return {

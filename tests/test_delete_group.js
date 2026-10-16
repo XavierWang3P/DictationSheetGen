@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function testDeleteGroup() {
   console.log('=== 开始验证词库分组删除功能 (v2.2.9) ===\n');
@@ -10,7 +11,7 @@ async function testDeleteGroup() {
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1600,1400',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 2000));
@@ -18,7 +19,7 @@ async function testDeleteGroup() {
   try {
     const res = await fetch('http://127.0.0.1:9266/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到目标测试页面');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -98,7 +99,7 @@ async function testDeleteGroup() {
     const pass1 = (
       r1.hasPill &&
       r1.pillText.includes('四年级上册 Unit 2 (0)') &&
-      r1.hasDelIcon &&
+      !r1.hasDelIcon &&
       r1.hasBtnDelCurrent &&
       r1.hasBtnDelEmpty
     );
@@ -142,9 +143,14 @@ async function testDeleteGroup() {
       );
       await new Promise(r => setTimeout(r, 300));
 
-      const delIcon = document.getElementById('btnDelPill_三年级测试组');
-      if (!delIcon) return { success: false, reason: '未找到 pill del icon' };
-      delIcon.click();
+      const pillBefore = document.getElementById('pillGroup_三年级测试组');
+      if (!pillBefore) return { success: false, reason: '未找到分组筛选按钮' };
+      pillBefore.click();
+      await new Promise(r => setTimeout(r, 200));
+
+      const btnDelCurrent = document.getElementById('btnDeleteCurrentGroup');
+      if (!btnDelCurrent) return { success: false, reason: '未找到删除当前分组按钮' };
+      btnDelCurrent.click();
       await new Promise(r => setTimeout(r, 300));
 
       const modalTitle = document.querySelector('.n-modal .n-card-header__main');

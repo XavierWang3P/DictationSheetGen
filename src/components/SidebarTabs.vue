@@ -26,6 +26,7 @@
 
       <!-- 兼容旧测试脚本隐藏桩 (可视化挖空合并至题目录入，保留无障碍桩支持历史自动化脚本) -->
       <button
+        v-if="isBrowserTestMode"
         type="button"
         class="sidebar-tab-btn"
         data-tab="paneClozeVisual"
@@ -38,6 +39,7 @@
 
       <!-- 兼容旧测试脚本隐藏桩 (试卷排版已升级为右侧独立检视面板，保留无障碍桩支持历史自动化脚本) -->
       <button
+        v-if="isBrowserTestMode"
         type="button"
         class="sidebar-tab-btn"
         data-tab="paneSettings"
@@ -77,6 +79,7 @@ import QuestionListPane from './QuestionListPane.vue';
 import WordLibraryPane from './WordLibraryPane.vue';
 import VisualClozePane from './VisualClozePane.vue';
 import AppIcon from './AppIcon.vue';
+import { isBrowserTestMode } from '../testing/browserTestBridge.js';
 
 const tabs = [
   { key: 'paneQuick', label: '题目录入', icon: 'edit' },
@@ -88,16 +91,6 @@ function onTabClick(key) {
   state.ui.activeView = key;
   if (key === 'paneSettings') {
     state.ui.isSettingsCollapsed = false;
-  }
-  ['paneQuick', 'paneList', 'paneWordLib', 'paneClozeVisual'].forEach(k => {
-    const pane = document.getElementById(k);
-    if (pane) {
-      pane.classList.toggle('active', k === key);
-    }
-  });
-  const paneSettings = document.getElementById('paneSettings');
-  if (paneSettings) {
-    paneSettings.classList.toggle('active', key === 'paneSettings' || !state.ui.isSettingsCollapsed);
   }
 }
 </script>

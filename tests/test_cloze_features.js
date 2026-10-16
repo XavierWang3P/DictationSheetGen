@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function testClozeFeatures() {
   console.log('=== 开始执行句子挖空专项新功能测试 (v2.2.4) ===\n');
@@ -10,7 +11,7 @@ async function testClozeFeatures() {
     '--no-sandbox',
     '--window-size=1600,1200',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 2000));
@@ -18,7 +19,7 @@ async function testClozeFeatures() {
   try {
     const res = await fetch('http://127.0.0.1:9258/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到目标测试页面');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);

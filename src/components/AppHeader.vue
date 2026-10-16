@@ -2,9 +2,9 @@
   <header class="app-header no-print" data-debug-id="H-001" data-debug-name="顶部标题栏">
     <div class="header-brand">
       <!-- 保持常驻展开，隐藏折叠控制桩以兼容回归测试 -->
-      <button id="btnToggleSidebar" style="display:none;" aria-hidden="true" @click="state.ui.isSidebarCollapsed = !state.ui.isSidebarCollapsed"></button>
+      <button v-if="isBrowserTestMode" id="btnToggleSidebar" style="display:none;" aria-hidden="true" @click="state.ui.isSidebarCollapsed = !state.ui.isSidebarCollapsed"></button>
       <img
-        src="../assets/branding/dictation-sheet-logo.png"
+        :src="logoUrl"
         alt="DictationSheet Logo"
         class="header-logo"
       />
@@ -16,30 +16,30 @@
 
     <div class="header-actions">
       <!-- 兼容旧测试脚本隐藏桩，实际界面自动响应更新，无需手动生成预览 -->
-      <button id="btnGeneratePreview" style="display:none;" aria-hidden="true" @click="handleRefreshPreview"></button>
+      <button v-if="isBrowserTestMode" id="btnGeneratePreview" style="display:none;" aria-hidden="true" @click="handleRefreshPreview"></button>
 
       <n-button
         size="small"
         id="btnExportConfig"
         data-debug-id="H-004"
-        data-debug-name="导出配置按钮"
+        data-debug-name="导出备份按钮"
         @click="handleExportConfig"
-        title="将当前设置与词表导出为 JSON 文件"
+        title="将当前试卷、卷面设置和题库导出为 JSON 备份"
       >
         <template #icon><AppIcon name="download" :size="14" /></template>
-        导出配置
+        导出备份
       </n-button>
 
       <n-button
         size="small"
         id="btnTriggerImport"
         data-debug-id="H-005"
-        data-debug-name="导入数据按钮"
+        data-debug-name="恢复备份按钮"
         @click="triggerFileInput"
-        title="导入已保存的配置或词表文件"
+        title="从 JSON 备份恢复试卷、设置和题库；操作前会显示影响范围"
       >
         <template #icon><AppIcon name="upload" :size="14" /></template>
-        导入数据
+        恢复备份
       </n-button>
       <input type="file" ref="fileInputRef" id="fileImportInput" accept=".json,.txt" style="display:none;" @change="handleFileChange" />
 
@@ -66,7 +66,7 @@
       </n-popconfirm>
 
       <!-- 保持右侧面板常驻展开，隐藏切换控制桩以兼容回归测试 -->
-      <button id="btnToggleSettings" style="display:none;" aria-hidden="true" @click="state.ui.isSettingsCollapsed = !state.ui.isSettingsCollapsed"></button>
+      <button v-if="isBrowserTestMode" id="btnToggleSettings" style="display:none;" aria-hidden="true" @click="state.ui.isSettingsCollapsed = !state.ui.isSettingsCollapsed"></button>
 
       <n-button
         type="primary"
@@ -80,23 +80,73 @@
         打印 / 导出 PDF
       </n-button>
     </div>
+
+    <n-modal v-model:show="showRestoreReview" :mask-closable="false">
+      <div class="restore-review-card" role="dialog" aria-labelledby="restoreReviewTitle">
+        <h2 id="restoreReviewTitle">确认恢复备份</h2>
+        <p class="restore-file-name">文件：{{ pendingImport?.fileName }}</p>
+        <ul v-if="pendingImport?.kind === 'json'" class="restore-summary-list">
+          <li v-if="pendingImport.validation.hasDraftItems">
+            当前试卷将替换为备份中的 {{ pendingImport.validation.draftItems.length }} 道题。
+          </li>
+          <li v-if="pendingImport.validation.draftSettings">卷面设置将使用备份中的设置。</li>
+          <li v-if="pendingImport.validation.hasLibraryWords">
+            备份含 {{ pendingImport.validation.libraryWords.length }} 个词库条目。
+          </li>
+          <li v-if="pendingImport.validation.hasLibrarySentences">
+            备份含 {{ pendingImport.validation.librarySentences.length }} 个句库条目。
+          </li>
+        </ul>
+        <p v-else>识别到 {{ pendingImport?.items?.length || 0 }} 个单词，将追加到当前试卷并自动跳过重复项。</p>
+
+        <fieldset
+          v-if="pendingImport?.kind === 'json' && (pendingImport.validation.hasLibraryWords || pendingImport.validation.hasLibrarySentences)"
+          class="restore-mode-group"
+        >
+          <legend>题库处理方式</legend>
+          <label>
+            <input v-model="libraryRestoreMode" type="radio" value="merge" />
+            合并到现有题库（推荐，不删除原有内容）
+          </label>
+          <label>
+            <input v-model="libraryRestoreMode" type="radio" value="replace" />
+            覆盖恢复（用备份内容替换对应题库）
+          </label>
+          <p v-if="libraryRestoreMode === 'replace'" class="restore-danger-note">
+            覆盖恢复会删除对应题库中不在备份里的内容；写入失败时事务会自动回滚。
+          </p>
+        </fieldset>
+
+        <div class="restore-actions">
+          <n-button size="small" @click="cancelRestore">取消</n-button>
+          <n-button type="primary" size="small" :loading="restoreLoading" @click="applyPendingImport">
+            {{ libraryRestoreMode === 'replace' ? '覆盖并恢复' : '合并并恢复' }}
+          </n-button>
+        </div>
+      </div>
+    </n-modal>
   </header>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
-import { NButton, NPopconfirm, useMessage } from 'naive-ui';
+import { ref } from 'vue';
+import { NButton, NModal, NPopconfirm, useMessage } from 'naive-ui';
 import { state, db, normalizeSettings } from '../stores/appStore.js';
-import { computePageLayout, DEFAULT_SETTINGS, DEFAULT_WORDS_RAW, createDraftItem } from '../core/layout.js';
-import { validateImportData, detectDuplicates } from '../core/storage.js';
+import { DEFAULT_SETTINGS, DEFAULT_WORDS_RAW, createDraftItem } from '../core/layout.js';
+import { validateImportData, detectDuplicates, ensureUniqueItemIds } from '../core/storage.js';
 import { parseCustomText } from '../core/tokenizer.js';
 import AppIcon from './AppIcon.vue';
 import IconActionButton from './IconActionButton.vue';
+import { isBrowserTestMode } from '../testing/browserTestBridge.js';
 
+// 复用入口页已由 Vite 处理好的品牌图地址，兼容开发服务器和 file:// 多文件交付。
+const logoUrl = document.querySelector('link[rel="icon"]')?.href || '';
 const message = useMessage();
 const fileInputRef = ref(null);
-
-const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
+const showRestoreReview = ref(false);
+const pendingImport = ref(null);
+const libraryRestoreMode = ref('merge');
+const restoreLoading = ref(false);
 
 function handleRefreshPreview() {
   state.ui.zoom = Math.round(state.ui.zoom * 100) / 100;
@@ -119,6 +169,7 @@ function handleExportConfig() {
     library: {
       wordsCount: state.library.words.length,
       sentencesCount: state.library.sentences.length,
+      groups: state.library.groups,
       words: state.library.words,
       sentences: state.library.sentences
     },
@@ -129,12 +180,12 @@ function handleExportConfig() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `dictation_config_${Date.now()}.json`;
+  a.download = `dictation_backup_${Date.now()}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  message.success('配置已导出为 JSON 文件（含草稿与词库数据）！');
+  message.success('备份已导出（含当前试卷、卷面设置和题库）');
 }
 
 function triggerFileInput() {
@@ -167,37 +218,16 @@ function handleFileChange(e) {
           return;
         }
 
-        if (validation.draftItems.length > 0) {
-          const newItems = validation.draftItems.map(it => createDraftItem(it));
-          const dupCheck = detectDuplicates(state.draft.items, newItems);
-          state.draft.items = newItems;
-          const dupTip = dupCheck.duplicates.length > 0 ? ` (包含 ${dupCheck.duplicates.length} 条已存在词条)` : '';
-          message.success(`已成功导入试卷 (${newItems.length} 词)${dupTip}！`);
-        }
-
-        if (validation.draftSettings) {
-          state.draft.settings = normalizeSettings(validation.draftSettings);
-        }
-
-        if (validation.libraryWords.length > 0) {
-          state.library.words = validation.libraryWords.map(w => createDraftItem({ ...w, type: 'word' }));
-          await db.clear('words');
-          await db.bulkPut('words', state.library.words);
-        }
-
-        if (validation.librarySentences.length > 0) {
-          state.library.sentences = validation.librarySentences.map(s => createDraftItem({ ...s, type: 'sentence' }));
-          await db.clear('sentences');
-          await db.bulkPut('sentences', state.library.sentences);
-        }
+        pendingImport.value = { kind: 'json', fileName: file.name, validation };
+        libraryRestoreMode.value = 'merge';
+        showRestoreReview.value = true;
       } else {
         // txt 纯文本
         const list = parseCustomText(content);
         if (list.length > 0) {
-          const dupCheck = detectDuplicates(state.draft.items, list);
-          state.draft.items = list;
-          const dupTip = dupCheck.duplicates.length > 0 ? ` (其中 ${dupCheck.duplicates.length} 条已存在)` : '';
-          message.success(`已成功从文本导入 ${list.length} 个单词${dupTip}！`);
+          pendingImport.value = { kind: 'text', fileName: file.name, items: list };
+          libraryRestoreMode.value = 'merge';
+          showRestoreReview.value = true;
         } else {
           message.warning('未能识别有效单词文本');
         }
@@ -210,12 +240,158 @@ function handleFileChange(e) {
   reader.readAsText(file);
 }
 
+function cancelRestore() {
+  showRestoreReview.value = false;
+  pendingImport.value = null;
+}
+
+async function applyPendingImport() {
+  const pending = pendingImport.value;
+  if (!pending || restoreLoading.value) return;
+  restoreLoading.value = true;
+
+  try {
+    if (pending.kind === 'text') {
+      const normalized = pending.items.map((item) => createDraftItem(item));
+      const result = detectDuplicates(state.draft.items, normalized);
+      const unique = ensureUniqueItemIds(state.draft.items, result.unique, 'imported-draft');
+      state.draft.items.push(...unique);
+      message.success(`已追加 ${unique.length} 道题，跳过 ${result.duplicates.length} 道重复题。`);
+      cancelRestore();
+      return;
+    }
+
+    const { validation } = pending;
+    const importedWords = validation.libraryWords.map((item) => createDraftItem({ ...item, type: item.type || 'word' }));
+    const importedSentences = validation.librarySentences.map((item) => createDraftItem({ ...item, type: item.type || 'sentence' }));
+    const collections = {};
+    let nextWords = state.library.words;
+    let nextSentences = state.library.sentences;
+    let nextGroups = state.library.groups;
+    let skippedDuplicates = 0;
+
+    if (validation.hasLibraryWords) {
+      if (libraryRestoreMode.value === 'replace') {
+        nextWords = ensureUniqueItemIds([], importedWords, 'restored-word');
+        collections.words = nextWords;
+      } else {
+        const result = detectDuplicates(state.library.words, importedWords);
+        const unique = ensureUniqueItemIds(state.library.words, result.unique, 'restored-word');
+        nextWords = [...state.library.words, ...unique];
+        collections.words = unique;
+        skippedDuplicates += result.duplicates.length;
+      }
+    }
+
+    if (validation.hasLibrarySentences) {
+      if (libraryRestoreMode.value === 'replace') {
+        nextSentences = ensureUniqueItemIds([], importedSentences, 'restored-sentence');
+        collections.sentences = nextSentences;
+      } else {
+        const result = detectDuplicates(state.library.sentences, importedSentences);
+        const unique = ensureUniqueItemIds(state.library.sentences, result.unique, 'restored-sentence');
+        nextSentences = [...state.library.sentences, ...unique];
+        collections.sentences = unique;
+        skippedDuplicates += result.duplicates.length;
+      }
+    }
+
+    if (validation.hasLibraryGroups) {
+      nextGroups = libraryRestoreMode.value === 'replace'
+        ? validation.libraryGroups
+        : [...new Set([...state.library.groups, ...validation.libraryGroups])];
+    }
+
+    const saved = await db.writeStores(collections, {
+      replace: libraryRestoreMode.value === 'replace',
+      groups: validation.hasLibraryGroups ? nextGroups : undefined
+    });
+    if (!saved) throw new Error('题库写入失败，原有题库未替换');
+
+    if (validation.hasDraftItems) {
+      state.draft.items = ensureUniqueItemIds(
+        [],
+        validation.draftItems.map((item) => createDraftItem(item)),
+        'restored-draft'
+      );
+    }
+    if (validation.draftSettings) {
+      state.draft.settings = normalizeSettings(validation.draftSettings);
+    }
+    if (validation.hasLibraryWords) state.library.words = nextWords;
+    if (validation.hasLibrarySentences) state.library.sentences = nextSentences;
+    if (validation.hasLibraryGroups) state.library.groups = nextGroups;
+
+    const duplicateText = skippedDuplicates > 0 ? `，跳过 ${skippedDuplicates} 条重复内容` : '';
+    message.success(`备份恢复完成${duplicateText}。`);
+    cancelRestore();
+  } catch (error) {
+    console.error('恢复备份失败:', error);
+    message.error(error?.message || '恢复失败，请检查备份文件后重试');
+  } finally {
+    restoreLoading.value = false;
+  }
+}
+
 function handleResetDefaults() {
   state.draft.items = DEFAULT_WORDS_RAW.map(w => createDraftItem(w));
   state.draft.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   message.success('已恢复为默认设置！');
 }
 </script>
+
+<style scoped>
+.restore-review-card {
+  width: min(520px, calc(100vw - 32px));
+  padding: 20px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(20, 34, 29, 0.22);
+}
+
+.restore-review-card h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.restore-file-name,
+.restore-summary-list,
+.restore-mode-group {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.restore-summary-list {
+  padding-left: 20px;
+}
+
+.restore-mode-group {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.restore-mode-group label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.restore-danger-note {
+  margin: 2px 0 0;
+  color: var(--danger);
+}
+
+.restore-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+</style>
 
 <style scoped>
 .app-header {

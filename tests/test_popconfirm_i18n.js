@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function testPopconfirmI18n() {
   console.log('=== 开始验证 Naive UI 提示框按钮完全中文化 ===\n');
@@ -10,7 +11,7 @@ async function testPopconfirmI18n() {
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1600,1400',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 3500));
@@ -18,7 +19,7 @@ async function testPopconfirmI18n() {
   try {
     const res = await fetch('http://127.0.0.1:9260/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到目标测试页面');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);

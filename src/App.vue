@@ -98,7 +98,7 @@
           <DebugOverlay />
 
           <!-- 兼容旧测试脚本与新功能专用隐藏桩按钮 (不干扰实际视觉界面) -->
-          <div style="display:none;" aria-hidden="true">
+          <div v-if="isBrowserTestMode" style="display:none;" aria-hidden="true">
             <button id="btnLoadDefaultSample" @click="handleNineSample"></button>
             <button id="btnLoadSampleNine" @click="handleNineSample"></button>
             <button id="btnLoadSampleG4" @click="handleG4Sample"></button>
@@ -113,13 +113,12 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { NConfigProvider, NMessageProvider, NTooltip, zhCN, dateZhCN } from 'naive-ui';
 import packageInfo from '../package.json';
-import { state, loadSavedState, loadLibraryFromDB } from './stores/appStore.js';
+import { state, pageLayout, loadSavedState, loadLibraryFromDB } from './stores/appStore.js';
 import { useDebugMode } from './composables/useDebugMode.js';
 import {
-  computePageLayout,
   createDraftItem,
   DEFAULT_WORDS_RAW,
   DEFAULT_CLOZE_WORDS_RAW
@@ -133,6 +132,7 @@ import DebugOverlay from './components/DebugOverlay.vue';
 import MobileNotice from './components/MobileNotice.vue';
 import { isMobilePhoneDevice } from './core/deviceDetect.js';
 import { naiveThemeOverrides as themeOverrides } from './theme/naiveTheme.js';
+import { exposeBrowserTestApi, isBrowserTestMode, removeBrowserTestApi } from './testing/browserTestBridge.js';
 
 import {
   generateAlphabetSequenceItems,
@@ -166,7 +166,7 @@ const updateMobileStatus = () => {
 
 let mql = null;
 
-const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
+const layout = pageLayout;
 
 function handleNineSample() {
   if (state.draft.settings.dictMode === 'cloze') {
@@ -212,7 +212,7 @@ function handleAlphabet26Sample() {
 
 function handleAlphabetNeighborsSample() {
   state.draft.settings.dictMode = 'alphabet';
-  state.draft.settings.title = 'PEP三年级英语 字母左右邻居专项练习卷';
+  state.draft.settings.title = 'PEP三年级英语 前后字母专项练习卷';
   state.draft.settings.columns = 3;
   state.draft.settings.copiesPerPage = 3;
   state.draft.items = generateLetterNeighborsItems({ count: 9, caseStyle: 'upper', neighborType: 'both' });
@@ -240,12 +240,14 @@ onMounted(async () => {
   registerDebugKeyboardListener();
   loadSavedState();
   await loadLibraryFromDB();
-  window._setG4Sample = handleG4Sample;
-  window._setAlphabet26Sample = handleAlphabet26Sample;
-  window._setAlphabetNeighborsSample = handleAlphabetNeighborsSample;
-  window._setAlphabetCaseSample = handleAlphabetCaseSample;
-  window._setIsMobile = (val) => { isMobile.value = val; };
-  window._getIsMobile = () => isMobile.value;
+  exposeBrowserTestApi({
+    _setG4Sample: handleG4Sample,
+    _setAlphabet26Sample: handleAlphabet26Sample,
+    _setAlphabetNeighborsSample: handleAlphabetNeighborsSample,
+    _setAlphabetCaseSample: handleAlphabetCaseSample,
+    _setIsMobile: (val) => { isMobile.value = val; },
+    _getIsMobile: () => isMobile.value
+  });
 });
 
 onUnmounted(() => {
@@ -256,6 +258,14 @@ onUnmounted(() => {
   }
   mql?.removeEventListener?.('change', updateMobileStatus);
   unregisterDebugKeyboardListener();
+  removeBrowserTestApi([
+    '_setG4Sample',
+    '_setAlphabet26Sample',
+    '_setAlphabetNeighborsSample',
+    '_setAlphabetCaseSample',
+    '_setIsMobile',
+    '_getIsMobile'
+  ]);
 });
 </script>
 

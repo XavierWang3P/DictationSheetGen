@@ -1415,9 +1415,13 @@ export function renderAlpha26GridRows(seqItems, s, copies, effectivePromptSize) 
     let cellsHtml = '';
     rowItems.forEach((entry) => {
       const item = entry.item || entry;
-      const overallIndex = entry.overallIndex || '';
-      const safeCardId = escapeHtml(item.id);
       const aData = item.alphaData || {};
+      // 26 字母练习自身是一套完整序列；即使前面混排了其他题型，
+      // 卷面也固定显示 1~26，避免出现 2~27、4~29 等误导学生的编号。
+      const overallIndex = Number.isInteger(aData.seqIdx)
+        ? aData.seqIdx + 1
+        : (entry.overallIndex || '');
+      const safeCardId = escapeHtml(item.id);
       const guideChar = aData.targetEn || item.en || '';
       const cellLabel = (aData.caseStyle === 'upper')
         ? (aData.upper || '')
@@ -1688,7 +1692,9 @@ export function renderPracticeSheetHtml(layout, settings) {
   s.layoutDefaults = normalizeLayoutDefaults(settings?.layoutDefaults, settings || {});
   const { copiesPerPage, isLandscape, pageWidthMm, pageHeightMm } = layout;
   const curPromptSize = Number(s.promptFontSize) || 14;
+  const safePageFontZh = escapeHtml(s.fontFamilyZh || "'KaiTi', '楷体', STKaiti, serif");
   const safePageFontEn = escapeHtml(s.fontFamilyEn || "'Times New Roman', Times, serif");
+  const safeDividerStyle = ['dashed', 'solid', 'none'].includes(s.dividerStyle) ? s.dividerStyle : 'dashed';
   const effectivePromptSize = curPromptSize;
 
   let pagesHtml = '';
@@ -1732,8 +1738,8 @@ export function renderPracticeSheetHtml(layout, settings) {
             height: ${pageHeightMm}mm;
             min-height: ${pageHeightMm}mm;
             max-height: ${pageHeightMm}mm;
-            font-family: ${s.fontFamilyZh};
-            --font-zh: ${s.fontFamilyZh};
+            font-family: ${safePageFontZh};
+            --font-zh: ${safePageFontZh};
             --font-en: ${safePageFontEn};
             padding: ${Number(s.pageMargin || 8)}mm ${Number(s.pageMarginHorizontal ?? 12)}mm;
           ">
@@ -1779,7 +1785,7 @@ export function renderPracticeSheetHtml(layout, settings) {
         for (let c = 0; c < copiesPerPage; c++) {
           if (c > 0) {
             const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">沿虚线裁切分发</span>` : '';
-            copySlipsHtml += `<div class="section-cut-divider ${s.dividerStyle}">${guideTag}</div>`;
+            copySlipsHtml += `<div class="section-cut-divider ${safeDividerStyle}">${guideTag}</div>`;
           }
           copySlipsHtml += renderCopySlipHtml(chunk, pageIdx, c, renderSettings, effectivePromptSize);
         }
@@ -1789,7 +1795,7 @@ export function renderPracticeSheetHtml(layout, settings) {
         for (let c = 0; c < impCols; c++) {
           if (c > 0) {
             const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">沿虚线裁切分发</span>` : '';
-            copySlipsHtml += `<div class="section-cut-divider vertical ${s.dividerStyle}">${guideTag}</div>`;
+            copySlipsHtml += `<div class="section-cut-divider vertical ${safeDividerStyle}">${guideTag}</div>`;
           }
           copySlipsHtml += renderCopySlipHtml(chunk, pageIdx, c, renderSettings, effectivePromptSize);
         }
@@ -1799,13 +1805,13 @@ export function renderPracticeSheetHtml(layout, settings) {
         for (let r = 0; r < impRows; r++) {
           if (r > 0) {
             const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">沿虚线裁切分发</span>` : '';
-            rowsHtml += `<div class="section-cut-divider horizontal ${s.dividerStyle}">${guideTag}</div>`;
+            rowsHtml += `<div class="section-cut-divider horizontal ${safeDividerStyle}">${guideTag}</div>`;
           }
           let colsHtml = '';
           for (let c = 0; c < impCols; c++) {
             if (c > 0) {
               const guideTag = s.showCutGuide ? `<span class="cut-scissors-tag">沿虚线裁切分发</span>` : '';
-              colsHtml += `<div class="section-cut-divider vertical ${s.dividerStyle}">${guideTag}</div>`;
+              colsHtml += `<div class="section-cut-divider vertical ${safeDividerStyle}">${guideTag}</div>`;
             }
             const copyIdx = r * impCols + c;
             colsHtml += renderCopySlipHtml(chunk, pageIdx, copyIdx, renderSettings, effectivePromptSize);
@@ -1821,8 +1827,8 @@ export function renderPracticeSheetHtml(layout, settings) {
           height: ${pageHeightMm}mm;
           min-height: ${pageHeightMm}mm;
           max-height: ${pageHeightMm}mm;
-          font-family: ${s.fontFamilyZh};
-          --font-zh: ${s.fontFamilyZh};
+          font-family: ${safePageFontZh};
+          --font-zh: ${safePageFontZh};
           --font-en: ${safePageFontEn};
           padding: ${Number(s.pageMargin || 8)}mm ${Number(s.pageMarginHorizontal ?? 12)}mm ${Math.max(4, Number(s.pageMargin || 8) - 2)}mm ${Number(s.pageMarginHorizontal ?? 12)}mm;
         ">${innerHtml}</div>`;

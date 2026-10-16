@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 const port = 9261;
@@ -30,12 +31,12 @@ async function run() {
     '--no-first-run',
     `--user-data-dir=${profileDir}`,
     '--window-size=1440,1000',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   try {
     const tabs = await waitForEndpoint(`http://127.0.0.1:${port}/json`);
-    const target = tabs.find(tab => tab.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     assert.ok(target, '未找到构建后的本地页面');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -169,10 +170,21 @@ async function run() {
     ws.close();
     console.log('PASS: 每页3份使用11mm字母格，Q/j/g/p 范字放大且保持规范基线');
   } finally {
-    edge.kill();
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise(resolve => {
+      const killer = spawn('taskkill', ['/pid', String(edge.pid), '/f', '/t'], { stdio: 'ignore' });
+      killer.once('error', () => {
+        edge.kill();
+        resolve();
+      });
+      killer.once('exit', resolve);
+    });
+    await new Promise(resolve => setTimeout(resolve, 250));
     if (profileDir.startsWith(os.tmpdir())) {
-      fs.rmSync(profileDir, { recursive: true, force: true, maxRetries: 3 });
+      try {
+        fs.rmSync(profileDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+      } catch (error) {
+        console.warn(`临时浏览器资料目录稍后由系统清理：${error.code || error.message}`);
+      }
     }
   }
 }

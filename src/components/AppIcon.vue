@@ -24,6 +24,7 @@ import CloseOutline from '@vicons/ionicons5/es/CloseOutline';
 import CloudUploadOutline from '@vicons/ionicons5/es/CloudUploadOutline';
 import CopyOutline from '@vicons/ionicons5/es/CopyOutline';
 import CreateOutline from '@vicons/ionicons5/es/CreateOutline';
+import CutOutline from '@vicons/ionicons5/es/CutOutline';
 import DocumentTextOutline from '@vicons/ionicons5/es/DocumentTextOutline';
 import DownloadOutline from '@vicons/ionicons5/es/DownloadOutline';
 import EyeOutline from '@vicons/ionicons5/es/EyeOutline';
@@ -37,10 +38,12 @@ import RemoveOutline from '@vicons/ionicons5/es/RemoveOutline';
 import PricetagOutline from '@vicons/ionicons5/es/PricetagOutline';
 import PrintOutline from '@vicons/ionicons5/es/PrintOutline';
 import RefreshOutline from '@vicons/ionicons5/es/RefreshOutline';
+import RepeatOutline from '@vicons/ionicons5/es/RepeatOutline';
 import SearchOutline from '@vicons/ionicons5/es/SearchOutline';
 import SettingsOutline from '@vicons/ionicons5/es/SettingsOutline';
 import TextOutline from '@vicons/ionicons5/es/TextOutline';
 import TrashOutline from '@vicons/ionicons5/es/TrashOutline';
+import SwapHorizontalOutline from '@vicons/ionicons5/es/SwapHorizontalOutline';
 
 const BilibiliIcon = {
   name: 'BilibiliIcon',
@@ -92,6 +95,7 @@ const iconMap = Object.freeze({
   edit: CreateOutline,
   'file-text': DocumentTextOutline,
   refresh: RefreshOutline,
+  repeat: RepeatOutline,
   check: CheckmarkOutline,
   x: CloseOutline,
   'arrow-up': ChevronUpOutline,
@@ -101,9 +105,11 @@ const iconMap = Object.freeze({
   alphabet: TextOutline,
   eye: EyeOutline,
   copy: CopyOutline,
+  cut: CutOutline,
   bug: BugOutline,
   menu: MenuOutline,
   minus: RemoveOutline,
+  'swap-horizontal': SwapHorizontalOutline,
   grid: GridOutline,
   github: LogoGithub,
   globe: GlobeOutline,

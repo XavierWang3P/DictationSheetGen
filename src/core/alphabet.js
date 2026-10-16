@@ -78,7 +78,7 @@ export function generateAlphabetSequenceItems(options = {}) {
 }
 
 /**
- * 2. 生成字母左右邻居默写题 (只保留每行 5 题固定布局)
+ * 2. 生成前后字母默写题 (只保留每行 5 题固定布局)
  * @param {Object} options
  * @param {number} options.count 题量 (5, 10, 15, 20，默认 10)
  * @param {string} options.caseStyle 'upper' | 'lower' | 'pair' | 'mix'
@@ -134,16 +134,16 @@ export function generateLetterNeighborsItems(options = {}) {
     let targetEn = '';
 
     if (type === 'both') {
-      promptZh = `邻居: _ ${midChar} _`;
+      promptZh = `${midChar} 的前后字母`;
       targetEn = `${prevChar}, ${nextChar}`;
     } else if (type === 'middle') {
-      promptZh = `邻居: ${prevChar} _ ${nextChar}`;
+      promptZh = `${prevChar}、${nextChar} 中间的字母`;
       targetEn = midChar;
     } else if (type === 'pre') {
-      promptZh = `邻居: _ ${midChar}`;
+      promptZh = `${midChar} 前面的字母`;
       targetEn = prevChar;
     } else if (type === 'post') {
-      promptZh = `邻居: ${midChar} _`;
+      promptZh = `${midChar} 后面的字母`;
       targetEn = nextChar;
     }
 
@@ -266,10 +266,10 @@ export const ALPHABET_PRESETS = [
   },
   {
     key: 'alpha_neighbors_9',
-    title: '三年级英语 字母左右邻居必考卷',
-    description: '前后各留空，考查字母在字母表中的前驱与后继邻居，每行5题。',
+    title: '三年级英语 前后字母练习卷',
+    description: '写出中间字母前面和后面的字母，每行 5 题。',
     settings: {
-      title: '三年级英语 字母左右邻居专项练习卷',
+      title: '三年级英语 前后字母专项练习卷',
       columns: 5,
       wordsPerPage: 10,
       copiesPerPage: 2

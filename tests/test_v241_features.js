@@ -6,14 +6,14 @@ import { normalizeQuestion, getQuestionTypeDefinition } from '../src/question-ty
 
 console.log('=== 开始执行 v2.4.1 八大问题与版式功能专项测试 ===\n');
 
-// 1. 验证字母邻居出题格式与默认排版 (4列, 单行精简提示 _ X _)
-console.log('【验证 1】字母邻居出题与单行紧凑防溢出格式:');
+// 1. 验证前后字母出题格式与默认排版（简短、适合三年级学生理解）
+console.log('【验证 1】前后字母出题与单行紧凑防溢出格式:');
 const neighbors = generateLetterNeighborsItems({ count: 4, type: 'both', rowLayout: 'bottom-4col' });
 assert.equal(neighbors.length, 4);
 assert.equal(neighbors[0].layout.columns, 4);
-assert.match(neighbors[0].prompt, /^邻居:\s+_\s+[A-Za-z]\s+_$/);
+assert.match(neighbors[0].prompt, /^[A-Za-z]\s+的前后字母$/);
 assert.ok(neighbors[0].neighborData.midChar);
-console.log('-> 邻居样例:', neighbors[0].prompt, '列数:', neighbors[0].layout.columns);
+console.log('-> 前后字母样例:', neighbors[0].prompt, '列数:', neighbors[0].layout.columns);
 console.log('-> 判定: ✅ PASS\n');
 
 // 2. 验证字母大小写转换出题格式 (4列, 严格文案 "X 的大写/小写")

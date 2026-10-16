@@ -5,51 +5,53 @@
       <div class="pane-header-title">
         <span class="title-with-icon">
           <AppIcon name="book" :size="16" />
-          题库
+          本地题库
         </span>
-        <span class="quick-stat-badge" id="libStatBadge">共 {{ state.library.words.length }} 词</span>
       </div>
+      <span class="quick-stat-badge" id="libStatBadge">{{ state.library.words.length }} 个单词</span>
+    </div>
 
-      <div class="header-action-group">
-        <n-button
-          size="small"
-          type="primary"
-          ghost
-          id="btnLibImport"
-          data-debug-id="L-005"
-          data-debug-name="词库导入按钮"
-          @click="openImportModal"
-          title="从 Excel / CSV / 剪贴板批量导入"
-        >
-          <template #icon><AppIcon name="upload" :size="14" /></template>
-          导入
-        </n-button>
-        <n-button
-          size="small"
-          id="btnLibExport"
-          data-debug-id="L-006"
-          data-debug-name="词库导出按钮"
-          @click="handleExportLib"
-          title="导出题库备份文件"
-        >
-          <template #icon><AppIcon name="download" :size="14" /></template>
-          导出
-        </n-button>
-        <!-- 兼容旧自动化测试的隐藏桩，移除可见课标词库按钮 -->
-        <button id="btnPresetUnits" style="display:none;" aria-hidden="true" @click="showPresetModal = true"></button>
-        <n-popconfirm
-          @positive-click="handleClearLib"
-          positive-text="确定"
-          negative-text="取消"
-        >
-          <template #trigger>
-            <n-button size="small" type="error" ghost id="btnLibClear" title="清空本地题库">
-              <template #icon><AppIcon name="trash" :size="14" /></template>
-            </n-button>
-          </template>
-          确定要清空本地词库中的所有词汇吗？当前试卷中的内容不受影响。
-        </n-popconfirm>
-      </div>
+    <div class="library-main-actions">
+      <n-button
+        size="small"
+        type="primary"
+        class="library-main-btn"
+        id="btnLibImport"
+        data-debug-id="L-005"
+        data-debug-name="词库导入按钮"
+        @click="openImportModal"
+        title="从 Excel / CSV / 剪贴板批量导入"
+      >
+        <template #icon><AppIcon name="upload" :size="14" /></template>
+        导入词库
+      </n-button>
+      <n-button
+        size="small"
+        class="library-main-btn"
+        id="btnLibExport"
+        data-debug-id="L-006"
+        data-debug-name="词库导出按钮"
+        @click="handleExportLib"
+        title="导出题库备份文件"
+      >
+        <template #icon><AppIcon name="download" :size="14" /></template>
+        导出备份
+      </n-button>
+      <!-- 兼容旧自动化测试的隐藏桩，移除可见课标词库按钮 -->
+      <button v-if="isBrowserTestMode" id="btnPresetUnits" style="display:none;" aria-hidden="true" @click="showPresetModal = true"></button>
+      <n-popconfirm
+        @positive-click="handleClearLib"
+        positive-text="清空题库"
+        negative-text="取消"
+      >
+        <template #trigger>
+          <button type="button" class="header-ghost-clear-btn" id="btnLibClear" title="清空本地题库">
+            <AppIcon name="trash" :size="12" />
+            <span>清空</span>
+          </button>
+        </template>
+        确定要清空本地词库中的所有词汇吗？当前试卷中的内容不受影响。
+      </n-popconfirm>
     </div>
 
     <!-- 单元分组导航 -->
@@ -57,20 +59,20 @@
       <div class="lib-group-header">
         <div class="group-title-wrap">
           <span class="group-header-label">
-            <AppIcon name="tag" :size="13" />
             单元分类
           </span>
-          <span class="group-header-count">({{ groupStats.length }})</span>
+          <span class="group-header-count">{{ groupStats.length }} 个分组</span>
         </div>
-        <button
-          type="button"
-          class="btn-new-group-pill"
+        <n-button
+          size="small"
+          class="btn-new-group"
           id="btnNewGroup"
           @click="openNewGroupModal"
           title="新建单词分组，如 X年级UnitX"
         >
-          <AppIcon name="plus" :size="12" /> 新建组
-        </button>
+          <template #icon><AppIcon name="plus" :size="13" /></template>
+          新建分组
+        </n-button>
       </div>
 
       <!-- 分组胶囊横向滚动选择列表 -->
@@ -84,87 +86,78 @@
         >
           全部 ({{ state.library.words.length }})
         </button>
-        <div
+        <button
           v-for="grp in groupStats"
           :key="grp.name"
+          type="button"
           class="group-pill-btn"
           :class="{ active: activeGroup === grp.name }"
           :id="'pillGroup_' + cleanId(grp.name)"
-          role="button"
-          tabindex="0"
           @click="activeGroup = grp.name"
-          @keydown.enter.space.prevent="activeGroup = grp.name"
         >
           <span>{{ grp.name }} ({{ grp.count }})</span>
-          <IconActionButton
-            v-if="grp.name !== '通用词汇'"
-            class="pill-del-icon"
-            :id="'btnDelPill_' + cleanId(grp.name)"
-            label="删除此分组"
-            icon="x"
-            :icon-size="10"
-            @click.stop="promptDeleteGroup(grp.name)"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- 搜索输入框 -->
-    <div class="search-input-wrap">
-      <input
-        type="text"
-        v-model="searchQuery"
-        id="inputSearchLib"
-        data-debug-id="L-003"
-        data-debug-name="词库搜索输入框"
-        placeholder="搜索英文单词、中文释义或分组..."
-        class="native-search-input"
-      />
-    </div>
-
-    <!-- 批量操作与统计状态栏 -->
-    <div class="toolbar-row">
-      <div class="toolbar-left">
-        <n-button size="small" id="btnLibSelectAll" @click="handleToggleSelectAll">
-          {{ isAllSelected ? '取消全选' : '全选' }}
-        </n-button>
-        <n-button
-          type="primary"
-          size="small"
-          id="btnLibBatchAddToDraft"
-          data-debug-id="L-004"
-          data-debug-name="词库批量加入试卷按钮"
-          :disabled="selectedIds.size === 0"
-          @click="handleBatchAdd"
-        >
-          <template #icon><AppIcon name="plus" :size="14" /></template>
-          批量加入试卷
-        </n-button>
-        <n-button
-          v-if="selectedIds.size > 0"
-          size="small"
-          id="btnBatchSetGroup"
-          @click="openBatchSetGroupModal"
-          title="为已选中的单词统一设置/移动分组"
-        >
-          <template #icon><AppIcon name="tag" :size="13" /></template>
-          设为分组
-        </n-button>
-      </div>
-
-      <div class="toolbar-right" id="libSelectedInfo">
-        <span>已选 <strong id="libSelectedCount" style="color:var(--primary);">{{ selectedIds.size }}</strong> / {{ filteredWords.length }} 词</span>
-        <button
-          v-if="activeGroup !== 'all' && activeGroup !== '通用词汇'"
-          type="button"
-          class="btn-delete-group-inline"
-          id="btnDeleteCurrentGroup"
-          @click="promptDeleteGroup(activeGroup)"
-          title="删除当前单元分组"
-        >
-          <AppIcon name="trash" :size="11" />
-          删除本组
         </button>
+      </div>
+    </div>
+
+    <div class="library-control-panel">
+      <!-- 搜索输入框 -->
+      <div class="search-input-wrap">
+        <AppIcon class="search-leading-icon" name="search" :size="15" />
+        <input
+          type="text"
+          v-model="searchQuery"
+          id="inputSearchLib"
+          data-debug-id="L-003"
+          data-debug-name="词库搜索输入框"
+          placeholder="搜索单词、中文释义或分组"
+          class="native-search-input"
+        />
+      </div>
+
+      <!-- 批量操作与统计状态栏 -->
+      <div class="toolbar-row">
+        <div class="toolbar-left">
+          <n-button size="small" id="btnLibSelectAll" @click="handleToggleSelectAll">
+            {{ isAllSelected ? '取消全选' : '全选当前结果' }}
+          </n-button>
+          <n-button
+            type="primary"
+            size="small"
+            id="btnLibBatchAddToDraft"
+            data-debug-id="L-004"
+            data-debug-name="词库批量加入试卷按钮"
+            :disabled="selectedIds.size === 0"
+            @click="handleBatchAdd"
+          >
+            <template #icon><AppIcon name="plus" :size="14" /></template>
+            加入试卷
+          </n-button>
+          <n-button
+            v-if="selectedIds.size > 0"
+            size="small"
+            id="btnBatchSetGroup"
+            @click="openBatchSetGroupModal"
+            title="为已选中的单词统一设置或移动分组"
+          >
+            移至分组
+          </n-button>
+        </div>
+
+        <div class="toolbar-right" id="libSelectedInfo">
+          <span>已选 <strong id="libSelectedCount">{{ selectedIds.size }}</strong> / {{ filteredWords.length }}</span>
+          <button
+            v-if="activeGroup !== 'all' && activeGroup !== '通用词汇'"
+            type="button"
+            class="btn-delete-group-inline"
+            id="btnDeleteCurrentGroup"
+            @click="promptDeleteGroup(activeGroup)"
+            title="删除当前单元分组"
+          >
+            <AppIcon name="trash" :size="11" />
+            删除本组
+          </button>
+        </div>
       </div>
     </div>
 
@@ -242,8 +235,7 @@
                 :title="'点击更改分组（当前：' + (w.group || '通用词汇') + '）'"
                 @click.stop="openEditSingleGroup(w)"
               >
-                <AppIcon name="tag" :size="10" />
-                {{ w.group || '通用词汇' }}
+              {{ w.group || '通用词汇' }}
               </span>
             </div>
             <div v-if="w.zh" class="lib-item-zh">
@@ -252,18 +244,16 @@
           </div>
 
           <div class="lib-item-actions">
-            <button
-              type="button"
-              class="btn-lib-add btn-act"
-              :data-id="w.id"
-              title="添加到试卷"
-              @click.stop="handleAddSingle(w)"
-            >
-              <AppIcon name="plus" :size="11" />
-              试卷
-            </button>
             <IconActionButton
-              class="btn-lib-del btn-act del"
+              class="btn-lib-add lib-row-action"
+              :data-id="w.id"
+              label="加入试卷"
+              icon="plus"
+              :icon-size="12"
+              @click.stop="handleAddSingle(w)"
+            />
+            <IconActionButton
+              class="btn-lib-del lib-row-action del"
               :data-id="w.id"
               label="从题库中删除"
               icon="trash"
@@ -681,6 +671,7 @@ import {
   downloadExcelTemplate,
   downloadCsvTemplate
 } from '../core/excelParser.js';
+import { isBrowserTestMode } from '../testing/browserTestBridge.js';
 
 const message = useMessage();
 const searchQuery = ref('');
@@ -728,21 +719,16 @@ const groupToDelete = ref('');
 const groupWordsCount = ref(0);
 const deleteGroupAction = ref('dissolve'); // 'dissolve' or 'deleteAll'
 
-function getSavedCustomGroups() {
-  try {
-    const raw = localStorage.getItem('dictation_custom_groups');
-    if (raw) return new Set(JSON.parse(raw));
-  } catch (e) {}
-  return new Set();
-}
-
 function saveCustomGroups() {
-  try {
-    localStorage.setItem('dictation_custom_groups', JSON.stringify(Array.from(customGroups.value)));
-  } catch (e) {}
+  state.library.groups = Array.from(customGroups.value);
 }
 
-const customGroups = ref(getSavedCustomGroups());
+const customGroups = computed({
+  get: () => new Set(state.library.groups),
+  set: (groups) => {
+    state.library.groups = Array.from(groups);
+  }
+});
 
 function cleanId(str) {
   return (str || '').replace(/\s+/g, '_');
@@ -825,7 +811,7 @@ function openNewGroupModal() {
   showNewGroupModal.value = true;
 }
 
-function handleCreateGroup() {
+async function handleCreateGroup() {
   const name = newGroupName.value.trim();
   if (!name) {
     message.warning('请输入有效的分组名称，如「三年级Unit 2」');
@@ -833,6 +819,10 @@ function handleCreateGroup() {
   }
   const nextSet = new Set(customGroups.value);
   nextSet.add(name);
+  if (!await db.writeStores({}, { groups: Array.from(nextSet) })) {
+    message.error('创建分组失败，本地题库未更改，请重试');
+    return;
+  }
   customGroups.value = nextSet;
   saveCustomGroups();
   activeGroup.value = name;
@@ -858,9 +848,14 @@ function promptDeleteGroup(groupName) {
   }
 }
 
-function doDeleteEmptyGroup(grp) {
-  customGroups.value.delete(grp);
-  customGroups.value = new Set(customGroups.value);
+async function doDeleteEmptyGroup(grp) {
+  const nextGroups = new Set(customGroups.value);
+  nextGroups.delete(grp);
+  if (!await db.writeStores({}, { groups: Array.from(nextGroups) })) {
+    message.error('删除分组失败，本地题库未更改，请重试');
+    return;
+  }
+  customGroups.value = nextGroups;
   saveCustomGroups();
   if (activeGroup.value === grp) {
     activeGroup.value = 'all';
@@ -872,37 +867,48 @@ async function handleConfirmDeleteGroup() {
   const grp = groupToDelete.value;
   if (!grp) return;
 
+  const nextGroups = new Set(customGroups.value);
+  nextGroups.delete(grp);
+
   if (deleteGroupAction.value === 'deleteAll') {
     const wordsToDelete = state.library.words.filter(w => (w.group || '通用词汇').trim() === grp);
-    state.library.words = state.library.words.filter(w => (w.group || '通用词汇').trim() !== grp);
+    const nextWords = state.library.words.filter(w => (w.group || '通用词汇').trim() !== grp);
+    const saved = await db.writeStores(
+      { words: nextWords },
+      { replace: true, groups: Array.from(nextGroups) }
+    );
+    if (!saved) {
+      message.error('删除分组失败，本地题库未更改，请重试');
+      return;
+    }
+    state.library.words = nextWords;
 
     const newSelected = new Set(selectedIds.value);
     wordsToDelete.forEach(w => newSelected.delete(w.id));
     selectedIds.value = newSelected;
-
-    if (db && typeof db.delete === 'function') {
-      for (const w of wordsToDelete) {
-        await db.delete('words', w.id);
-      }
-    }
     message.success(`已彻底删除分组「${grp}」及内部 ${wordsToDelete.length} 个单词！`);
   } else {
     const updated = [];
-    state.library.words.forEach(w => {
+    const nextWords = state.library.words.map(w => {
       if ((w.group || '通用词汇').trim() === grp) {
-        w.group = '通用词汇';
-        w.updatedAt = Date.now();
-        updated.push(w);
+        const nextWord = { ...w, group: '通用词汇', updatedAt: Date.now() };
+        updated.push(nextWord);
+        return nextWord;
       }
+      return w;
     });
-    if (db && typeof db.bulkPut === 'function' && updated.length > 0) {
-      await db.bulkPut('words', updated);
+    if (!await db.writeStores(
+      updated.length > 0 ? { words: updated } : {},
+      { groups: Array.from(nextGroups) }
+    )) {
+      message.error('解散分组失败，本地题库未更改，请重试');
+      return;
     }
+    state.library.words = nextWords;
     message.success(`已解散分组「${grp}」，内部 ${updated.length} 个单词已保留并转入「通用词汇」！`);
   }
 
-  customGroups.value.delete(grp);
-  customGroups.value = new Set(customGroups.value);
+  customGroups.value = nextGroups;
   saveCustomGroups();
 
   if (activeGroup.value === grp) {
@@ -929,14 +935,23 @@ async function handleApplyBatchGroup() {
   }
   const ids = selectedIds.value;
   const updated = [];
-  state.library.words.forEach(w => {
+  const nextWords = state.library.words.map(w => {
     if (ids.has(w.id)) {
-      w.group = target;
-      w.updatedAt = Date.now();
-      updated.push(w);
+      const nextWord = { ...w, group: target, updatedAt: Date.now() };
+      updated.push(nextWord);
+      return nextWord;
     }
+    return w;
   });
-  await db.bulkPut('words', updated);
+  const nextGroups = new Set(customGroups.value);
+  if (target !== '通用词汇') nextGroups.add(target);
+  if (!await db.writeStores({ words: updated }, { groups: Array.from(nextGroups) })) {
+    message.error('批量设置分组失败，本地题库未更改，请重试');
+    return;
+  }
+  state.library.words = nextWords;
+  customGroups.value = nextGroups;
+  saveCustomGroups();
   showBatchGroupModal.value = false;
   batchCustomGroup.value = '';
   message.success(`已将选中的 ${updated.length} 个单词归入「${target}」分组！`);
@@ -955,11 +970,19 @@ async function handleSaveSingleGroup() {
     message.warning('分组名称不能为空');
     return;
   }
-  editingWord.value.group = target;
-  editingWord.value.updatedAt = Date.now();
-  await db.bulkPut('words', [editingWord.value]);
+  const nextWord = { ...editingWord.value, group: target, updatedAt: Date.now() };
+  const nextGroups = new Set(customGroups.value);
+  if (target !== '通用词汇') nextGroups.add(target);
+  if (!await db.writeStores({ words: [nextWord] }, { groups: Array.from(nextGroups) })) {
+    message.error('修改分组失败，本地题库未更改，请重试');
+    return;
+  }
+  const wordIndex = state.library.words.findIndex((word) => word.id === nextWord.id);
+  if (wordIndex >= 0) state.library.words[wordIndex] = nextWord;
+  customGroups.value = nextGroups;
+  saveCustomGroups();
   showEditSingleModal.value = false;
-  message.success(`已将「${editingWord.value.en}」移入「${target}」！`);
+  message.success(`已将「${nextWord.en}」移入「${target}」！`);
 }
 
 async function handleImportPresetUnit(preset) {
@@ -978,8 +1001,15 @@ async function handleImportPresetUnit(preset) {
     group: preset.name,
     updatedAt: Date.now()
   }));
+  const nextGroups = new Set(customGroups.value);
+  nextGroups.add(preset.name);
+  if (!await db.writeStores({ words: newWords }, { groups: Array.from(nextGroups) })) {
+    message.error('载入单元词库失败，本地题库未更改，请重试');
+    return;
+  }
   state.library.words.push(...newWords);
-  await db.bulkPut('words', newWords);
+  customGroups.value = nextGroups;
+  saveCustomGroups();
   activeGroup.value = preset.name;
   showPresetModal.value = false;
   message.success(`已成功载入「${preset.name}」(${newWords.length} 词)！`);
@@ -1019,13 +1049,16 @@ async function handleDelete(id) {
   const idx = state.library.words.findIndex(w => w.id === id);
   if (idx !== -1) {
     const wordEn = state.library.words[idx].en;
+    if (!await db.delete('words', id)) {
+      message.error('删除单词失败，本地题库未更改，请重试');
+      return;
+    }
     state.library.words.splice(idx, 1);
     if (selectedIds.value.has(id)) {
       const newSet = new Set(selectedIds.value);
       newSet.delete(id);
       selectedIds.value = newSet;
     }
-    await db.delete('words', id);
     message.info(`已从词库移除「${wordEn}」`);
   }
 }
@@ -1034,11 +1067,14 @@ function handleExportLib() {
   const data = {
     app: 'DictationSheetGen',
     type: 'wordLibrary',
-    version: '4.1',
+    version: '5.0',
     exportedAt: new Date().toISOString(),
     count: state.library.words.length,
-    groups: allGroups.value,
-    words: state.library.words
+    groups: state.library.groups,
+    library: {
+      groups: state.library.groups,
+      words: state.library.words
+    }
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1049,16 +1085,19 @@ function handleExportLib() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  message.success('本地词库已导出为独立 JSON 文件（含分组标签）！');
+  message.success('本地题库备份已导出，可通过顶部“恢复备份”重新导入');
 }
 
 async function handleClearLib() {
+  if (!await db.writeStores({ words: [] }, { replace: true, groups: [] })) {
+    message.error('清空题库失败，本地题库未更改，请重试');
+    return;
+  }
   state.library.words = [];
   selectedIds.value = new Set();
   activeGroup.value = 'all';
   customGroups.value = new Set();
   saveCustomGroups();
-  await db.clear('words');
   message.info('本地词库已清空');
 }
 
@@ -1141,20 +1180,18 @@ async function handleConfirmImport() {
     return;
   }
 
-  // 追加到本地词库
-  state.library.words = [...state.library.words, ...wordsToAdd];
-
-  // 记录新分组
+  const nextGroups = new Set(customGroups.value);
   wordsToAdd.forEach(w => {
-    if (w.group && w.group !== '通用词汇') {
-      customGroups.value.add(w.group);
-    }
+    if (w.group && w.group !== '通用词汇') nextGroups.add(w.group);
   });
-  saveCustomGroups();
-
-  if (db && typeof db.bulkPut === 'function') {
-    await db.bulkPut('words', wordsToAdd);
+  if (!await db.writeStores({ words: wordsToAdd }, { groups: Array.from(nextGroups) })) {
+    message.error('导入词库失败，本地题库未更改，请重试');
+    return;
   }
+
+  state.library.words = [...state.library.words, ...wordsToAdd];
+  customGroups.value = nextGroups;
+  saveCustomGroups();
 
   const dupMsg = dupCheck.duplicates.length > 0 ? ` (自动跳过 ${dupCheck.duplicates.length} 个重复词)` : '';
   message.success(`成功导入 ${wordsToAdd.length} 个单词！${dupMsg}`);
@@ -1168,8 +1205,8 @@ async function handleConfirmImport() {
   }
 }
 
-function handleDownloadExcelTemplate() {
-  downloadExcelTemplate();
+async function handleDownloadExcelTemplate() {
+  await downloadExcelTemplate();
   message.success('已开始下载中小学英语默写词库导入模板 (.xlsx)');
 }
 
@@ -1186,13 +1223,14 @@ function handleDownloadCsvTemplate() {
   gap: 12px;
   background: transparent;
   width: 100%;
+  font-family: var(--font-ui-zh);
 }
 
 .pane-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 0;
   user-select: none;
   width: 100%;
 }
@@ -1201,6 +1239,7 @@ function handleDownloadCsvTemplate() {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .title-with-icon {
@@ -1210,6 +1249,7 @@ function handleDownloadCsvTemplate() {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .quick-stat-badge {
@@ -1221,18 +1261,46 @@ function handleDownloadCsvTemplate() {
   border: 1px solid var(--border-light, #e2e8f0);
 }
 
-.header-action-group {
+.library-main-actions {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.library-main-btn {
+  height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.header-ghost-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  margin-left: auto;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  transition: all 0.15s ease;
+}
+
+.header-ghost-clear-btn:hover {
+  border-color: rgba(197, 82, 74, 0.2);
+  background: var(--color-danger-light);
+  color: var(--danger);
 }
 
 /* 分组导航区域 */
 .lib-group-section {
-  margin-bottom: 10px;
-  background: transparent;
+  margin-bottom: 0;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--border-light, #e2e8f0);
-  padding: 0 0 8px 0;
 }
 
 .lib-group-header {
@@ -1260,27 +1328,6 @@ function handleDownloadCsvTemplate() {
 .group-header-count {
   font-size: 11px;
   color: var(--text-light);
-}
-
-.btn-new-group-pill {
-  background: white;
-  border: 1px solid var(--border-color, #cbd5e1);
-  border-radius: 4px;
-  font-size: 11px;
-  height: 22px;
-  padding: 0 8px;
-  color: var(--primary, #2f6659);
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  transition: all 0.15s ease;
-}
-
-.btn-new-group-pill:hover {
-  background: var(--bg-hover, #f1f5f9);
-  border-color: var(--primary, #2f6659);
 }
 
 .group-pills-bar {
@@ -1320,46 +1367,35 @@ function handleDownloadCsvTemplate() {
   font-weight: 600;
 }
 
-.pill-del-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  color: var(--text-light);
-  margin-left: 2px;
-  transition: all 0.15s ease;
-}
-
-.pill-del-icon:hover {
-  background: #fee2e2;
-  color: #ef4444;
-}
-
-.group-pill-btn.active .pill-del-icon {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.group-pill-btn.active .pill-del-icon:hover {
-  background: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-}
-
 .search-input-wrap {
   position: relative;
   margin-bottom: 8px;
 }
 
+.library-control-panel {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.search-leading-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  z-index: 1;
+  color: var(--text-light);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 .native-search-input {
   width: 100%;
   height: 32px;
-  padding: 0 10px;
+  padding: 0 10px 0 32px;
   font-size: 12.5px;
   border: 1px solid var(--border-color, #cbd5e1);
   background: white;
   color: var(--text-main);
-  border-radius: 5px;
+  border-radius: 6px;
   outline: none;
   font-family: inherit;
   transition: all 0.15s ease;
@@ -1374,7 +1410,7 @@ function handleDownloadCsvTemplate() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 0;
   flex-wrap: wrap;
   gap: 6px;
 }
@@ -1392,6 +1428,11 @@ function handleDownloadCsvTemplate() {
   gap: 6px;
   font-size: 11.5px;
   color: var(--text-muted, #64748b);
+}
+
+#libSelectedCount {
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .btn-delete-group-inline {
@@ -1417,9 +1458,12 @@ function handleDownloadCsvTemplate() {
 .words-list-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   max-height: 480px;
   overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-card);
 }
 
 .empty-list-tip {
@@ -1436,23 +1480,28 @@ function handleDownloadCsvTemplate() {
 .lib-item-row {
   display: flex;
   align-items: center;
-  padding: 6px 10px;
+  padding: 8px 9px;
   background: white;
-  border: 1px solid var(--border-light, #e2e8f0);
-  border-radius: 5px;
+  border: none;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 0;
   font-size: 12px;
   gap: 8px;
   transition: all 0.15s ease;
 }
 
 .lib-item-row:hover {
-  border-color: var(--primary, #2f6659);
-  background: var(--bg-hover, #f8fafc);
+  background: var(--primary-light);
+  box-shadow: none;
 }
 
 .lib-item-row.is-selected {
   background: rgba(47, 102, 89, 0.05);
-  border-color: var(--primary, #2f6659);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.lib-item-row:last-child {
+  border-bottom: none;
 }
 
 .lib-item-check {
@@ -1463,7 +1512,8 @@ function handleDownloadCsvTemplate() {
 }
 
 .lib-item-num {
-  font-family: 'Times New Roman', serif;
+  font-family: var(--font-ui-zh);
+  font-variant-numeric: tabular-nums;
   font-size: 11.5px;
   color: #94a3b8;
   min-width: 18px;
@@ -1499,7 +1549,7 @@ function handleDownloadCsvTemplate() {
 }
 
 .lib-item-zh {
-  font-family: var(--font-zh, 'KaiTi', '楷体', STKaiti, serif);
+  font-family: var(--font-ui-zh);
   font-size: 11.5px;
   color: #64748b;
   white-space: nowrap;
@@ -1510,11 +1560,10 @@ function handleDownloadCsvTemplate() {
 .word-group-tag {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
   font-size: 10px;
   color: var(--primary, #2f6659);
   background: rgba(47, 102, 89, 0.08);
-  border: 1px solid rgba(47, 102, 89, 0.2);
+  border: 1px solid var(--primary-border);
   border-radius: 4px;
   padding: 0 5px;
   height: 18px;
@@ -1523,42 +1572,54 @@ function handleDownloadCsvTemplate() {
 }
 
 .word-group-tag:hover {
-  background: var(--primary, #2f6659);
-  color: #ffffff;
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 .lib-item-actions {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
   flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
 }
 
-.btn-act {
-  background: white;
-  border: 1px solid var(--border-color, #cbd5e1);
-  border-radius: 4px;
-  height: 24px;
-  padding: 0 7px;
-  font-size: 11px;
-  cursor: pointer;
-  color: var(--text-muted, #64748b);
+.lib-item-row:hover .lib-item-actions,
+.lib-item-row:focus-within .lib-item-actions,
+.lib-item-actions:hover {
+  opacity: 1;
+}
+
+.lib-item-actions :deep(.lib-row-action) {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  width: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.btn-act:hover {
-  background: rgba(47, 102, 89, 0.08);
+.lib-item-actions :deep(.lib-row-action:hover) {
+  background: var(--bg-card);
   color: var(--primary, #2f6659);
-  border-color: var(--primary, #2f6659);
+  border-color: var(--primary-border);
 }
 
-.btn-act.del:hover {
-  background: #fee2e2;
-  color: #ef4444;
-  border-color: #ef4444;
+.lib-item-actions :deep(.lib-row-action.del:hover) {
+  background: var(--color-danger-light);
+  color: var(--danger);
+  border-color: rgba(197, 82, 74, 0.25);
 }
 
 .group-select-chip {

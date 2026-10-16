@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -40,7 +41,7 @@ async function testV230Refactor() {
     '--no-sandbox',
     '--window-size=1600,1200',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   let res = null;
@@ -60,7 +61,7 @@ async function testV230Refactor() {
 
   try {
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到目标页面');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -86,6 +87,22 @@ async function testV230Refactor() {
           method: 'Runtime.evaluate',
           params: { expression: expr, awaitPromise: true, returnByValue: true }
         }));
+      });
+    }
+
+    function sendCommand(method, params = {}) {
+      return new Promise((resolve, reject) => {
+        const cur = id++;
+        const h = (e) => {
+          const d = JSON.parse(e.data);
+          if (d.id === cur) {
+            ws.removeEventListener('message', h);
+            if (d.error) reject(new Error(JSON.stringify(d.error)));
+            else resolve(d.result);
+          }
+        };
+        ws.addEventListener('message', h);
+        ws.send(JSON.stringify({ id: cur, method, params }));
       });
     }
 
@@ -341,23 +358,15 @@ async function testV230Refactor() {
 
     // ================= 测试 7: 导出打印彻底消除末尾空白页 (.is-last-page 样式) =================
     console.log('【验证 7】打印排版末尾空白页消除验证 (.is-last-page 样式):');
+    await sendCommand('Emulation.setEmulatedMedia', { media: 'print' });
     const r7 = await evalExpr(`(() => {
       const pages = Array.from(document.querySelectorAll('.sheet-page'));
       const lastPage = pages[pages.length - 1];
       const hasLastPageClass = lastPage ? lastPage.classList.contains('is-last-page') : false;
-
-      // 检查页面样式规则
-      const printRules = Array.from(document.styleSheets).flatMap(s => {
-        try {
-          return Array.from(s.cssRules || []);
-        } catch (e) {
-          return [];
-        }
-      });
-
-      const hasBreakAfterAvoidRule = printRules.some(r => {
-        return r.cssText && r.cssText.includes('.is-last-page') && (r.cssText.includes('break-after') || r.cssText.includes('page-break-after'));
-      });
+      const lastPageStyle = lastPage ? window.getComputedStyle(lastPage) : null;
+      const hasBreakAfterAvoidRule = !!lastPageStyle && (
+        lastPageStyle.breakAfter !== 'page' && lastPageStyle.pageBreakAfter !== 'always'
+      );
 
       return {
         pageCount: pages.length,
@@ -365,6 +374,7 @@ async function testV230Refactor() {
         hasBreakAfterAvoidRule
       };
     })()`);
+    await sendCommand('Emulation.setEmulatedMedia', { media: '' });
     console.log('-> 结果:', JSON.stringify(r7, null, 2));
     const pass7 = r7.pageCount > 0 && r7.hasLastPageClass && r7.hasBreakAfterAvoidRule;
     console.log('-> 判定:', pass7 ? '✅ PASS' : '❌ FAIL', '\n');

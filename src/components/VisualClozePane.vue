@@ -260,8 +260,11 @@ async function handleSaveToLib() {
     segments: segments.value,
     updatedAt: Date.now()
   };
+  if (!await db.bulkPut('sentences', [sentenceItem])) {
+    message.error('保存到本地句库失败，句库未更改，请重试');
+    return;
+  }
   state.library.sentences.unshift(sentenceItem);
-  await db.bulkPut('sentences', [sentenceItem]);
   message.success('已成功保存至本地句库！');
 }
 
@@ -291,8 +294,11 @@ function handleAddSentenceToDraft(s) {
 async function handleDeleteSentence(id) {
   const idx = state.library.sentences.findIndex(s => s.id === id);
   if (idx !== -1) {
+    if (!await db.delete('sentences', id)) {
+      message.error('删除句库内容失败，本地句库未更改，请重试');
+      return;
+    }
     state.library.sentences.splice(idx, 1);
-    await db.delete('sentences', id);
     message.success('已从本地句库中删除！');
   }
 }

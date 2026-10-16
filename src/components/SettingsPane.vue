@@ -403,7 +403,7 @@
           </select>
         </div>
         <p class="field-note">
-          说明：中文全局默认使用楷体；英文全局默认使用 Times New Roman；句子挖空与字母专项等四线三格内容默认使用 XuMin 规范手写体。
+          说明：中文默认使用楷体，英文题干默认使用 Times New Roman；字母范字可在下方选择内置手写体。
         </p>
 
         <!-- 字母范字字体 -->
@@ -611,7 +611,7 @@
           <span class="column-config-label">句子默写</span>
           <div class="grid-button-group col-btn-group">
             <button
-              v-for="c in [1, 2, 3, 4]"
+              v-for="c in [1, 2, 3, 4, 5]"
               :key="c"
               type="button"
               class="grid-btn"
@@ -628,7 +628,7 @@
           <span class="column-config-label">句子挖空</span>
           <div class="grid-button-group col-btn-group">
             <button
-              v-for="c in [1, 2, 3, 4]"
+              v-for="c in [1, 2, 3, 4, 5]"
               :key="c"
               type="button"
               class="grid-btn"
@@ -645,7 +645,7 @@
           <span class="column-config-label">选择题</span>
           <div class="grid-button-group col-btn-group">
             <button
-              v-for="c in [1, 2, 3, 4]"
+              v-for="c in [1, 2, 3, 4, 5]"
               :key="c"
               type="button"
               class="grid-btn"
@@ -662,7 +662,7 @@
           <span class="column-config-label">填空题</span>
           <div class="grid-button-group col-btn-group">
             <button
-              v-for="c in [1, 2, 3, 4]"
+              v-for="c in [1, 2, 3, 4, 5]"
               :key="c"
               type="button"
               class="grid-btn"
@@ -674,9 +674,9 @@
           </div>
         </div>
 
-        <!-- 字母专项细化拆分：字母左右邻居 -->
+        <!-- 字母专项细化拆分：前后字母 -->
         <div class="column-config-row">
-          <span class="column-config-label">字母左右邻居</span>
+          <span class="column-config-label">前后字母</span>
           <div class="grid-button-group col-btn-group">
             <button
               type="button"

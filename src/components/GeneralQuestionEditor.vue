@@ -78,12 +78,14 @@
                 />
                 <!-- 保持测试兼容的隐藏按钮与动作 -->
                 <button
+                  v-if="isBrowserTestMode"
                   type="button"
                   data-action="move-option-up"
                   style="display:none;"
                   @click="moveOption(index, -1)"
                 ></button>
                 <button
+                  v-if="isBrowserTestMode"
                   type="button"
                   data-action="move-option-down"
                   style="display:none;"
@@ -133,7 +135,7 @@
               <label for="optInline">行内</label>
             </div>
             <!-- 保留无障碍/旧测试兼容隐藏桩 -->
-            <select id="choiceOptionLayout" v-model="choice.optionLayout" style="display:none;" aria-hidden="true">
+            <select v-if="isBrowserTestMode" id="choiceOptionLayout" v-model="choice.optionLayout" style="display:none;" aria-hidden="true">
               <option value="auto">自动排列</option>
               <option value="single">单列</option>
               <option value="double">双列</option>
@@ -269,8 +271,8 @@ She usually goes to school by [bike]."
           </div>
 
           <!-- 兼容自动化测试的桩节点 -->
-          <button id="btnAddInlineBlank" style="display:none;" type="button" @click="addBlank"></button>
-          <div class="blank-editor-list" style="display:none;" aria-hidden="true">
+          <button v-if="isBrowserTestMode" id="btnAddInlineBlank" style="display:none;" type="button" @click="addBlank"></button>
+          <div v-if="isBrowserTestMode" class="blank-editor-list" style="display:none;" aria-hidden="true">
             <div v-for="(blank, index) in fill.blanks" :key="blank.id" class="blank-editor-row">
               <input v-model="blank.answer" />
             </div>
@@ -352,6 +354,7 @@ import {
 import { normalizeQuestion, validateQuestion } from '../question-types/registry.js';
 import AppIcon from './AppIcon.vue';
 import QuestionEditorShell from './QuestionEditorShell.vue';
+import { isBrowserTestMode } from '../testing/browserTestBridge.js';
 
 const props = defineProps({
   type: { type: String, required: true },

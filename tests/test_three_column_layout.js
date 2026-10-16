@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -15,7 +16,7 @@ async function runThreeColumnTest() {
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
     '--window-size=1680,1050',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 2000));
@@ -23,7 +24,7 @@ async function runThreeColumnTest() {
   try {
     const res = await fetch('http://127.0.0.1:9268/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('Target tab not found');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);

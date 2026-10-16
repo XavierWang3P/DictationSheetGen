@@ -1,4 +1,12 @@
-import * as XLSX from 'xlsx';
+let xlsxModulePromise = null;
+export const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
+
+function loadXlsxModule() {
+  if (!xlsxModulePromise) {
+    xlsxModulePromise = import('xlsx');
+  }
+  return xlsxModulePromise;
+}
 
 /**
  * 判断是否为表头行
@@ -120,6 +128,13 @@ function mapRowToWordItem(cols, defaultGroup = '通用词汇') {
  * @returns {Promise<{ words: Array, groupsCount: number, duplicatesCount: number }>}
  */
 export async function parseExcelOrCsvFile(file, defaultGroup = '通用词汇') {
+  if (!file || typeof file.arrayBuffer !== 'function') {
+    throw new Error('请选择有效的表格文件');
+  }
+  if (Number(file.size) > MAX_IMPORT_FILE_BYTES) {
+    throw new Error('文件超过 10 MB，请拆分后再导入');
+  }
+  const XLSX = await loadXlsxModule();
   const buffer = await file.arrayBuffer();
   // 读取工作簿
   const workbook = XLSX.read(buffer, { type: 'array' });
@@ -185,7 +200,8 @@ export function parsePastedExcelText(pastedText, defaultGroup = '通用词汇') 
 /**
  * 生成并下载标准的 Excel (.xlsx) 示范模板
  */
-export function downloadExcelTemplate() {
+export async function downloadExcelTemplate() {
+  const XLSX = await loadXlsxModule();
   const sampleData = [
     ['年级与单元（可选）', '英文单词（必填）', '中文释义（建议）'],
     ['三年级上册 Unit 1', 'ruler', '尺子'],

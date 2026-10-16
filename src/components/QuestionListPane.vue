@@ -68,7 +68,7 @@
         <template v-else>
           <div
             v-for="(item, index) in state.draft.items"
-            :key="item.id || index"
+            :key="item.id"
             class="word-item-row compact-exam-row word-chip"
             :class="{
               'is-separator-row': item.questionType === 'separator',
@@ -392,8 +392,8 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { NPopconfirm, NModal, NInput, NInputNumber, NButton, NSelect, useMessage } from 'naive-ui';
-import { state } from '../stores/appStore.js';
-import { computePageLayout, stripOuterBrackets } from '../core/layout.js';
+import { state, pageLayout } from '../stores/appStore.js';
+import { stripOuterBrackets } from '../core/layout.js';
 import { normalizeQuestion } from '../question-types/registry.js';
 import {
   parseSentenceToSegments,
@@ -403,11 +403,12 @@ import {
 } from '../core/tokenizer.js';
 import AppIcon from './AppIcon.vue';
 import IconActionButton from './IconActionButton.vue';
+import { isBrowserTestMode } from '../testing/browserTestBridge.js';
 
 const message = useMessage();
 const structuredTypes = ['choice', 'inline-fill', 'english-composition'];
 
-const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
+const layout = pageLayout;
 
 const sectionColumnOptions = [
   { label: '每行 1 题（整行通栏）', value: 1 },
@@ -567,7 +568,7 @@ function openInFullStructuredEditor() {
   const idx = editingIndex.value;
   isEditModalOpen.value = false;
   state.ui.activeView = 'paneQuick';
-  window.__editingQuestionIndex = idx;
+  if (isBrowserTestMode) window.__editingQuestionIndex = idx;
   window.dispatchEvent(new CustomEvent('edit-question', { detail: idx }));
 }
 
@@ -590,7 +591,7 @@ const statBreakdownSummary = computed(() => {
   if (counts['sentence-cloze']) parts.push(`挖空${counts['sentence-cloze']}`);
   if (counts['sentence-dictation']) parts.push(`句子${counts['sentence-dictation']}`);
   if (counts['alpha-seq']) parts.push(`字母默写${counts['alpha-seq']}`);
-  if (counts['alpha-neighbor']) parts.push(`字母邻居${counts['alpha-neighbor']}`);
+  if (counts['alpha-neighbor']) parts.push(`前后字母${counts['alpha-neighbor']}`);
   if (counts['alpha-case']) parts.push(`大小写${counts['alpha-case']}`);
   if (counts['separator']) parts.push(`隔断${counts['separator']}`);
   if (counts['choice']) parts.push(`选择${counts['choice']}`);
@@ -612,7 +613,7 @@ function getQuestionTypeLabel(itemOrType) {
   if (typeof itemOrType === 'object' && itemOrType !== null) {
     if (itemOrType.questionType === 'alphabet') {
       const sub = itemOrType.subType || itemOrType.alphabetType;
-      if (sub === 'neighbor' || itemOrType.neighborData) return '字母邻居';
+      if (sub === 'neighbor' || itemOrType.neighborData) return '前后字母';
       if (sub === 'case' || itemOrType.caseData) return '大小写';
       if (sub === 'sequence' || itemOrType.alphaData) return '字母默写';
       return '字母';

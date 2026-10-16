@@ -5,8 +5,8 @@ import { normalizeQuestion } from '../src/question-types/registry.js';
 
 console.log('=== 开始执行字母全默写与混合题型新特性自动化验证 ===\n');
 
-// 1. 验证题号遵循全局设定（前置题号继承）
-console.log('【验证 1】题号遵循全局设定（前置题目题号连续顺延）:');
+// 1. 混排数据仍保留全局题号，26 字母练习区在卷面上独立显示 1~26
+console.log('【验证 1】混排数据保留全局题号，26 字母卷面序号固定为 1~26:');
 const preWords = [
   normalizeQuestion({ en: 'pen', zh: '钢笔' }),
   normalizeQuestion({ en: 'book', zh: '书' }),
@@ -20,17 +20,20 @@ const page0Items = res1.pageChunks[0].items;
 assert.equal(page0Items[0].overallIndex, 1);
 assert.equal(page0Items[1].overallIndex, 2);
 assert.equal(page0Items[2].overallIndex, 3);
-// 字母全默写第一个字母 A 应顺延为第 4 题
+// 布局元数据仍保留整张试卷的顺序，供排序和调试使用
 assert.equal(page0Items[3].overallIndex, 4);
 assert.equal(page0Items[28].overallIndex, 29);
-console.log('-> 题号顺延验证通过: 单词题 1~3, 字母题 4~29');
+const slipHtml1 = renderCopySlipHtml(res1.pageChunks[0], 0, 0, { ...DEFAULT_SETTINGS, promptFontSize: 16 }, 16);
+const alphabetNumbers = [...slipHtml1.matchAll(/alpha-cell-top[^>]*>[\s\S]*?<span class="word-num entry-index">(\d+)\.<\/span>/g)]
+  .map((match) => Number(match[1]));
+assert.deepEqual(alphabetNumbers, Array.from({ length: 26 }, (_, index) => index + 1));
+console.log('-> 卷面上的字母题序号严格为 1~26');
 console.log('-> 判定: ✅ PASS\n');
 
 // 2. 验证题号遵循全局字号与样式
 console.log('【验证 2】字母格序号字号遵循全局 promptFontSize 与不加粗样式:');
-const slipHtml1 = renderCopySlipHtml(res1.pageChunks[0], 0, 0, { ...DEFAULT_SETTINGS, promptFontSize: 16 }, 16);
 assert.match(slipHtml1, /class="alpha-cell-top" style="font-size:16pt;"/);
-assert.match(slipHtml1, /<span class="word-num entry-index">4\.<\/span>/);
+assert.match(slipHtml1, /<span class="word-num entry-index">1\.<\/span>/);
 console.log('-> promptFontSize:16pt 成功穿透至 alpha-cell-top');
 console.log('-> 判定: ✅ PASS\n');
 

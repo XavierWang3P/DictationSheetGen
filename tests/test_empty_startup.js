@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function testEmptyStartup() {
   console.log('=== 开始验证首屏默认不预设单词特性 (v2.2.7) ===\n');
@@ -8,9 +9,9 @@ async function testEmptyStartup() {
     '--remote-debugging-port=9269',
     '--disable-gpu',
     '--no-sandbox',
-    `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
+    `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}-${Date.now()}`,
     '--window-size=1600,1400',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 3500));
@@ -18,7 +19,7 @@ async function testEmptyStartup() {
   try {
     const res = await fetch('http://127.0.0.1:9269/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到目标测试页面');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -66,6 +67,7 @@ async function testEmptyStartup() {
       state.draft.items = [];
       state.draft.settings.dictMode = 'writing';
       state.draft.settings.copiesPerPage = 3;
+      state.draft.settings.showAnswerPage = false;
       await new Promise(r => setTimeout(r, 150));
 
       const textarea = document.getElementById('customWordTextarea');

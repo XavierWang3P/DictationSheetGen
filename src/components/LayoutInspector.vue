@@ -17,6 +17,7 @@
       </div>
       <!-- 保持常驻展开，隐藏收起控制桩以兼容回归测试 -->
       <button
+        v-if="isBrowserTestMode"
         type="button"
         id="btnCloseInspector"
         style="display:none;"
@@ -38,6 +39,7 @@
 import { state } from '../stores/appStore.js';
 import SettingsPane from './SettingsPane.vue';
 import AppIcon from './AppIcon.vue';
+import { isBrowserTestMode } from '../testing/browserTestBridge.js';
 </script>
 
 <style scoped>

@@ -100,11 +100,11 @@ assert.ok(previewCss.includes('.separator-line'), '分隔线包含统一的 .sep
 assert.ok(previewCss.includes('height: 1.5px;') || previewCss.includes('height: 1px;'), '分隔线具有一致的粗细与样式');
 console.log('-> 判定: ✅ PASS\n');
 
-// 4. 句子挖空移除预览区域，默认英文使用 XuMin 字体
-console.log('【验证 4】句子挖空删除效果预览区域，英文默认使用 XuMin 字体:');
+// 4. 句子挖空移除重复预览区域，英文遵循统一字体设置
+console.log('【验证 4】句子挖空删除重复预览区域，英文遵循统一字体设置:');
 assert.ok(!quickPaneVue.includes('id="visualClozePreview"'), '句子挖空题型编辑区已彻底删除 visualClozePreview 预览区域');
-assert.ok(quickPaneVue.includes("font-family: 'Xumin Regular'"), '句子挖空单词胶囊与原句编辑默认使用 XuMin 字体');
-assert.ok(previewCss.includes('.type-sentence-cloze') && previewCss.includes('Xumin Regular'), '试卷展示与打印页面句子挖空英文使用 XuMin 字体');
+assert.ok(quickPaneVue.includes("font-family: 'Times New Roman'"), '句子挖空单词胶囊与原句编辑使用统一英文字体');
+assert.ok(previewCss.includes('.type-sentence-cloze') && previewCss.includes("var(--font-en, 'Times New Roman'"), '试卷展示与打印页面句子挖空英文遵循全局英文字体设置');
 console.log('-> 判定: ✅ PASS\n');
 
 // 5. 题目序号统一格式与样式规则复用
@@ -115,29 +115,26 @@ assert.ok(previewCss.includes('.word-num,') && previewCss.includes('.entry-index
 assert.ok(previewCss.includes('font-weight: 400 !important;'), '题目序号统一步调，非加粗 (weight 400)');
 console.log('-> 判定: ✅ PASS\n');
 
-// 6. 字体系统与已废弃字体移除验证
-console.log('【验证 6】废弃字体全面移除，严格保证楷体(中文)、Times New Roman(英文/混排提示)、XuMin(挖空/字母四线格):');
+// 6. 字体系统与内置书写字体验证
+console.log('【验证 6】中文、英文字体规则和五款内置书写字体保持一致:');
 const fontsCss = readFileSync(resolve('src/styles/fonts.css'), 'utf-8');
 const handwritingJs = readFileSync(resolve('src/core/handwritingFonts.js'), 'utf-8');
 const settingsPaneVue = readFileSync(resolve('src/components/SettingsPane.vue'), 'utf-8');
 
-const deletedFonts = [
-  'shuyao-italic',
-  'shuyao-italic-four-line',
-  'Noto Sans SC',
-  'Georgia',
-  'Arial'
+const embeddedFontFamilies = [
+  'Shuyao Hengshui',
+  'Shuyao Italic',
+  'Shuyao Italic Four Line',
+  'Xumin Regular',
+  'Xumin Linglish'
 ];
-deletedFonts.forEach(font => {
-  assert.ok(!fontsCss.includes(font), `fonts.css 中不包含已被删除的字体引用: ${font}`);
-  assert.ok(!handwritingJs.includes(font), `handwritingFonts.js 中不包含已被删除的字体: ${font}`);
+embeddedFontFamilies.forEach(font => {
+  assert.ok(fontsCss.includes(`font-family: '${font}'`), `fonts.css 应内联字体: ${font}`);
+  assert.ok(handwritingJs.includes(font), `handwritingFonts.js 应注册字体: ${font}`);
 });
 
-// 排版设置中的下拉选项已清理
-assert.ok(!settingsPaneVue.includes('思源黑体'), '排版设置面板已移除思源黑体');
-assert.ok(!settingsPaneVue.includes('舒窈意大利斜体'), '排版设置面板已移除舒窈意大利斜体');
-assert.ok(!handwritingJs.includes('shuyao-italic-four-line'), '已移除四线三格字体 shuyao-italic-four-line');
-assert.ok(!settingsPaneVue.includes('Georgia'), '排版设置面板已移除 Georgia');
+assert.ok(settingsPaneVue.includes('Times New Roman'), '排版设置面板应说明默认英文字体');
+assert.ok(settingsPaneVue.includes('selectAlphabetGuideFont'), '排版设置面板应提供字母范字字体选择器');
 console.log('-> 判定: ✅ PASS\n');
 
 // 7. 试卷题目面板单击进入编辑与状态防抖

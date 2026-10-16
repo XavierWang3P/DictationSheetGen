@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function testPhase2() {
   const edge = spawn('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', [
@@ -7,7 +8,7 @@ async function testPhase2() {
     '--disable-gpu',
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   try {
@@ -21,7 +22,8 @@ async function testPhase2() {
   }
   if (!res) throw new Error('无法连接 Edge 调试端口 9253');
   const tabs = await res.json();
-  const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+  const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
+  if (!target) throw new Error('未找到目标测试页面');
   const ws = new WebSocket(target.webSocketDebuggerUrl);
 
     let id = 1;

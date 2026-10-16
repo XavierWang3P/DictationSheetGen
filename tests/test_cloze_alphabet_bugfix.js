@@ -98,6 +98,7 @@ const caseItems = generateCaseConversionItems({ count: 8, direction: 'random_swi
 
 assert.equal(seqItems[0].subType, 'sequence', '26字母题目 subType 必须为 sequence');
 assert.equal(neighborItems[0].subType, 'neighbor', '左右邻居题目 subType 必须为 neighbor');
+assert.match(neighborItems[0].zh, /的前后字母$/, '学生提示应使用简短易懂的“前后字母”，不使用抽象的“邻居”说法');
 assert.equal(caseItems[0].subType, 'case', '大小写转换题目 subType 必须为 case');
 
 // 3.2 列数解析独立性测试（不受全局 alphabetLayout 污染）

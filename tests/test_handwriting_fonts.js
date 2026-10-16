@@ -26,7 +26,7 @@ for (const filename of expectedAssets) {
   assert.ok(fs.existsSync(path.join(projectRoot, 'src/assets/fonts', filename)), `缺少内置字体 ${filename}`);
 }
 
-assert.ok((fontsCss.match(/@font-face/g) || []).length >= 5, '五个用户字体必须全部通过 @font-face 内置');
+assert.ok((fontsCss.match(/@font-face/g) || []).length >= 7, '两款界面字体和五款书写字体必须全部通过 @font-face 内置');
 assert.match(settingsSource, /id="selectAlphabetGuideFont"/, '设置区必须提供独立的字母范字字体选择器');
 assert.doesNotMatch(layoutSource, /Century Gothic/, '字母范字不得继续硬编码 Century Gothic');
 assert.match(DEFAULT_SETTINGS.alphabetGuideFont, /Shuyao Italic/, '新建字母练习应默认使用规范手写体');

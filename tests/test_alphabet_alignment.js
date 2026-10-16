@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 import assert from 'node:assert/strict';
 
 async function testAlphabetAlignment() {
@@ -10,7 +11,7 @@ async function testAlphabetAlignment() {
     '--disable-gpu',
     '--no-sandbox',
     '--window-size=1600,1200',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 2000));
@@ -18,7 +19,8 @@ async function testAlphabetAlignment() {
   try {
     const res = await fetch('http://127.0.0.1:9284/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen')) || tabs[0];
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
+    if (!target) throw new Error('未找到目标测试页面');
     const ws = new WebSocket(target.webSocketDebuggerUrl);
 
     let id = 1;

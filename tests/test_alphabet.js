@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function testAlphabet() {
   console.log('=== 开始执行三年级字母默写模式专项自动化测试 ===\n');
@@ -10,7 +11,7 @@ async function testAlphabet() {
     '--no-sandbox',
     '--window-size=1600,1200',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   await new Promise(r => setTimeout(r, 2000));
@@ -18,7 +19,7 @@ async function testAlphabet() {
   try {
     const res = await fetch('http://127.0.0.1:9254/json');
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到目标测试页面');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -96,8 +97,8 @@ async function testAlphabet() {
     const pass2 = r2.dictMode === 'alphabet' && r2.itemCount === 26 && r2.renderedCardCount === 26 && r2.title.includes('26个英文字母');
     console.log('-> 判定:', pass2 ? '✅ PASS' : '❌ FAIL', '\n');
 
-    // ================= 测试 3: 字母左右邻居默写生成 =================
-    console.log('【测试 3】字母左右邻居默写专项生成:');
+    // ================= 测试 3: 前后字母默写生成 =================
+    console.log('【测试 3】前后字母默写专项生成:');
     const r3 = await evalExpr(`(async () => {
       document.getElementById('btnLoadAlphabetNeighbors')?.click();
       await new Promise(r => setTimeout(r, 200));
@@ -113,7 +114,7 @@ async function testAlphabet() {
       };
     })()`);
     console.log('-> 结果:', JSON.stringify(r3, null, 2));
-    const pass3 = r3.itemCount === 9 && r3.title.includes('字母左右邻居') && r3.firstItemZh.includes('邻居');
+    const pass3 = r3.itemCount === 9 && r3.title.includes('前后字母') && r3.firstItemZh.includes('前后字母');
     console.log('-> 判定:', pass3 ? '✅ PASS' : '❌ FAIL', '\n');
 
     // ================= 测试 4: 字母大小写转换默写生成 =================

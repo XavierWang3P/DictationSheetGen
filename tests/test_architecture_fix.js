@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function testArchitectureFix() {
   console.log('=== 开始执行 Vue 渲染与事件架构修复真实端到端验证 ===\n');
@@ -10,7 +11,7 @@ async function testArchitectureFix() {
     '--no-sandbox',
     '--window-size=1600,1200',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenEdge-${process.pid}`,
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   let res = null;
@@ -30,7 +31,7 @@ async function testArchitectureFix() {
 
   try {
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到目标页面');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);

@@ -110,13 +110,13 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { NButtonGroup, NButton, NTooltip } from 'naive-ui';
-import { state } from '../stores/appStore.js';
+import { state, pageLayout } from '../stores/appStore.js';
 import { computePageLayout, renderPracticeSheetHtml, PAPER_SIZES } from '../core/layout.js';
 import AppIcon from './AppIcon.vue';
 
 const stageRef = ref(null);
 
-const layout = computed(() => computePageLayout(state.draft.items, state.draft.settings));
+const layout = pageLayout;
 const sheetHtml = computed(() => renderPracticeSheetHtml(layout.value, state.draft.settings));
 const renderedPageCount = computed(() => layout.value.totalPages * (state.draft.settings.showAnswerPage ? 2 : 1));
 
@@ -196,6 +196,13 @@ function handleZoom100() {
   state.ui.zoom = 1.0;
 }
 
+let zoomFitTimer = null;
+
+function scheduleZoomFit(delay = 0) {
+  clearTimeout(zoomFitTimer);
+  zoomFitTimer = setTimeout(updateZoomFit, delay);
+}
+
 watch(
   () => [
     state.draft.settings.paperSize,
@@ -205,18 +212,19 @@ watch(
   ],
   () => {
     if (state.ui.isZoomFit) {
-      setTimeout(updateZoomFit, 260);
+      scheduleZoomFit(260);
     }
   }
 );
 
 onMounted(() => {
   window.addEventListener('resize', updateZoomFit);
-  setTimeout(updateZoomFit, 200);
+  scheduleZoomFit(200);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateZoomFit);
+  clearTimeout(zoomFitTimer);
 });
 </script>
 

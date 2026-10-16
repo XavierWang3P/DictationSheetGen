@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { selectPageTarget } from './helpers/edgeCdp.js';
 
 async function runMobileTests() {
   console.log('=== 开始执行移动端访问拦截与提示全屏页专项测试 ===\n');
@@ -10,7 +11,7 @@ async function runMobileTests() {
     '--no-sandbox',
     `--user-data-dir=${process.env.TEMP}\\DictationSheetGenMobileTest-${process.pid}`,
     '--window-size=1600,1200',
-    'file:///d:/DictationSheetGen/dist/index.html'
+    new URL('../dist/index.html?__test=1', import.meta.url).href
   ]);
 
   let res = null;
@@ -25,7 +26,7 @@ async function runMobileTests() {
 
   try {
     const tabs = await res.json();
-    const target = tabs.find(t => t.url.includes('DictationSheetGen'));
+    const target = selectPageTarget(tabs, new URL('../dist/index.html?__test=1', import.meta.url).href);
     if (!target) throw new Error('未找到测试目标 Tab');
 
     const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -254,7 +255,9 @@ async function runMobileTests() {
   }
 }
 
-runMobileTests().catch(err => {
-  console.error('❌ 测试异常失败:', err);
-  process.exit(1);
-});
+runMobileTests()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('❌ 测试异常失败:', err);
+    process.exit(1);
+  });

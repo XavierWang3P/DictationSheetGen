@@ -61,6 +61,7 @@ export function normalizeLayoutDefaults(layoutDefaults, legacySettings = {}) {
 function baseQuestion(data, type) {
   const id = data?.id || generateId(type.replace(/[^a-z]/g, '').slice(0, 8) || 'item');
   return {
+    ...data,
     id,
     sourceId: data?.sourceId || null,
     questionType: type,
